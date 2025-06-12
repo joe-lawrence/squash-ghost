@@ -1,0 +1,2447 @@
+<!DOCTYPE HTML>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Squash Ghosting</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color-light: #f3f4f6; /* Tailwind gray-100 */
+            --bg-color-dark: #e5e7eb; /* Tailwind gray-200 */
+            --text-color: #374151; /* Tailwind gray-700 */
+            --card-bg: #ffffff; /* White */
+            --border-color: #e5e7eb; /* Tailwind gray-200 */
+            --input-border: #d1d5db; /* Tailwind gray-300 */
+            --header-color: #4f46e5; /* Tailwind indigo-700 */
+            --slider-track-bg: #cbd5e1; /* Tailwind slate-300 */
+            --slider-thumb-bg: #6366f1; /* Tailwind indigo-500 */
+            --slider-thumb-hover: #4f46e5; /* Tailwind indigo-600 */
+            --config-header: #4f46e5; /* Tailwind indigo-600 */
+            --config-border: #e2e8f0; /* Tailwind slate-200 */
+            --config-bg: #f8fafc; /* Tailwind slate-50 */
+            --accent-color: #4f46e5; /* Tailwind indigo-600 */
+            --routine-screen-bg: #f3f4f6; /* Tailwind gray-100 */
+            --shot-counter-color: #4b5563; /* Tailwind gray-600 */
+            --countdown-shot-text: #374151; /* Tailwind indigo-800 */
+            --progress-bar-container: #d1d5db; /* Tailwind gray-300 */
+            --progress-bar-fill: #6366f1; /* Tailwind indigo-500 */
+            --copy-paste-btn-bg: #2563eb; /* Tailwind blue-600 */
+            --copy-paste-btn-hover: #1d4ed8; /* Tailwind blue-700 */
+            --reset-btn-bg: #dc2626; /* Tailwind red-600 */
+            --reset-btn-hover: #b91c1c; /* Tailwind red-700 */
+            --start-btn-bg: #16a34a; /* Tailwind green-600 */
+            --start-btn-hover: #15803d; /* Tailwind green-700 */
+            --pause-btn-bg: #f59e0b; /* Tailwind yellow-500 */
+            --pause-btn-hover: #d97706; /* Tailwind yellow-600 */
+            --stop-btn-bg: #dc2626; /* Tailwind red-600 */
+            --stop-btn-hover: #b91c1c; /* Tailwind red-700 */
+            --repeat-btn-bg: #16a34a; /* Tailwind green-600 */
+            --repeat-btn-hover: #15803d; /* Tailwind green-700 */
+            --exit-btn-bg: #6b7280; /* Tailwind gray-500 */
+            --exit-btn-hover: #4b5563; /* Tailwind gray-600 */
+            --temp-message-bg: #ef4444; /* Red for temporary messages */
+            --sequence-header-color: #4f46e5; /* Tailwind indigo-700 */
+            --sequence-label-color: #4b5563; /* Tailwind gray-600 */
+            --sequence-input-border: #d1d5db; /* Tailwind gray-300 */
+            --sequence-radio-color: #4f46e5; /* Tailwind indigo-600 */
+            --add-sequence-btn-bg: #4f46e5; /* Tailwind indigo-500 */
+            --add-sequence-btn-hover: #4338ca; /* Tailwind indigo-600 */
+            --shot-counter-btn-bg: #6b7280; /* Gray-500 for shot counter button */
+            --shot-counter-btn-text: #ffffff; /* White text for shot counter button */
+
+            /* Theme Toggle Button specific variables for light mode */
+            --theme-toggle-bg: var(--config-bg);
+            --theme-toggle-text: var(--text-color);
+            --theme-toggle-hover-bg: var(--config-border);
+        }
+
+        [data-theme='dark'] {
+            --bg-color-light: #1a202c; /* Dark gray for background */
+            --bg-color-dark: #2d3748; /* Slightly lighter dark gray */
+            --text-color: #e2e8f0; /* Light gray for text */
+            --card-bg: #2d3748; /* Darker card background */
+            --border-color: #4a5568; /* Darker border */
+            --input-border: #4a5568; /* Darker input border */
+            --header-color: #a78bfa; /* Light indigo for headers */
+            --slider-track-bg: #4a5568; /* Darker slider track */
+            --slider-thumb-bg: #8b5cf6; /* Purple for slider thumb */
+            --slider-thumb-hover: #7c3aed; /* Darker purple */
+            --config-header: #a78bfa; /* Light indigo for config headers */
+            --config-border: #4a5568; /* Darker config border */
+            --config-bg: #2d3748; /* Darker config background */
+            --accent-color: #8b5cf6; /* Purple accent */
+            --routine-screen-bg: #1a202c; /* Dark gray for routine screen */
+            --shot-counter-color: #cbd5e1; /* Lighter gray for shot counter */
+            --countdown-shot-text: #a78bfa; /* Light indigo for countdown/shot text */
+            --progress-bar-container: #4a5568; /* Darker progress bar container */
+            --progress-bar-fill: #8b5cf6; /* Purple progress bar fill */
+            --copy-paste-btn-bg: #4c6ef5; /* Dark blue-600 equivalent */
+            --copy-paste-btn-hover: #3b5bdb; /* Dark blue-700 equivalent */
+            --reset-btn-bg: #ef4444; /* Dark red-600 equivalent */
+            --reset-btn-hover: #dc2626; /* Dark red-700 equivalent */
+            --start-btn-bg: #22c55e; /* Dark green-600 equivalent */
+            --start-btn-hover: #16a34a; /* Dark green-700 equivalent */
+            --pause-btn-bg: #facc15; /* Dark yellow-500 equivalent */
+            --pause-btn-hover: #eab308; /* Dark yellow-600 equivalent */
+            --stop-btn-bg: #ef4444; /* Dark red-600 equivalent */
+            --stop-btn-hover: #dc2626; /* Dark red-700 equivalent */
+            --repeat-btn-bg: #22c55e; /* Dark green-600 equivalent */
+            --repeat-btn-hover: #16a34a; /* Dark green-700 equivalent */
+            --exit-btn-bg: #9ca3af; /* Dark gray-500 equivalent */
+            --exit-btn-hover: #6b7280; /* Dark gray-600 equivalent */
+            --temp-message-bg: #dc2626; /* Darker red for temporary messages in dark mode */
+            --sequence-header-color: #a78bfa;
+            --sequence-label-color: #cbd5e1;
+            --sequence-input-border: #4a5568;
+            --sequence-radio-color: #8b5cf6;
+            --add-sequence-btn-bg: #8b5cf6; /* Dark indigo-500 equivalent */
+            --add-sequence-btn-hover: #7c3aed; /* Dark indigo-600 equivalent */
+            --shot-counter-btn-bg: #4a5568; /* Dark gray-600 for shot counter button */
+            --shot-counter-btn-text: #e2e8f0; /* Light text for shot counter button */
+
+            /* Theme Toggle Button specific variables for dark mode (inverted) */
+            --theme-toggle-bg: var(--text-color); /* Use light text color as background */
+            --theme-toggle-text: var(--bg-color-dark); /* Use dark background color as text color */
+            --theme-toggle-hover-bg: #cbd5e1; /* A lighter gray for hover in dark mode */
+        }
+
+        /* Base body styling with Inter font and a subtle gradient background */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color-light) 0%, var(--bg-color-dark) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            color: var(--text-color);
+            /* Removed background-color from transition for immediate flash changes */
+            transition: color 0.3s ease-out; /* Smooth transition for text color only */
+        }
+
+        /* Styles for the main configuration screen */
+        #configScreen {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out;
+        }
+
+        #configScreen h1 {
+            color: var(--header-color);
+        }
+
+        #configScreen label {
+            color: var(--text-color);
+        }
+
+        #configScreen .font-semibold.text-indigo-600,
+        #configScreen .text-indigo-700 { /* Keep original class names for simplicity, but map to var */
+            color: var(--accent-color);
+        }
+
+        /* Custom slider styling for consistent aesthetics */
+        input[type="range"] {
+            -webkit-appearance: none; /* Remove default WebKit styles */
+            width: 100%;
+            height: 8px;
+            background: var(--slider-track-bg);
+            border-radius: 5px;
+            outline: none;
+            transition: opacity .2s, background-color 0.3s ease-out;
+        }
+
+        /* WebKit (Chrome, Safari) thumb styling */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--slider-thumb-bg);
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        /* WebKit thumb active/hover state */
+        input[type="range"]::-webkit-slider-thumb:hover,
+        input[type="range"]::-webkit-slider-thumb:active {
+            background: var(--slider-thumb-hover);
+        }
+
+        /* Mozilla (Firefox) thumb styling */
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--slider-thumb-bg);
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        /* Mozilla thumb active/hover state */
+        input[type="range"]::-moz-range-thumb:hover,
+        input[type="range"]::-moz-range-thumb:active {
+            background: var(--slider-thumb-hover);
+        }
+
+        /* Textarea and input field styling */
+        textarea, input[type="text"], input[type="number"] {
+            background-color: var(--card-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+            transition: background-color 0.3s ease-out, border-color 0.3s ease-out, color 0.3s ease-out;
+        }
+
+        textarea:focus, input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+        }
+
+        /* Routine Shot Sequencing section */
+        .border.border-slate-200.rounded-lg.p-4.bg-slate-50,
+        .border.border-slate-200.rounded-lg.p-3.bg-white.shadow-sm {
+            border-color: var(--config-border);
+            background-color: var(--config-bg);
+            transition: background-color 0.3s ease-out, border-color 0.3s ease-out;
+        }
+
+        h2.text-xl.font-semibold.mb-3.text-indigo-600 { /* Keep original class names for simplicity, but map to var */
+            color: var(--config-header);
+        }
+
+        .form-radio.text-indigo-600 { /* Keep original class names for simplicity, but map to var */
+            color: var(--accent-color);
+        }
+
+        /* General Button Styling (use specific IDs/classes for actual buttons) */
+        button {
+            transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        /* Specific Button Styles */
+        #copyConfigButton, #pasteConfigButton, #openConfigButton {
+            background-color: var(--copy-paste-btn-bg);
+        }
+        #copyConfigButton:hover, #pasteConfigButton:hover, #openConfigButton:hover {
+            background-color: var(--copy-paste-btn-hover);
+        }
+
+        #resetConfigButton {
+            background-color: var(--reset-btn-bg);
+        }
+        #resetConfigButton:hover {
+            background-color: var(--reset-btn-hover);
+        }
+
+        #startRoutineButton {
+            background-color: var(--start-btn-bg);
+        }
+        #startRoutineButton:hover {
+            background-color: var(--start-btn-hover);
+        }
+        #startRoutineButton.opacity-50.cursor-not-allowed.bg-gray-400 { /* Specific override for disabled state */
+             background-color: #9ca3af; /* Tailwind gray-400 equivalent for disabled */
+             cursor: not-allowed;
+             opacity: 0.5;
+        }
+
+
+        #pauseResumeButton {
+            background-color: var(--pause-btn-bg);
+        }
+        #pauseResumeButton:hover {
+            background-color: var(--pause-btn-hover);
+        }
+
+        #stopButton {
+            background-color: var(--stop-btn-bg);
+        }
+        #stopButton:hover {
+            background-color: var(--stop-btn-hover);
+        }
+
+        #shotCounterButton { /* New style for shot counter button */
+            background-color: var(--shot-counter-btn-bg);
+            color: var(--shot-counter-btn-text);
+            cursor: default; /* Make it non-interactive */
+        }
+        #shotCounterButton:hover { /* No hover effect for a non-interactive button */
+            background-color: var(--shot-counter-btn-bg);
+        }
+
+        #repeatButton {
+            background-color: var(--repeat-btn-bg);
+        }
+        #repeatButton:hover {
+            background-color: var(--repeat-btn-hover);
+        }
+
+        #exitButton {
+            background-color: var(--exit-btn-bg);
+        }
+        #exitButton:hover {
+            background-color: var(--exit-btn-hover);
+        }
+
+
+        /* Keyframe animation for the screen flash effect */
+        /* Removed .flash-red as it's now handled by direct style manipulation for better consistency */
+
+        /* Utility classes for text fading animation during routine */
+        .text-fade-out {
+            opacity: 0;
+            transition: opacity 500ms ease-out; /* Smooth fade out over 500ms */
+        }
+
+        .text-fade-in {
+            opacity: 1;
+            transition: opacity 500ms ease-in; /* Smooth fade in over 500ms */
+        }
+
+        /* Ensure screen occupies full viewport on small devices */
+        #routineScreen {
+            height: 100vh;
+            width: 100vw;
+            /* Use fixed positioning to cover the whole screen */
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Ensure it's on top */
+            /* Background gradient matches body for consistency */
+            background: linear-gradient(135deg, var(--routine-screen-bg) 0%, var(--bg-color-dark) 100%);
+            color: var(--text-color);
+            transition: background-color 0.3s ease-out, color 0.3s ease-out;
+        }
+
+        #shotCounter { /* This will now be primarily hidden, its content moved to the button */
+            color: var(--shot-counter-color);
+        }
+
+        #countdownDisplay, #shotDisplay {
+            color: var(--countdown-shot-text);
+        }
+
+        #progressBarContainer {
+            background-color: var(--progress-bar-container);
+        }
+
+        #progressBar {
+            background-color: var(--progress-bar-fill);
+        }
+
+        /* Theme toggle button specific styling */
+        #themeToggleButton {
+            background-color: var(--theme-toggle-bg); /* Use theme-specific variables */
+            color: var(--theme-toggle-text);
+            border: 1px solid var(--border-color);
+        }
+        #themeToggleButton:hover {
+            background-color: var(--theme-toggle-hover-bg); /* Use theme-specific hover variable */
+        }
+
+        /* Additional styles for dynamic sequences */
+        #sequencesContainer h3 {
+            color: var(--sequence-header-color);
+        }
+        #sequencesContainer label {
+            color: var(--sequence-label-color);
+        }
+        #sequencesContainer textarea {
+            border-color: var(--sequence-input-border);
+            background-color: var(--card-bg); /* Ensure textareas in sequence also respond to theme */
+            color: var(--text-color);
+        }
+        #sequencesContainer input[type="radio"].form-radio {
+            color: var(--sequence-radio-color);
+        }
+        #addSequenceButton {
+            background-color: var(--add-sequence-btn-bg);
+        }
+        #addSequenceButton:hover {
+            background-color: var(--add-sequence-btn-hover);
+        }
+
+
+        /* Adjust layout for smaller screens */
+        @media (max-width: 640px) {
+            body {
+                padding: 0.5rem;
+                align-items: flex-start; /* Align to top for better content visibility */
+            }
+            #configScreen {
+                padding: 1rem;
+                margin-top: 1rem; /* Add some margin from top */
+                width: 100%; /* Full width on small screens */
+            }
+            .text-9xl { font-size: 5rem; } /* Adjust font size for countdown on small screens */
+            .text-7xl { font-size: 3.5rem; } /* Adjust font size for shot display on small screens */
+            .text-lg { font-size: 1rem; } /* Adjust font size for shot counter */
+            /* Adjusted button and counter positions for small screens */
+            .top-4 { top: 1rem; }
+            .right-4 { right: 1rem; }
+            .left-4 { left: 1rem; }
+            .py-3 { padding-top: 0.5rem; padding-bottom: 0.5rem; } /* Adjust button padding */
+            .px-6 { padding-left: 1rem; padding-right: 1rem; } /* Adjust button padding */
+            /* Ensure buttons don't wrap on small screens by making them flexible */
+            .flex-row-no-wrap { flex-wrap: nowrap; }
+            /* This might be needed if they still wrap: */
+            /* .space-x-4 > *:not(:first-child) { margin-left: 0.5rem !important; } */
+        }
+    </style>
+</head>
+<body>
+    <div id="configScreen" class="w-full max-w-2xl p-6 rounded-xl shadow-lg">
+        <h1 class="text-4xl font-bold text-center mb-8">Squash Ghosting</h1>
+
+        <div class="space-y-6">
+            <div>
+                <label for="countdownInterval" class="block text-sm font-medium mb-1">
+                    Countdown Interval: <span id="countdownIntervalValue" class="font-semibold text-indigo-600">10 seconds</span>
+                </label>
+                <input type="range" id="countdownInterval" min="0" max="60" value="10" class="w-full">
+            </div>
+
+            <div>
+                <label for="totalShots" class="block text-sm font-medium mb-1">
+                    Total Number of Shots: <span id="totalShotsValue" class="font-semibold text-indigo-600">20</span>
+                </label>
+                <input type="range" id="totalShots" min="0" max="100" value="20" class="w-full">
+            </div>
+
+            <div>
+                <label for="shotInterval" class="block text-sm font-medium mb-1">
+                    Shot Interval: <span id="shotIntervalValue" class="font-semibold text-indigo-600">4.0 seconds</span>
+                </label>
+                <input type="range" id="shotInterval" min="3.0" max="6.0" step="0.1" value="4.0" class="w-full">
+            </div>
+
+            <div>
+                <label for="nextShotAnnouncementDelay" class="block text-sm font-medium mb-1">
+                    Next Shot Announced in: <span id="nextShotAnnouncementDelayValue" class="font-semibold text-indigo-600">1.25 seconds</span>
+                </label>
+                <input type="range" id="nextShotAnnouncementDelay" min="0.00" max="5.00" step="0.01" value="1.25" class="w-full">
+            </div>
+
+            <div>
+                <label for="randomOffset" class="block text-sm font-medium mb-1">
+                    Random Offset: <span id="randomOffsetValue" class="font-semibold text-indigo-600">0.00 seconds</span>
+                </label>
+                <input type="range" id="randomOffset" min="0.00" max="0.25" step="0.01" value="0.00" class="w-full">
+            </div>
+
+            <div class="mb-4">
+                <label for="routineIntro" class="block text-sm font-medium mb-1">
+                    Optional Routine Intro (spoken once after countdown):
+                </label>
+                <textarea id="routineIntro" rows="2" class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="e.g., Let's begin your ghosting routine."></textarea>
+            </div>
+
+            <div class="border rounded-lg p-4">
+                <h2 class="text-xl font-semibold mb-3">Routine Shot Sequencing</h2>
+                <div class="flex flex-wrap items-center space-x-4 mb-4 justify-start">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="seriesOrder" value="ordered" checked class="form-radio rounded-full">
+                        <span class="ml-2">Ordered</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full">
+                        <span class="ml-2">Randomized</span>
+                    </label>
+                </div>
+
+                <div id="sequencesContainer" class="space-y-4">
+                    </div>
+
+                <button id="addSequenceButton" class="mt-4 w-full text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out shadow-md hover:shadow-lg">
+                    Add Sequence
+                </button>
+            </div>
+
+            <div class="flex flex-row justify-between space-x-2 mt-6"> <!-- Adjusted to space-x-2 for more compact row -->
+                <button id="copyConfigButton" class="text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240zm0-80h360v-480H360zM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80zm160-240v-480z"/>
+                    </svg>
+                </button>
+                <button id="pasteConfigButton" class="text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120zm0-80h560v-560h-80v120H280v-120h-80zm280-560q17 0 28.5-11.5T520-800t-11.5-28.5T480-840t-28.5 11.5T440-800t11.5 28.5T480-760"/>
+                    </svg>
+                </button>
+                <button id="resetConfigButton" class="text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M520-330v-60h160v60zm60 210v-50h-60v-60h60v-50h60v160zm100-50v-60h160v60zm40-110v-160h60v50h60v60h-60v50zm111-280h-83q-26-88-99-144t-169-56q-117 0-198.5 81.5T200-480q0 72 32.5 132t87.5 98v-110h80v240H160v-80h94q-62-50-98-122.5T120-480q0-75 28.5-140.5t77-114 114-77T480-840q129 0 226.5 79.5T831-560"/>
+                    </svg>
+                </button>
+                <button id="openConfigButton" class="text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v240h-80v-200H520v-200H240v640h360v80zm638 15L760-183v89h-80v-226h226v80h-90l118 118zm-638-95v-640z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <button id="startRoutineButton" class="w-full text-white font-bold py-3 px-4 rounded-lg text-xl transition duration-200 ease-in-out shadow-xl hover:shadow-2xl mt-4 flex items-center justify-center h-12">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                    <path d="m380-300 280-180-280-180zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+                </svg>
+                <span class="ml-2">Start Routine</span>
+            </button>
+        </div>
+        <!-- Night Mode Toggle Button -->
+        <div class="mt-8 text-center">
+            <button id="themeToggleButton" class="font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out shadow-md flex items-center justify-center">
+                <!-- SVG icons for light and dark mode -->
+                <svg id="moonIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M524-40q-84 0-157.5-32t-128-86.5-86.5-128T120-444q0-146 93-257.5T450-840q-18 99 11 193.5T561-481t165.5 100T920-370q-26 144-138 237T524-40m0-80q88 0 163-44t118-121q-86-8-163-43.5T504-425t-97-138-43-163q-77 43-120.5 118.5T200-444q0 135 94.5 229.5T524-120m-20-305"/></svg>
+                <svg id="sunIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="m806-235-57-57q17-16 31-34.5t25-38.5q-48-5-94-18t-88-35L416-625q-22-42-35-87.5T364-806q-20 11-38.5 25T291-750l-56-56q43-44 97.5-73T450-920q-18 99 11 193.5T561-561t165.5 100T920-450q-11 63-40.5 117.5T806-235M775-38 667-146q-34 13-69.5 19.5T524-120q-84 0-157.5-32t-128-86.5-86.5-128T120-524q0-38 6.5-73.5T146-667L39-774l57-57L832-95zM524-200q20 0 40-2.5t39-7.5L210-603q-5 20-7.5 39.5T200-524q0 135 94.5 229.5T524-200m-4-321"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="routineScreen" class="hidden w-full h-screen flex flex-col justify-center items-center transition-colors duration-200">
+        <!-- Removed: <div class="absolute top-4 right-4 font-semibold text-lg" id="shotCounter"></div> -->
+        <div class="absolute top-4 w-full flex justify-center">
+            <!-- Active Routine Buttons: Pause/Resume | Counter | Stop -->
+            <div id="activeRoutineButtons" class="flex space-x-4 items-stretch max-w-lg w-full">
+                <button id="pauseResumeButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <!-- Initial icon for Pause -->
+                    <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M320-320h80v-320h-80v320zm240 0h80v-320h-80v320zm-80 240q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+                    </svg>
+                    <svg id="resumeIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="m380-300 280-180-280-180zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+                    </svg>
+                </button>
+                <button id="shotCounterButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <!-- Initial shot count will be set by JS -->
+                    <span id="shotCounterValue">0 / 0</span>
+                </button>
+                <button id="stopButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M320-320h320v-320H320zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Finished Routine Buttons: Repeat | Counter | Exit -->
+            <div id="finishedRoutineButtons" class="hidden flex space-x-4 items-stretch max-w-lg w-full">
+                <button id="repeatButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M280-80 120-240l160-160 56 58-62 62h406v-160h80v240H274l62 62zm-80-440v-240h486l-62-62 56-58 160 160-160 160-56-58 62-62H280v160z"/>
+                    </svg>
+                </button>
+                <button id="shotCounterButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <!-- Initial shot count will be set by JS -->
+                    <span id="shotCounterValue">0 / 0</span>
+                </button>
+                <button id="exitButton" class="text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out shadow-md flex-1 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                        <path d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="text-9xl font-extrabold opacity-100 transition-opacity duration-500" id="countdownDisplay"></div>
+        <div class="text-7xl font-extrabold opacity-100 transition-opacity duration-500 text-center" id="shotDisplay"></div>
+        <!-- Progress Bar for Next Shot -->
+        <div id="progressBarContainer" class="w-11/12 max-w-md rounded-full h-4 mt-8 overflow-hidden">
+            <div id="progressBar" class="h-full rounded-full transition-all duration-100 ease-linear" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store configuration settings and routine state
+        let countdownInterval = 10; // Initial countdown time in seconds
+        let totalShots = 20; // Total number of shots for the routine
+        let shotInterval = 4.0; // Base interval between shots in seconds
+        let nextShotAnnouncementDelay = 1.25; // Delay between shot timer start and announcement in seconds
+        let randomOffset = 0.00; // Random offset for shot interval in seconds
+        let seriesOrder = 'ordered'; // Order of sequences ('ordered' or 'randomized')
+        let routineIntroText = ""; // Optional routine intro text
+
+        // Array to store the details of each configured sequence
+        // Each element: { id, shotSelections: [], order: 'ordered'/'randomized', sequenceIntro: '', postSequenceRest: 0 }
+        let sequences = [];
+        let nextSequenceId = 0; // Counter for unique sequence IDs
+
+        // Array that will hold the final, flattened list of shots for the current routine execution
+        // Each element: { name: 'Shot Name', sequenceId: X }
+        let currentRoutineShots = [];
+        let currentShotIndex = 0; // Index of the current shot being executed
+        let isRoutineRunning = false; // Flag to indicate if the routine is active
+        let isPaused = false; // Flag to indicate if the routine is paused
+        let countdownValue = 0; // Current value of the countdown
+        let lastPlayedSequenceId = null; // Tracks the ID of the last sequence whose shot was played, for intro logic
+        let isResting = false; // Flag to indicate if the routine is currently in a rest period
+        let restCountdownRemaining = 0; // Remaining time in the post-sequence rest period
+
+        // Web Audio API context and SpeechSynthesis API objects
+        let audioContext;
+        let utterance;
+        let synth;
+
+        // Timer IDs to manage timeouts and clear them on pause/stop
+        let countdownTimerId = null;
+        let shotTimerId = null;
+        let flashTimerId = null; // Added a specific timer for the flash to manage its timing
+        let restTimerId = null; // New timer for post-sequence rest
+        let beepDuration = 0.3; // Increased duration of the screen flash and beep tone in seconds
+
+        // Progress bar specific variables
+        let progressBarAnimationId = null; // For requestAnimationFrame
+        let currentIntervalStartTime = 0; // Time when the current interval (shot or rest) started
+        let currentIntervalDuration = 0; // The target duration of the current interval (in milliseconds)
+        let pausedTimeElapsed = 0; // Time elapsed within the current interval when it was paused
+
+
+        // DOM Elements - Cached for efficient access
+        const configScreen = document.getElementById('configScreen');
+        const routineScreen = document.getElementById('routineScreen');
+
+        const countdownIntervalInput = document.getElementById('countdownInterval');
+        const countdownIntervalValueDisplay = document.getElementById('countdownIntervalValue');
+        const totalShotsInput = document.getElementById('totalShots');
+        const totalShotsValueDisplay = document.getElementById('totalShotsValue');
+        const shotIntervalInput = document.getElementById('shotInterval');
+        const shotIntervalValueDisplay = document.getElementById('shotIntervalValue');
+        const nextShotAnnouncementDelayInput = document.getElementById('nextShotAnnouncementDelay');
+        const nextShotAnnouncementDelayValueDisplay = document.getElementById('nextShotAnnouncementDelayValue');
+        const randomOffsetInput = document.getElementById('randomOffset');
+        const randomOffsetValueDisplay = document.getElementById('randomOffsetValue');
+        const routineIntroInput = document.getElementById('routineIntro');
+
+        const seriesOrderRadios = document.querySelectorAll('input[name="seriesOrder"]');
+        const sequencesContainer = document.getElementById('sequencesContainer');
+        const addSequenceButton = document.getElementById('addSequenceButton');
+        const startRoutineButton = document.getElementById('startRoutineButton');
+        const copyConfigButton = document.getElementById('copyConfigButton');
+        const pasteConfigButton = document.getElementById('pasteConfigButton');
+        const resetConfigButton = document.getElementById('resetConfigButton');
+        const openConfigButton = document.getElementById('openConfigButton');
+
+        // Changed: shotCounterDisplay now references the new button
+        const shotCounterButton = document.getElementById('shotCounterButton');
+        const shotCounterValueDisplay = document.getElementById('shotCounterValue'); // Span inside the button
+
+        const countdownDisplay = document.getElementById('countdownDisplay');
+        const shotDisplay = document.getElementById('shotDisplay');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const activeRoutineButtons = document.getElementById('activeRoutineButtons');
+        const finishedRoutineButtons = document.getElementById('finishedRoutineButtons');
+        const pauseResumeButton = document.getElementById('pauseResumeButton');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const resumeIcon = document.getElementById('resumeIcon');
+        // Removed pauseResumeText, as requested to be icon-only
+        const stopButton = document.getElementById('stopButton');
+        const repeatButton = document.getElementById('repeatButton');
+        const exitButton = document.getElementById('exitButton');
+        const themeToggleButton = document.getElementById('themeToggleButton'); // New: Theme toggle button
+        const moonIcon = document.getElementById('moonIcon'); // New: Moon icon element
+        const sunIcon = document.getElementById('sunIcon'); // New: Sun icon element
+
+        /**
+         * Shuffles an array in place using the Fisher-Yates (Knuth) algorithm.
+         * This ensures a truly random permutation of the array elements.
+         * @param {Array} array - The array to shuffle.
+         * @returns {Array} The shuffled array (same instance).
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /**
+         * Initializes the Web Audio API context.
+         * Crucially, this function attempts to resume the AudioContext on the first user interaction
+         * to comply with browser autoplay policies, especially on mobile (e.g., iOS Safari).
+         */
+        function initAudioContext() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // If the audio context is suspended (common on iOS), attempt to resume it
+                    // when the user interacts with the document (e.g., clicks the start button).
+                    if (audioContext.state === 'suspended') {
+                        const resumeAudio = () => {
+                            audioContext.resume().then(() => {
+                                console.log('AudioContext resumed successfully.');
+                                // Remove listeners once resumed to avoid multiple calls
+                                document.removeEventListener('click', resumeAudio);
+                                document.removeEventListener('touchend', resumeAudio);
+                            }).catch(error => console.error("Error resuming AudioContext:", error));
+                        };
+                        // Add passive listeners for user gestures
+                        document.addEventListener('click', resumeAudio, { once: true, passive: true });
+                        document.addEventListener('touchend', resumeAudio, { once: true, passive: true });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to initialize AudioContext:", error);
+            }
+        }
+
+        /**
+         * Initializes the SpeechSynthesis API.
+         * Includes a workaround for iOS Safari where SpeechSynthesis might not work until
+         * a user gesture is detected and a silent utterance is played.
+         */
+        function initSpeechSynthesis() {
+            try {
+                if (!synth) {
+                    synth = window.speechSynthesis;
+                    if (!synth) {
+                        console.warn("SpeechSynthesis not supported by this browser.");
+                        return;
+                    }
+
+                    // iOS "wake up" workaround: Play a silent utterance on first user interaction.
+                    // This primes the speech engine, making subsequent speech calls more reliable.
+                    const wakeUpSpeech = () => {
+                        const silentUtterance = new SpeechSynthesisUtterance('');
+                        silentUtterance.volume = 0; // Make it silent
+                        silentUtterance.onend = () => console.log('Silent utterance finished (SpeechSynthesis primed).');
+                        const errorUtterance = silentUtterance; // Use a local variable to prevent 'client' reference error.
+                        errorUtterance.onerror = (e) => console.warn('Silent utterance error:', e);
+                        synth.speak(silentUtterance);
+                        // Remove listeners once primed
+                        document.removeEventListener('click', wakeUpSpeech);
+                        document.removeEventListener('touchend', wakeUpSpeech);
+                    };
+                    // Add passive listeners for user gestures
+                    document.addEventListener('click', wakeUpSpeech, { once: true, passive: true });
+                    document.addEventListener('touchend', wakeUpSpeech, { once: true, passive: true });
+                }
+            } catch (error) {
+                console.error("Failed to initialize SpeechSynthesis:", error);
+            }
+        }
+
+        /**
+         * Generic function to update the displayed value next to a slider.
+         * @param {HTMLInputElement} slider - The slider input element.
+         * @param {HTMLElement} display - The span/label element that displays the value.
+         * @param {string} unit - Optional unit string (e.g., " seconds").
+         * @param {number} decimals - Number of decimal places to format the value.
+         */
+        function updateSliderValue(slider, display, unit, decimals) {
+            try {
+                const value = parseFloat(slider.value).toFixed(decimals);
+                display.textContent = value + (unit || '');
+            } catch (error) {
+                console.error("Error updating slider value:", error);
+            }
+        }
+
+        /**
+         * Adds a new sequence configuration block to the UI and updates the internal state.
+         * Each new sequence defaults to a comprehensive list of shots to guide the user.
+         * @param {object} [initialData] - Optional object to pre-populate sequence fields.
+         */
+        function addSequence(initialData = {}) {
+            try {
+                const id = initialData.id !== undefined ? initialData.id : nextSequenceId++; // Use provided ID or generate new
+                if (id >= nextSequenceId) { // Ensure nextSequenceId is always higher than any used ID
+                    nextSequenceId = id + 1;
+                }
+                const newSequence = {
+                    // Provide a default list of shot selections for new sequences
+                    shotSelections: initialData.shotSelections !== undefined ? initialData.shotSelections : ["Front Right", "Mid Right", "Back Right", "Back Left", "Mid Left", "Front Left"],
+                    id: id,
+                    order: initialData.order || 'ordered',
+                    sequenceIntro: initialData.sequenceIntro || '',
+                    postSequenceRest: initialData.postSequenceRest || 0
+                };
+
+                // Check if sequence with this ID already exists, update if it does, add if not.
+                const existingIndex = sequences.findIndex(seq => seq.id === id);
+                if (existingIndex > -1) {
+                    sequences[existingIndex] = newSequence;
+                } else {
+                    sequences.push(newSequence);
+                }
+
+
+                // Create the DOM element for the new sequence
+                const sequenceDiv = document.createElement('div');
+                sequenceDiv.id = `sequence-${id}`;
+                // Apply theme-dependent classes for the sequence block
+                sequenceDiv.className = 'border rounded-lg p-3 shadow-sm flex flex-col space-y-2';
+                sequenceDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-md font-medium">Sequence ${id + 1}</h3>
+                        <button data-id="${id}" class="remove-sequence-button text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded-full text-sm">
+                            &times; Remove
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-3 text-sm mt-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="sequenceOrder-${id}" value="ordered" ${newSequence.order === 'ordered' ? 'checked' : ''} class="form-radio rounded-full">
+                            <span class="ml-1">Ordered</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="sequenceOrder-${id}" value="randomized" ${newSequence.order === 'randomized' ? 'checked' : ''} class="form-radio rounded-full">
+                            <span class="ml-1">Randomized</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label for="sequenceIntro-${id}" class="block text-xs font-medium mb-1">Optional Sequence Intro (spoken once):</label>
+                        <textarea id="sequenceIntro-${id}" rows="2" class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="e.g., Focus on front court shots.">${newSequence.sequenceIntro}</textarea>
+                    </div>
+                    <div>
+                        <label for="shotSelections-${id}" class="block text-xs font-medium mb-1">Shot Selections (one per line):</label>
+                        <textarea id="shotSelections-${id}" rows="4" class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="e.g.,&#10;Front Right&#10;Back Left&#10;Front Left">${newSequence.shotSelections.join('\n')}</textarea>
+                    </div>
+                    
+                    <div class="mt-4"> <label for="postSequenceRest-${id}" class="block text-xs font-medium mb-1">
+                            Post Sequence Rest: <span id="postSequenceRestValue-${id}" class="font-semibold text-indigo-600">0 seconds</span>
+                        </label>
+                        <input type="range" id="postSequenceRest-${id}" min="0" max="300" value="${newSequence.postSequenceRest}" class="w-full">
+                    </div>
+                `;
+                sequencesContainer.appendChild(sequenceDiv); // Add the new sequence block to the container
+
+                // Add event listeners for the newly created elements
+                sequenceDiv.querySelector(`#shotSelections-${id}`).addEventListener('input', saveConfiguration);
+                sequenceDiv.querySelector(`#sequenceIntro-${id}`).addEventListener('input', saveConfiguration); // New: for sequence intro
+                // New: Event listener for post sequence rest slider
+                const postRestSlider = sequenceDiv.querySelector(`#postSequenceRest-${id}`);
+                const postRestValueDisplay = sequenceDiv.querySelector(`#postSequenceRestValue-${id}`);
+                postRestSlider.addEventListener('input', () => updateSliderValue(postRestSlider, postRestValueDisplay, ' seconds', 0));
+                postRestSlider.addEventListener('input', saveConfiguration); // Save config when this slider changes
+                sequenceDiv.querySelectorAll(`input[name="sequenceOrder-${id}"]`).forEach(radio => {
+                    radio.addEventListener('change', saveConfiguration);
+                });
+                sequenceDiv.querySelector('.remove-sequence-button').addEventListener('click', (e) => removeSequence(parseInt(e.target.dataset.id)));
+
+                // Update display for the new slider's initial value
+                updateSliderValue(postRestSlider, postRestValueDisplay, ' seconds', 0);
+                saveConfiguration(); // Update configuration immediately after adding a new sequence
+            } catch (error) {
+                console.error("Error adding sequence:", error);
+            }
+        }
+
+        /**
+         * Removes a sequence configuration block from the UI and its data from the state.
+         * Prevents removal if it's the last remaining sequence to ensure a routine can always be configured.
+         * @param {number} idToRemove - The unique ID of the sequence to remove.
+         */
+        function removeSequence(idToRemove) {
+            try {
+                if (sequences.length <= 1) {
+                    console.warn("Cannot remove the last sequence. At least one sequence must be present.");
+                    showTemporaryMessage("Cannot remove the last sequence. At least one sequence must be present.");
+                    return;
+                }
+                sequences = sequences.filter(seq => seq.id !== idToRemove); // Remove from global array
+                const sequenceDiv = document.getElementById(`sequence-${idToRemove}`);
+                if (sequenceDiv) {
+                    sequenceDiv.remove(); // Remove from DOM
+                }
+                saveConfiguration(); // Update configuration after removal
+            } catch (error) {
+                console.error("Error removing sequence:", error);
+            }
+        }
+
+        /**
+         * Calculates the estimated total time of the routine based on current settings.
+         * @returns {number} The total estimated time in seconds.
+         */
+        function calculateEstimatedTotalTime() {
+            let totalTimeSeconds = 0;
+            // Start with 0, as countdown is excluded
+
+            // Track unique sequence IDs for which post-sequence rest has been added
+            const addedRestForSequences = new Set();
+
+            for (let i = 0; i < currentRoutineShots.length; i++) {
+                const shot = currentRoutineShots[i];
+                totalTimeSeconds += shotInterval; // Add base shot interval for each shot
+
+                // Add post-sequence rest if this is the end of a sequence and its rest hasn't been added yet
+                if (shot.isEndOfSequence && !addedRestForSequences.has(shot.sequenceId)) {
+                    const sequenceObj = sequences.find(s => s.id === shot.sequenceId);
+                    if (sequenceObj && sequenceObj.postSequenceRest > 0) {
+                        totalTimeSeconds += sequenceObj.postSequenceRest;
+                        addedRestForSequences.add(shot.sequenceId); // Mark as added
+                    }
+                }
+            }
+            return totalTimeSeconds;
+        }
+
+        /**
+         * Formats a given number of seconds into a mm:ss string.
+         * @param {number} totalSeconds - The total number of seconds.
+         * @returns {string} The formatted time string (mm:ss).
+         */
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.round(totalSeconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * Reads all current configuration settings from the UI and updates global variables.
+         * This function also generates the complete `currentRoutineShots` array based on user settings,
+         * including series set order, sequence order, and repeating sequences if needed to meet total shots.
+         */
+        function saveConfiguration() {
+            try {
+                // Update basic slider values
+                countdownInterval = parseInt(countdownIntervalInput.value);
+                shotInterval = parseFloat(shotIntervalInput.value);
+                nextShotAnnouncementDelay = parseFloat(nextShotAnnouncementDelayInput.value);
+                randomOffset = parseFloat(randomOffsetInput.value);
+
+            } catch (error) {
+                console.error("Error saving configuration:", error);
+            }
+
+            // Update routine intro text
+            routineIntroText = routineIntroInput.value.trim();
+
+            // Update sequences data
+            sequences.forEach(sequence => {
+                const shotSelectionsTextarea = document.getElementById(`shotSelections-${sequence.id}`);
+                if (shotSelectionsTextarea) {
+                    sequence.shotSelections = shotSelectionsTextarea.value.split('\n').map(s => s.trim()).filter(s => s !== '');
+                }
+
+                const sequenceIntroTextarea = document.getElementById(`sequenceIntro-${sequence.id}`);
+                if (sequenceIntroTextarea) {
+                    sequence.sequenceIntro = sequenceIntroTextarea.value.trim();
+                }
+
+                const sequenceOrderRadios = document.querySelectorAll(`input[name="sequenceOrder-${sequence.id}"]`);
+                sequenceOrderRadios.forEach(radio => {
+                    if (radio.checked) {
+                        sequence.order = radio.value;
+                    }
+                });
+
+                const postSequenceRestInput = document.getElementById(`postSequenceRest-${sequence.id}`);
+                if (postSequenceRestInput) {
+                    sequence.postSequenceRest = parseInt(postSequenceRestInput.value);
+                }
+            });
+
+            // Update series order
+            seriesOrderRadios.forEach(radio => {
+                if (radio.checked) {
+                    seriesOrder = radio.value;
+                }
+            });
+
+            // Rebuild currentRoutineShots based on updated configuration
+            currentRoutineShots = [];
+            if (sequences.length === 0) {
+                // If no sequences are defined, add a default one
+                addSequence();
+                return; // Re-run saveConfiguration after adding default
+            }
+
+            // Determine effective totalShots: if using series set order, totalShots should be the length of generated shots.
+            let totalPossibleShotsFromSequences = 0;
+            sequences.forEach(seq => {
+                totalPossibleShotsFromSequences += seq.shotSelections.length;
+            });
+
+            // If totalShots is less than total possible shots from all sequences, it's treated as a hard limit.
+            // Otherwise, it's used to determine how many times to repeat the series.
+            const configuredTotalShots = parseInt(totalShotsInput.value);
+
+
+            let shotsToGenerate = configuredTotalShots; // Default to user's set total shots
+
+            if (seriesOrder === 'ordered' && totalPossibleShotsFromSequences > 0) {
+                // If ordered and sequences exist, and configured total shots is less than total possible
+                // from sequences, we cap it at the configured total shots.
+                // Otherwise, if configured total shots is more, we repeat sequences until we reach it.
+                // Or if configuredTotalShots is 0 (meaning unlimited), just add all shots.
+                if (configuredTotalShots === 0) { // 0 means unlimited shots
+                    shotsToGenerate = Infinity;
+                } else if (configuredTotalShots < totalPossibleShotsFromSequences) {
+                    shotsToGenerate = configuredTotalShots;
+                } else {
+                    shotsToGenerate = configuredTotalShots; // We will repeat sequences to reach this
+                }
+            } else if (seriesOrder === 'randomized' && totalPossibleShotsFromSequences === 0) {
+                 // If randomized and no shots in sequences, then totalShots will be 0.
+                 // This needs to be handled to prevent infinite loops if totalShots is not 0.
+                 // It's better to ensure there's at least one default sequence.
+                shotsToGenerate = 0;
+            }
+
+
+            let generatedCount = 0;
+            let sequenceIndex = 0;
+            const availableSequences = [...sequences]; // Create a mutable copy
+
+            while (generatedCount < shotsToGenerate) {
+                if (availableSequences.length === 0) break; // Should not happen if a default sequence is always present
+
+                let sequenceToAdd;
+                if (seriesOrder === 'randomized') {
+                    // Pick a random sequence
+                    sequenceToAdd = availableSequences[Math.floor(Math.random() * availableSequences.length)];
+                } else { // 'ordered'
+                    sequenceToAdd = availableSequences[sequenceIndex % availableSequences.length];
+                    sequenceIndex++;
+                }
+
+                let shotsInSequence = [...sequenceToAdd.shotSelections];
+                if (shotsInSequence.length === 0) { // Skip sequences with no shots
+                    console.warn(`Sequence ${sequenceToAdd.id} has no shots. Skipping.`);
+                    if (sequenceIndex >= availableSequences.length && generatedCount === 0) {
+                        // If all sequences are empty and no shots generated, break to prevent infinite loop
+                        break;
+                    }
+                    continue; // Go to next iteration to try another sequence
+                }
+
+                if (sequenceToAdd.order === 'randomized') {
+                    shuffleArray(shotsInSequence);
+                }
+
+                for (let i = 0; i < shotsInSequence.length; i++) {
+                    if (generatedCount >= shotsToGenerate) break;
+
+                    currentRoutineShots.push({
+                        name: shotsInSequence[i],
+                        sequenceId: sequenceToAdd.id,
+                        isEndOfSequence: (i === shotsInSequence.length - 1)
+                    });
+                    generatedCount++;
+                }
+                // If we generated shots but are still less than the target, and all sequences have been processed
+                // without reaching target in this cycle, and we are not in 'series set' mode
+                if (generatedCount < shotsToGenerate && sequenceIndex >= availableSequences.length && configuredTotalShots !== 0) {
+                     // Reset sequence index to loop through available sequences again for repeating the series
+                    sequenceIndex = 0;
+                    if (seriesOrder === 'randomized') {
+                         // Re-shuffle for the next cycle if randomized
+                        shuffleArray(availableSequences);
+                    }
+                }
+            }
+            // If totalShots is 0, it means "series set", so totalShots should be the length of generated shots.
+            totalShots = configuredTotalShots === 0 ? currentRoutineShots.length : configuredTotalShots;
+            totalShotsValueDisplay.textContent = configuredTotalShots === 0 ? "Series set" : totalShots.toString();
+
+
+            // Calculate and display estimated total time
+            const estimatedTime = calculateEstimatedTotalTime();
+            const formattedTime = formatTime(estimatedTime);
+            startRoutineButton.dataset.originalText = `Start Routine (~${formattedTime})`; // Store for temporary messages
+            startRoutineButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                <path d="m380-300 280-180-280-180zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+            </svg><span class="ml-2">${startRoutineButton.dataset.originalText}</span>`;
+
+            // Enable/disable start button based on whether any shots were generated
+            if (currentRoutineShots.length > 0) {
+                startRoutineButton.disabled = false;
+                startRoutineButton.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400'); // Remove disabled styling
+                // Tailwind classes for buttons are now handled by CSS variables, no need to re-add here.
+            } else {
+                startRoutineButton.disabled = true;
+                startRoutineButton.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400'); // Add disabled styling
+            }
+
+            saveConfigurationToLocalStorage(); // Save current configuration
+        }
+
+        /**
+         * Validates the current configuration settings.
+         * @returns {boolean} True if the configuration is valid, false otherwise.
+         */
+        function validateConfiguration() {
+            try {
+                if (sequences.length === 0) {
+                    console.error("Validation Error: At least one sequence must be defined.");
+                    return false;
+                }
+                if (currentRoutineShots.length === 0) {
+                     console.error("Validation Error: No shots generated. Please ensure your sequences have at least one shot configured.");
+                     return false;
+                }
+                return true;
+            } catch (error) {
+                console.error("Error validating configuration:", error);
+                return false;
+            }
+        }
+
+
+        /**
+         * Loads configuration from localStorage on page load.
+         */
+        function loadConfigurationFromLocalStorage() {
+            try {
+                const savedConfig = localStorage.getItem('squashGhostingConfig');
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+
+                    // Restore simple values
+                    countdownIntervalInput.value = config.countdownInterval;
+                    totalShotsInput.value = config.totalShots;
+                    shotIntervalInput.value = config.shotInterval;
+                    nextShotAnnouncementDelayInput.value = config.nextShotAnnouncementDelay;
+                    randomOffsetInput.value = config.randomOffset;
+                    routineIntroInput.value = config.routineIntroText || '';
+
+                    // Restore radio button selections
+                    seriesOrderRadios.forEach(radio => {
+                        radio.checked = radio.value === config.seriesOrder;
+                    });
+
+                    // Clear existing sequences before loading
+                    sequencesContainer.innerHTML = '';
+                    sequences = [];
+                    nextSequenceId = 0; // Reset counter for clean load
+
+                    // Restore sequences
+                    if (config.sequences && config.sequences.length > 0) {
+                        config.sequences.forEach(seqData => addSequence(seqData));
+                    } else {
+                        addSequence(); // Add a default sequence if none saved
+                    }
+
+                    // Update all slider displays and trigger a full save to rebuild currentRoutineShots
+                    updateSliderValue(countdownIntervalInput, countdownIntervalValueDisplay, ' seconds', 0);
+                    updateSliderValue(totalShotsInput, totalShotsValueDisplay, '', 0);
+                    updateSliderValue(shotIntervalInput, shotIntervalValueDisplay, ' seconds', 1);
+                    updateSliderValue(nextShotAnnouncementDelayInput, nextShotAnnouncementDelayValueDisplay, ' seconds', 2);
+                    updateSliderValue(randomOffsetInput, randomOffsetValueDisplay, ' seconds', 2);
+
+                    saveConfiguration(); // Call saveConfiguration to re-initialize everything properly
+                } else {
+                    // If no saved config, ensure a default sequence exists and save initial state
+                    if (sequences.length === 0) {
+                        addSequence();
+                    }
+                    saveConfiguration();
+                }
+            } catch (error) { // Corrected syntax here
+                console.error("Error loading configuration from localStorage:", error);
+                // Fallback to default configuration if loading fails
+                if (sequences.length === 0) {
+                    addSequence();
+                }
+                    saveConfiguration();
+            }
+        }
+
+        /**
+         * Saves current configuration to localStorage.
+         */
+        function saveConfigurationToLocalStorage() {
+            try {
+                const configToSave = {
+                    countdownInterval: countdownInterval,
+                    totalShots: parseInt(totalShotsInput.value), // Ensure saving the raw input value for totalShots
+                    shotInterval: shotInterval,
+                    nextShotAnnouncementDelay: nextShotAnnouncementDelay,
+                    randomOffset: randomOffset,
+                    routineIntroText: routineIntroText,
+                    seriesOrder: seriesOrder,
+                    sequences: sequences // Save the entire sequences array
+                };
+                localStorage.setItem('squashGhostingConfig', JSON.stringify(configToSave));
+                console.log('Configuration saved to localStorage.');
+            } catch (error) {
+                console.error("Error saving configuration to localStorage:", error);
+            }
+        }
+
+        /**
+         * Copies the current configuration as a JSON string to the clipboard.
+         */
+        async function copyConfiguration() {
+            try {
+                saveConfiguration(); // Ensure latest configuration is captured
+
+                const configData = {
+                    countdownInterval: countdownInterval,
+                    totalShots: parseInt(totalShotsInput.value), // Use the input value for copy
+                    shotInterval: shotInterval,
+                    nextShotAnnouncementDelay: nextShotAnnouncementDelay,
+                    randomOffset: randomOffset,
+                    routineIntroText: routineIntroText,
+                    seriesOrder: seriesOrder,
+                    sequences: sequences.map(seq => ({
+                        id: seq.id,
+                        shotSelections: seq.shotSelections,
+                        order: seq.order,
+                        sequenceIntro: seq.sequenceIntro,
+                        postSequenceRest: seq.postSequenceRest
+                    }))
+                };
+
+                const jsonString = JSON.stringify(configData, null, 2);
+
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = jsonString;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+
+                console.log("Configuration copied to clipboard!");
+                // For icon-only buttons, visual feedback is usually a temporary change in icon or background/border.
+                // Keeping it simple here.
+            } catch (error) {
+                console.error("Error copying configuration:", error);
+                showTemporaryMessage("Failed to copy configuration. Your browser might not support automatic clipboard access in this environment. Please check console for details.");
+            }
+        }
+
+        /**
+         * Retrieves configuration settings from the clipboard (as a JSON string) and applies them to the UI.
+         */
+        async function pasteConfiguration() {
+            try {
+                let jsonString = '';
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    jsonString = await navigator.clipboard.readText();
+                } else {
+                    showTemporaryMessage("Please manually paste your configuration JSON into a text editor and then retry.");
+                    console.warn("Clipboard API readText not available. Manual paste might be required.");
+                    return;
+                }
+
+                const parsedConfig = JSON.parse(jsonString);
+
+                countdownIntervalInput.value = parsedConfig.countdownInterval || 0;
+                totalShotsInput.value = parsedConfig.totalShots !== undefined ? parsedConfig.totalShots : 1;
+                shotIntervalInput.value = parsedConfig.shotInterval || 3.0;
+                nextShotAnnouncementDelayInput.value = parsedConfig.nextShotAnnouncementDelay || 1.25;
+                randomOffsetInput.value = parsedConfig.randomOffset || 0.00;
+                routineIntroInput.value = parsedConfig.routineIntroText || '';
+
+                updateSliderValue(countdownIntervalInput, countdownIntervalValueDisplay, ' seconds', 0);
+                updateSliderValue(shotIntervalInput, shotIntervalValueDisplay, ' seconds', 1);
+                updateSliderValue(nextShotAnnouncementDelayInput, nextShotAnnouncementDelayValueDisplay, ' seconds', 2);
+                updateSliderValue(randomOffsetInput, randomOffsetValueDisplay, ' seconds', 2);
+
+                document.querySelector(`input[name="seriesOrder"][value="${parsedConfig.seriesOrder || 'ordered'}"]`).checked = true;
+
+                sequences = [];
+                sequencesContainer.innerHTML = '';
+                nextSequenceId = 0;
+
+                if (parsedConfig.sequences && Array.isArray(parsedConfig.sequences)) {
+                    let maxId = -1;
+                    parsedConfig.sequences.forEach(seqData => {
+                        addSequence(seqData);
+                        if (seqData.id > maxId) {
+                            maxId = seqData.id;
+                        }
+                    });
+                    nextSequenceId = maxId + 1;
+                } else {
+                    addSequence(); // If no sequences in pasted data, add a default one
+                }
+
+                saveConfiguration();
+                console.log("Configuration pasted from clipboard!");
+                // For icon-only buttons, visual feedback is usually a temporary change in icon or background/border.
+                // Keeping it simple here.
+            } catch (error) {
+                console.error("Error pasting configuration:", error);
+                showTemporaryMessage("Failed to paste configuration. Invalid JSON or data structure. Please ensure you copied valid configuration data. Check console for details.");
+            }
+        }
+
+        /**
+         * Opens a configuration from a JSON file selected by the user.
+         */
+        function openConfigurationFromFile() {
+            try {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json'; // Accept only JSON files
+
+                input.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) {
+                        console.log("No file selected.");
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const jsonString = e.target.result;
+                            const parsedConfig = JSON.parse(jsonString);
+
+                            // Apply parsed data to general settings
+                            countdownIntervalInput.value = parsedConfig.countdownInterval || 0;
+                            totalShotsInput.value = parsedConfig.totalShots !== undefined ? parsedConfig.totalShots : 1;
+                            shotIntervalInput.value = parsedConfig.shotInterval || 3.0;
+                            nextShotAnnouncementDelayInput.value = parsedConfig.nextShotAnnouncementDelay || 1.25;
+                            randomOffsetInput.value = parsedConfig.randomOffset || 0.00;
+                            routineIntroInput.value = parsedConfig.routineIntroText || '';
+
+                            updateSliderValue(countdownIntervalInput, countdownIntervalValueDisplay, ' seconds', 0);
+                            updateSliderValue(shotIntervalInput, shotIntervalValueDisplay, ' seconds', 1);
+                            updateSliderValue(nextShotAnnouncementDelayInput, nextShotAnnouncementDelayValueDisplay, ' seconds', 2);
+                            updateSliderValue(randomOffsetInput, randomOffsetValueDisplay, ' seconds', 2);
+
+                            document.querySelector(`input[name="seriesOrder"][value="${parsedConfig.seriesOrder || 'ordered'}"]`).checked = true;
+
+                            // Clear existing sequences in UI and state
+                            sequences = [];
+                            sequencesContainer.innerHTML = '';
+                            nextSequenceId = 0;
+
+                            // Rebuild sequences from parsed data
+                            if (parsedConfig.sequences && Array.isArray(parsedConfig.sequences)) {
+                                let maxId = -1;
+                                parsedConfig.sequences.forEach(seqData => {
+                                    addSequence(seqData);
+                                    if (seqData.id > maxId) {
+                                        maxId = seqData.id;
+                                    }
+                                });
+                                nextSequenceId = maxId + 1;
+                            } else {
+                                addSequence(); // If no sequences in pasted data, add a default one
+                            }
+
+                            saveConfiguration();
+                            console.log("Configuration opened from file and applied!");
+                            // For icon-only buttons, visual feedback is usually a temporary change in icon or background/border.
+                            // Keeping it simple here.
+                        } catch (parseError) {
+                            console.error("Error parsing configuration file:", parseError);
+                            showTemporaryMessage("Failed to parse configuration file. Please ensure it is a valid JSON file. Check console for details.");
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+
+                input.click();
+
+            } catch (error) {
+                console.error("Error opening configuration file:", error);
+                showTemporaryMessage("Failed to open configuration file. Check console for details.");
+            }
+        }
+
+
+        /**
+         * Resets all configuration options to their default values.
+         */
+        function resetConfiguration() {
+            // Using a custom modal for confirmation instead of `confirm()`
+            showConfirmationModal("Are you sure you want to reset all configurations to default?", () => {
+                try {
+                    // Set default values for main inputs
+                    countdownIntervalInput.value = 10;
+                    totalShotsInput.value = 20;
+                    shotIntervalInput.value = 4.0;
+                    nextShotAnnouncementDelayInput.value = 1.25;
+                    randomOffsetInput.value = 0.00;
+                    routineIntroInput.value = "";
+
+                    // Update display values for sliders
+                    updateSliderValue(countdownIntervalInput, countdownIntervalValueDisplay, ' seconds', 0);
+                    updateSliderValue(shotIntervalInput, shotIntervalValueDisplay, ' seconds', 1);
+                    updateSliderValue(nextShotAnnouncementDelayInput, nextShotAnnouncementDelayValueDisplay, ' seconds', 2);
+                    updateSliderValue(randomOffsetInput, randomOffsetValueDisplay, ' seconds', 2);
+
+                    // Set default series order
+                    document.querySelector(`input[name="seriesOrder"][value="ordered"]`).checked = true;
+
+                    // Clear existing sequences in UI and state
+                    sequences = [];
+                    sequencesContainer.innerHTML = '';
+                    nextSequenceId = 0;
+
+                    // Add the default sequence with new default shots
+                    addSequence({ shotSelections: ["Front Right", "Mid Right", "Back Right", "Back Left", "Mid Left", "Front Left"] });
+
+                    saveConfiguration();
+                    console.log("Configuration reset to defaults!");
+                    // For icon-only buttons, visual feedback is usually a temporary change in icon or background/border.
+                    // Keeping it simple here.
+                } catch (error) {
+                    console.error("Error resetting configuration:", error);
+                    showTemporaryMessage("Failed to reset configuration. Please check console for details.");
+                }
+            });
+        }
+
+        /**
+         * Displays a temporary message to the user, similar to an alert but non-blocking.
+         * For simplicity, this adds text to the start routine button.
+         * In a more complex app, you'd use a dedicated modal or toast notification.
+         * @param {string} message - The message to display.
+         */
+        function showTemporaryMessage(message) {
+            const originalButtonText = startRoutineButton.dataset.originalText || "Start Routine";
+            const originalBgStyle = startRoutineButton.style.backgroundColor; // Store current background
+
+            startRoutineButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                <path d="m380-300 280-180-280-180zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+            </svg><span class="ml-2">${message}</span>`;
+            
+            // Apply temporary background using CSS variable
+            startRoutineButton.style.backgroundColor = 'var(--temp-message-bg)';
+
+            setTimeout(() => {
+                startRoutineButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="currentColor">
+                    <path d="m380-300 280-180-280-180zM480-80q-83 0-156-31.5T197-197t-85.5-127T80-480t31.5-156T197-763t127-85.5T480-880t156 31.5T763-763t85.5 127T880-480t-31.5 156T763-197t-127 85.5T480-80m0-80q134 0 227-93t93-227-93-227-227-93-227 93-93 227 93 227 227 93m0-320"/>
+                </svg><span class="ml-2">${originalButtonText}</span>`;
+                // Restore original background
+                startRoutineButton.style.backgroundColor = originalBgStyle;
+            }, 5000); // Message disappears after 5 seconds
+        }
+
+        /**
+         * Displays a custom confirmation modal.
+         * @param {string} message - The message to display in the modal.
+         * @param {Function} onConfirm - Callback to execute if the user confirms.
+         * @param {Function} [onCancel] - Optional callback to execute if the user cancels.
+         */
+        function showConfirmationModal(message, onConfirm, onCancel) {
+            const modalId = 'customConfirmationModal';
+            let modal = document.getElementById(modalId);
+
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden';
+                modal.innerHTML = `
+                    <div class="p-6 rounded-lg shadow-lg max-w-sm w-full transition-colors duration-200" id="modalContent">
+                        <p class="text-lg font-semibold mb-4" id="modalMessage"></p>
+                        <div class="flex justify-end space-x-4">
+                            <button id="modalCancelBtn" class="px-4 py-2 rounded-md font-semibold transition duration-150">Cancel</button>
+                            <button id="modalConfirmBtn" class="px-4 py-2 rounded-md font-semibold text-white transition duration-150">Confirm</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Update modal content for theming
+            const modalContent = document.getElementById('modalContent');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            // Apply theme-dependent styles directly to modal elements
+            modalContent.style.backgroundColor = `var(--card-bg)`;
+            modalMessage.style.color = `var(--text-color)`;
+            
+            modalCancelBtn.style.backgroundColor = `var(--exit-btn-bg)`;
+            modalCancelBtn.style.color = `var(--text-color)`; // Ensure text color is theme-aware
+            modalCancelBtn.onmouseover = () => modalCancelBtn.style.backgroundColor = `var(--exit-btn-hover)`;
+            modalCancelBtn.onmouseout = () => modalCancelBtn.style.backgroundColor = `var(--exit-btn-bg)`;
+
+            modalConfirmBtn.style.backgroundColor = `var(--reset-btn-bg)`;
+            modalConfirmBtn.onmouseover = () => modalConfirmBtn.style.backgroundColor = `var(--reset-btn-hover)`;
+            modalConfirmBtn.onmouseout = () => modalConfirmBtn.style.backgroundColor = `var(--reset-btn-bg)`;
+
+
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+
+            const confirmBtn = modal.querySelector('#modalConfirmBtn');
+            const cancelBtn = modal.querySelector('#modalCancelBtn');
+
+            const cleanup = () => {
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                modal.classList.add('hidden');
+            };
+
+            confirmBtn.onclick = () => {
+                onConfirm();
+                cleanup();
+            };
+
+            cancelBtn.onclick = () => {
+                if (onCancel) onCancel();
+                cleanup();
+            };
+        }
+
+
+        /**
+         * Toggles the visibility of the configuration screen and routine execution screen.
+         * @param {string} screenName - The name of the screen to show ('config' or 'routine').
+         */
+        function showScreen(screenName) {
+            try {
+                if (screenName === 'config') {
+                    configScreen.classList.remove('hidden');
+                    routineScreen.classList.add('hidden');
+                } else {
+                    configScreen.classList.add('hidden');
+                    routineScreen.classList.remove('hidden');
+                }
+                // Reset body background to current theme's gradient.
+                document.body.style.background = `linear-gradient(135deg, var(--bg-color-light) 0%, var(--bg-color-dark) 100%)`;
+            } catch (error) {
+                console.error("Error showing screen:", error);
+            }
+        }
+
+        /**
+         * Initiates the ghosting routine. This function is called when the "Start Routine" button is clicked.
+         * It saves the current configuration, validates it, initializes audio/speech, and starts the countdown.
+         */
+        function startRoutine() {
+            try {
+                saveConfiguration(); // Ensure all latest settings from UI are captured
+                if (!validateConfiguration()) {
+                    // Call showTemporaryMessage for user feedback.
+                    showTemporaryMessage("Routine cannot start: Ensure at least one sequence has shots defined (one per line).");
+                    console.error("Routine cannot start: No shots generated. Please ensure your sequences have at least one shot configured.");
+                    return;
+                }
+
+                // Initialize audio and speech contexts on user interaction to comply with browser policies.
+                initAudioContext();
+                initSpeechSynthesis();
+
+                // Explicitly resume audio and speech contexts as they might be suspended
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().catch(e => console.error("Error resuming AudioContext on start:", e));
+                }
+                if (synth && synth.paused) {
+                    synth.resume(); // Ensure speech synthesis is not paused
+                }
+
+
+                // Reset routine state variables
+                currentShotIndex = 0;
+                lastPlayedSequenceId = null; // Reset for a new routine start
+                isRoutineRunning = true;
+                isPaused = false;
+                isResting = false; // Ensure resting flag is reset
+
+                // Reset progress bar visibility and state
+                resetProgressBar();
+                progressBarContainer.classList.remove('hidden');
+
+
+                // Configure buttons for active routine state
+                activeRoutineButtons.classList.remove('hidden');
+                finishedRoutineButtons.classList.add('hidden');
+                // Set pause icon and text initially
+                pauseIcon.classList.remove('hidden');
+                resumeIcon.classList.add('hidden');
+                // No text for pause/resume button now, so remove this line
+                // pauseResumeText.textContent = "Pause";
+                // Show shot counter button and update its initial value
+                shotCounterButton.classList.remove('hidden');
+                shotCounterValueDisplay.textContent = `${currentShotIndex} / ${totalShots}`;
+
+
+                showScreen('routine'); // Switch to the routine execution screen
+                
+                // NEW: Speak "Get Ready" immediately when the routine starts
+                speak("Get Ready", () => {
+                    if (!isRoutineRunning) return; // Safeguard after speech
+                    // Conditional start based on countdownInterval
+                    if (countdownInterval > 0) {
+                        startCountdown(); // Always start countdown first if interval > 0
+                    } else {
+                        // If countdown interval is 0, skip countdown and directly start shot progression
+                        countdownDisplay.classList.add('hidden'); // Ensure countdown display is hidden
+                        
+                        // Play routine intro if available, then start shot progression immediately
+                        if (routineIntroText && routineIntroText.length > 0) {
+                            speak(routineIntroText, () => {
+                                if (!isRoutineRunning) return; // Safeguard after speech
+                                startShotProgression(); // Start shot progression AFTER routine intro finishes speaking
+                            });
+                        } else {
+                            // NEW ADDITION: Play a subtle beep if no countdown and no routine intro to help activate TTS on iOS.
+                            playBeep(440, 0.2); // Subtle beep
+                            startShotProgression(); // No routine intro, start shot progression immediately
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error starting routine:", error);
+                stopRoutine(); // In case of critical error during start, return to config
+            }
+        }
+
+        /**
+         * Plays a single beep sound using the Web Audio API.
+         * @param {number} [frequency=880] - The frequency of the beep in Hz. Default is 880Hz.
+         * @param {number} [volume=0.5] - The volume of the beep (0.0 to 1.0). Default is 0.5.
+         */
+        function playBeep(frequency = 880, volume = 0.5) {
+            try {
+                if (!audioContext || audioContext.state === 'suspended') {
+                    console.warn("AudioContext not ready or suspended. Cannot play beep.");
+                    return;
+                }
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + beepDuration);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + beepDuration);
+            } catch (error) {
+                console.error("Error playing beep:", error);
+            }
+        }
+
+        /**
+         * Plays a two-tone beep sound for shot announcements.
+         * Consists of a lower tone followed by a higher tone.
+         */
+        function playTwoToneBeep() {
+            try {
+                if (!audioContext || audioContext.state === 'suspended') {
+                    console.warn("AudioContext not ready or suspended. Cannot play two-tone beep.");
+                    return;
+                }
+
+                const lowFrequency = 440;
+                const highFrequency = 880;
+                const volume = 0.5;
+                const singleBeepDuration = 0.2;
+                const shortGap = 0.05;
+
+                const oscillator1 = audioContext.createOscillator();
+                const gainNode1 = audioContext.createGain();
+                oscillator1.connect(gainNode1);
+                gainNode1.connect(audioContext.destination);
+
+                oscillator1.type = 'sine';
+                oscillator1.frequency.setValueAtTime(lowFrequency, audioContext.currentTime);
+
+                gainNode1.gain.setValueAtTime(volume, audioContext.currentTime);
+                gainNode1.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + singleBeepDuration);
+
+                oscillator1.start(audioContext.currentTime);
+                oscillator1.stop(audioContext.currentTime + singleBeepDuration);
+
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode2 = audioContext.createGain();
+                oscillator2.connect(gainNode2);
+                gainNode2.connect(audioContext.destination);
+
+                oscillator2.type = 'sine';
+                oscillator2.frequency.setValueAtTime(highFrequency, audioContext.currentTime);
+
+                gainNode2.gain.setValueAtTime(volume, audioContext.currentTime);
+                // No exponential ramp for the second beep, for a sharper stop
+                oscillator2.start(audioContext.currentTime + singleBeepDuration + shortGap);
+                oscillator2.stop(audioContext.currentTime + singleBeepDuration + shortGap + singleBeepDuration);
+            } catch (error) {
+                console.error("Error playing two-tone beep:", error);
+            }
+        }
+
+
+        /**
+         * Briefly flashes the screen background red by directly manipulating style.
+         */
+        function flashScreen() {
+            try {
+                // Apply the flash color
+                document.body.style.background = 'var(--temp-message-bg)';
+
+                // Clear any existing flash timer to prevent conflicts
+                if (flashTimerId) clearTimeout(flashTimerId);
+
+                // Schedule restoration of the original background after a short flash duration
+                const flashDurationMs = 150; // Keep the visual flash very short
+                flashTimerId = setTimeout(() => {
+                    // Restore the original background by explicitly setting the gradient again
+                    document.body.style.background = `linear-gradient(135deg, var(--bg-color-light) 0%, var(--bg-color-dark) 100%)`;
+                }, flashDurationMs);
+            } catch (error) {
+                console.error("Error flashing screen:", error);
+            }
+        }
+
+        /**
+         * Speaks the given text using the SpeechSynthesis API.
+         * @param {string} text - The text string to be spoken.
+         * @param {Function} [callback] - Optional callback function to execute once speech has finished.
+         */
+        function speak(text, callback) {
+            try {
+                if (!synth) {
+                    console.warn("SpeechSynthesis not available to speak:", text);
+                    callback && callback();
+                    return;
+                }
+
+                // Immediately cancel any ongoing speech to ensure the new utterance can play
+                if (synth.speaking) {
+                    synth.cancel();
+                }
+                // If the speech synthesis is paused, try to resume it before speaking
+                if (synth.paused) {
+                    synth.resume();
+                }
+
+                utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 1;
+                utterance.rate = 1;
+                utterance.volume = 1;
+
+                utterance.onend = () => {
+                    console.log(`Speech "${text}" finished.`);
+                    if (isRoutineRunning) {
+                        callback && callback();
+                    } else {
+                        console.log("Speech finished, but routine was stopped. Callback skipped.");
+                    }
+                };
+                utterance.onerror = (event) => {
+                    if (event.error === 'interrupted') {
+                        console.info(`SpeechSynthesisUtterance: "${text}" was interrupted.`);
+                    } else {
+                        console.error("SpeechSynthesisUtterance error:", event.error, `for text: "${text}"`);
+                    }
+                    if (isRoutineRunning) {
+                        callback && callback();
+                    } else {
+                        console.log("Speech error, but routine was stopped. Callback skipped.");
+                    }
+                };
+
+                // Add a small delay before speaking again to allow the engine to clear state
+                // This setTimeout ensures that even if synth.cancel() isn't instant, the speak call is deferred.
+                setTimeout(() => {
+                     if (!isRoutineRunning) { // Double check if routine is still running after delay
+                         console.log("Routine stopped during speech delay, skipping speech.");
+                         callback && callback();
+                         return;
+                     }
+                     synth.speak(utterance);
+                }, 100); // 100ms delay
+
+
+            } catch (error) {
+                console.error("Error speaking text:", error);
+                callback && callback();
+            }
+        }
+
+        /**
+         * Initiates and manages the countdown phase before the routine begins.
+         */
+        function startCountdown() {
+            try {
+                countdownValue = countdownInterval;
+                countdownDisplay.classList.remove('hidden', 'text-fade-out');
+                countdownDisplay.classList.add('text-fade-in');
+                countdownDisplay.textContent = countdownValue;
+
+                // Set initial progress bar for countdown
+                currentIntervalDuration = countdownInterval * 1000;
+                currentIntervalStartTime = performance.now();
+                pausedTimeElapsed = 0;
+                startProgressBarAnimation();
+
+                playTwoToneBeep();
+                flashScreen();
+
+                countdownTimerId = setTimeout(updateCountdownDisplayLoop, 1000);
+            } catch (error) {
+                console.error("Error starting countdown:", error);
+                stopRoutine();
+            }
+        }
+
+        /**
+         * Updates the countdown display every second and triggers audio/visual cues.
+         * Transitions to routine intro or shot progression when countdown reaches zero.
+         */
+        function updateCountdownDisplayLoop() {
+            try {
+                if (isPaused || !isRoutineRunning) return;
+
+                countdownValue--;
+
+                if (countdownValue >= 0) {
+                    countdownDisplay.textContent = countdownValue;
+                    countdownDisplay.classList.remove('text-fade-out');
+                    countdownDisplay.classList.add('text-fade-in');
+
+                    playTwoToneBeep();
+                    flashScreen();
+
+                    setTimeout(() => {
+                        if (!isRoutineRunning) return;
+                        countdownDisplay.classList.remove('text-fade-in');
+                        countdownDisplay.classList.add('text-fade-out');
+                    }, 500);
+
+                    countdownTimerId = setTimeout(updateCountdownDisplayLoop, 1000);
+                } else {
+                    countdownDisplay.classList.add('hidden');
+                    stopProgressBarAnimation(); // Stop countdown progress bar
+
+                    if (routineIntroText && routineIntroText.length > 0) {
+                        speak(routineIntroText, () => {
+                            if (!isRoutineRunning) return;
+                            startShotProgression();
+                        });
+                    } else {
+                        startShotProgression();
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating countdown display loop:", error);
+                stopRoutine();
+            }
+        }
+
+
+        /**
+         * Initiates the main shot progression phase of the routine.
+         */
+        function startShotProgression() {
+            try {
+                if (!isRoutineRunning) return;
+
+                if (currentRoutineShots.length === 0) {
+                    console.warn("No shots in the routine to play.");
+                    finishRoutine();
+                    return;
+                }
+                shotCounterButton.classList.remove('hidden'); // Ensure shot counter button is visible
+                executeNextShot();
+            } catch (error) {
+                console.error("Error starting shot progression:", error);
+                stopRoutine();
+            }
+        }
+
+        /**
+         * Executes the next shot in the routine sequence, or initiates a post-sequence rest.
+         */
+        function executeNextShot() {
+            try {
+                if (isPaused || !isRoutineRunning) return;
+
+                // Check if all shots are completed or if we've exceeded the total number specified
+                if (currentShotIndex >= totalShots || currentShotIndex >= currentRoutineShots.length) {
+                    finishRoutine();
+                    return;
+                }
+
+                const currentShotData = currentRoutineShots[currentShotIndex];
+                const shotName = currentShotData.name;
+                const currentSequenceObj = sequences.find(s => s.id === currentShotData.sequenceId);
+                const sequenceIntro = currentSequenceObj ? currentSequenceObj.sequenceIntro : '';
+
+                // Determine if this is the start of a new sequence for intro purposes
+                const isNewSequenceStart = (currentShotIndex === 0 || currentShotData.sequenceId !== lastPlayedSequenceId);
+                const shouldPlaySequenceIntro = isNewSequenceStart && sequenceIntro && sequenceIntro.length > 0;
+
+                // Always display the shot and counter immediately
+                shotDisplay.textContent = shotName;
+                shotDisplay.classList.remove('hidden', 'text-fade-out');
+                shotDisplay.classList.add('text-fade-in'); // Make sure it fades in each time
+
+                // Update shot counter button text
+                shotCounterValueDisplay.textContent = `${currentShotIndex + 1} / ${totalShots}`;
+                shotCounterButton.classList.remove('hidden'); // Ensure counter button is visible
+
+                // Calculate the dynamic interval for this shot upfront
+                const dynamicInterval = shotInterval + (Math.random() * randomOffset * 2) - randomOffset;
+                currentIntervalDuration = dynamicInterval * 1000; // Store duration in milliseconds
+                currentIntervalStartTime = performance.now(); // Mark the start of the interval
+                pausedTimeElapsed = 0; // Reset paused time for the new interval
+                startProgressBarAnimation(); // Start progress bar animation immediately
+
+                // Schedule the beep and flash to happen 'beepDuration' seconds BEFORE the end of the interval.
+                // This aligns with the timing: "[ (Shot interval) - (time to play tones) ] Play tones & flash screen."
+                const beepAndFlashTriggerTime = Math.max(0, dynamicInterval * 1000 - (beepDuration * 1000));
+                clearTimeout(flashTimerId); // Clear any previous flash timer
+                flashTimerId = setTimeout(() => {
+                    if (!isRoutineRunning || isPaused) return; // Check routine state before executing
+                    playTwoToneBeep();
+                    flashScreen();
+                }, beepAndFlashTriggerTime);
+
+                // Schedule the actual transition to the next shot or rest
+                // This timeout fires exactly when the full interval has passed.
+                clearTimeout(shotTimerId); // Clear any previous shot timer
+                shotTimerId = setTimeout(() => {
+                    if (!isRoutineRunning || isPaused) return; // Double-check if routine is still running
+
+                    stopProgressBarAnimation(); // Stop progress bar for this shot (which just hit 100%)
+
+                    const completedShotData = currentRoutineShots[currentShotIndex];
+                    const currentSequenceObjForRest = sequences.find(s => s.id === completedShotData.sequenceId);
+
+                    currentShotIndex++; // Increment for the *next* shot
+
+                    const isLastShotOfSequence = completedShotData.isEndOfSequence;
+                    const hasPostSequenceRest = currentSequenceObjForRest && currentSequenceObjForRest.postSequenceRest > 0;
+
+                    // Decide whether to go to rest or the next shot
+                    if (isLastShotOfSequence && hasPostSequenceRest) {
+                        // Check if this is the absolute final rest of the entire routine
+                        const isFinalRestOfRoutine = (currentShotIndex >= totalShots || currentShotIndex >= currentRoutineShots.length);
+                        startPostSequenceRest(currentSequenceObjForRest.postSequenceRest, completedShotData.sequenceId, isFinalRestOfRoutine);
+                    } else {
+                        lastPlayedSequenceId = completedShotData.sequenceId; // Update last played sequence ID
+                        executeNextShot(); // Proceed to the next shot immediately
+                    }
+                }, dynamicInterval * 1000); // Wait for the full calculated interval
+
+
+                // Function to speak the shot name, potentially after an intro
+                const announceShot = () => {
+                    if (!isRoutineRunning) return;
+                    speak(shotName, () => {
+                        // Speech finished, now fade out the text.
+                        setTimeout(() => {
+                            if (!isRoutineRunning) return;
+                            shotDisplay.classList.remove('text-fade-in');
+                            shotDisplay.classList.add('text-fade-out');
+                        }, 500); // Adjust this delay if text disappears too quickly
+                    });
+                };
+
+                // Schedule the shot announcement.
+                // If there's a sequence intro, the shot announcement happens *after* the sequence intro.
+                // Otherwise, it happens after `nextShotAnnouncementDelay` from the start of the shot.
+                if (shouldPlaySequenceIntro) {
+                    speak(sequenceIntro, () => {
+                        if (!isRoutineRunning) return;
+                        setTimeout(announceShot, nextShotAnnouncementDelay * 1000);
+                    });
+                } else {
+                    setTimeout(announceShot, nextShotAnnouncementDelay * 1000);
+                }
+
+            } catch (error) {
+                console.error("Error executing next shot:", error);
+                stopRoutine();
+            }
+        }
+
+        /**
+         * Initiates and manages the post-sequence rest period.
+         * @param {number} duration - The duration of the rest period in seconds.
+         * @param {number} sequenceIdOfCompletedSequence - The ID of the sequence that just finished, for lastPlayedSequenceId tracking.
+         * @param {boolean} [isFinalRest=false] - True if this is the final rest for the entire routine.
+         */
+        function startPostSequenceRest(duration, sequenceIdOfCompletedSequence, isFinalRest = false) {
+            try {
+                if (!isRoutineRunning) return;
+
+                isResting = true;
+                restCountdownRemaining = duration;
+                lastPlayedSequenceId = sequenceIdOfCompletedSequence;
+
+                shotDisplay.classList.remove('hidden', 'text-fade-out');
+                shotDisplay.classList.add('text-fade-in');
+                shotCounterButton.classList.add('hidden'); // Hide shot counter button during rest
+
+                // Set up progress bar for rest
+                currentIntervalDuration = duration * 1000;
+                currentIntervalStartTime = performance.now();
+                pausedTimeElapsed = 0;
+                startProgressBarAnimation();
+
+                speak("Rest", () => {
+                    if (!isRoutineRunning) return;
+                    updatePostSequenceRestDisplayLoop(isFinalRest);
+                });
+
+            } catch (error) {
+                console.error("Error starting post-sequence rest:", error);
+                stopRoutine();
+            }
+        }
+
+        /**
+         * Updates the post-sequence rest display every second.
+         * Plays beeps for the final 10 seconds of rest.
+         * Transitions back to shot progression or finishes routine when rest is over.
+         * @param {boolean} [isFinalRest=false] - True if this is the final rest for the entire routine.
+         */
+        function updatePostSequenceRestDisplayLoop(isFinalRest = false) {
+            try {
+                if (isPaused || !isRoutineRunning) return;
+
+                shotDisplay.innerHTML = `Rest<br>${restCountdownRemaining}`;
+                
+                if (restCountdownRemaining <= 10 && restCountdownRemaining > 0) {
+                    playBeep(440, 0.3);
+                }
+
+                if (restCountdownRemaining > 0) {
+                    restCountdownRemaining--;
+                    restTimerId = setTimeout(() => updatePostSequenceRestDisplayLoop(isFinalRest), 1000);
+                } else {
+                    // Rest period is over
+                    isResting = false;
+                    stopProgressBarAnimation(); // Stop progress bar when rest is over
+                    if (isFinalRest) {
+                        finishRoutine();
+                    } else {
+                        executeNextShot();
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating post-sequence rest display loop:", error);
+                stopRoutine();
+            }
+        }
+
+        /**
+         * Starts the progress bar animation using requestAnimationFrame.
+         * The progress bar fills up over `currentIntervalDuration`.
+         */
+        function startProgressBarAnimation() {
+            if (progressBarAnimationId) {
+                cancelAnimationFrame(progressBarAnimationId);
+            }
+            // Update the start time to account for any time already elapsed if resuming
+            currentIntervalStartTime = performance.now() - pausedTimeElapsed; // Adjust start time for resumed state
+            progressBarAnimationId = requestAnimationFrame(updateProgressBar);
+        }
+
+        /**
+         * Stops the progress bar animation.
+         */
+        function stopProgressBarAnimation() {
+            if (progressBarAnimationId) {
+                cancelAnimationFrame(progressBarAnimationId);
+                progressBarAnimationId = null;
+            }
+            // Reset the width to 0% when stopped
+            progressBar.style.width = '0%';
+            pausedTimeElapsed = 0; // Reset elapsed time for next interval
+        }
+
+        /**
+         * Updates the progress bar's width based on the elapsed time.
+         * This function is called repeatedly by requestAnimationFrame.
+         * @param {DOMHighResTimeStamp} currentTime - The time provided by requestAnimationFrame.
+         */
+        function updateProgressBar(currentTime) {
+            if (!isRoutineRunning) {
+                cancelAnimationFrame(progressBarAnimationId);
+                progressBarAnimationId = null;
+                return;
+            }
+
+            let elapsedTime;
+            if (isPaused) {
+                // If paused, don't update elapsed time, just use the value from when it was paused.
+                elapsedTime = pausedTimeElapsed;
+            } else {
+                // If not paused, calculate current elapsed time and update pausedTimeElapsed.
+                elapsedTime = currentTime - currentIntervalStartTime;
+                pausedTimeElapsed = elapsedTime; // Store for when it gets paused
+            }
+
+            const progress = Math.min(elapsedTime / currentIntervalDuration, 1); // Clamp to 1 (100%)
+            progressBar.style.width = `${progress * 100}%`;
+
+            if (progress < 1) {
+                progressBarAnimationId = requestAnimationFrame(updateProgressBar);
+            } else {
+                cancelAnimationFrame(progressBarAnimationId);
+                progressBarAnimationId = null;
+            }
+        }
+
+        /**
+         * Resets the progress bar to 0% width.
+         */
+        function resetProgressBar() {
+            stopProgressBarAnimation(); // Ensure any active animation is stopped
+            progressBar.style.width = '0%';
+            pausedTimeElapsed = 0;
+            currentIntervalStartTime = 0;
+            currentIntervalDuration = 0;
+        }
+
+
+        /**
+         * Toggles the routine between paused and resumed states.
+         */
+        function togglePauseResume() {
+            console.log("togglePauseResume called.");
+            try {
+                if (!isRoutineRunning) {
+                    console.log("Routine not running, cannot toggle pause/resume.");
+                    return;
+                }
+
+                if (isPaused) {
+                    resumeRoutine();
+                } else {
+                    pauseRoutine();
+                }
+            } catch (error) {
+                console.error("Error toggling pause/resume:", error);
+            }
+        }
+
+        /**
+         * Pauses the currently running routine. Clears timers and stops speech.
+         */
+        function pauseRoutine() {
+            try {
+                isPaused = true;
+                // Store the elapsed time for the current interval before pausing
+                pausedTimeElapsed = performance.now() - currentIntervalStartTime;
+
+                // Clear any active timers to halt progression
+                clearTimeout(countdownTimerId);
+                clearTimeout(shotTimerId);
+                clearTimeout(flashTimerId); // Clear the specific flash timer
+                clearTimeout(restTimerId); // Clear rest timer
+                cancelAnimationFrame(progressBarAnimationId); // Pause progress bar animation
+                progressBarAnimationId = null;
+
+                // Stop any ongoing speech utterance
+                if (synth && synth.speaking) {
+                    synth.cancel();
+                }
+                pauseIcon.classList.add('hidden');
+                resumeIcon.classList.remove('hidden');
+                console.log("Routine Paused.");
+            } catch (error) {
+                console.error("Error pausing routine:", error);
+            }
+        }
+
+        /**
+         * Resumes a paused routine. Restarts countdown or shot progression based on current state.
+         */
+        function resumeRoutine() {
+            try {
+                isPaused = false;
+                pauseIcon.classList.remove('hidden');
+                resumeIcon.classList.add('hidden');
+                console.log("Routine Resumed.");
+
+                // Restart progress bar animation
+                startProgressBarAnimation();
+
+                if (isResting) { // If paused during rest, resume rest countdown
+                    updatePostSequenceRestDisplayLoop();
+                } else if (countdownValue >= 0 && countdownValue < countdownInterval + 1 && !countdownDisplay.classList.contains('hidden')) {
+                    // If paused during countdown, resume its loop
+                    updateCountdownDisplayLoop();
+                } else if (currentShotIndex < totalShots) { // If paused during a shot progression
+                    const remainingIntervalTimeMs = currentIntervalDuration - pausedTimeElapsed;
+
+                    // Reschedule beep and flash if it was pending
+                    const originalBeepFlashTime = currentIntervalDuration - (beepDuration * 1000);
+                    const remainingBeepFlashDelay = originalBeepFlashTime - pausedTimeElapsed;
+
+                    if (remainingBeepFlashDelay > 0) { // Only schedule if it's still in the future
+                        clearTimeout(flashTimerId);
+                        flashTimerId = setTimeout(() => {
+                            if (!isRoutineRunning || isPaused) return; // Double-check state
+                            playTwoToneBeep();
+                            flashScreen();
+                        }, remainingBeepFlashDelay);
+                    }
+
+                    // Reschedule shot timer
+                    clearTimeout(shotTimerId);
+                    shotTimerId = setTimeout(() => {
+                        if (!isRoutineRunning || isPaused) return;
+
+                        stopProgressBarAnimation();
+
+                        const completedShotData = currentRoutineShots[currentShotIndex];
+                        const currentSequenceObjForRest = sequences.find(s => s.id === completedShotData.sequenceId);
+
+                        currentShotIndex++;
+
+                        const isLastShotOfSequence = completedShotData.isEndOfSequence;
+                        const hasPostSequenceRest = currentSequenceObjForRest && currentSequenceObjForRest.postSequenceRest > 0;
+
+                        if (isLastShotOfSequence && hasPostSequenceRest) {
+                            const isFinalRestOfRoutine = (currentShotIndex >= totalShots || currentShotIndex >= currentRoutineShots.length);
+                            startPostSequenceRest(currentSequenceObjForRest.postSequenceRest, completedShotData.sequenceId, isFinalRestOfRoutine);
+                        } else {
+                            lastPlayedSequenceId = completedShotData.sequenceId;
+                            executeNextShot();
+                        }
+                    }, remainingIntervalTimeMs);
+
+                    // Reschedule shot announcement if it was pending
+                    // Need to calculate when the announcement was *originally* supposed to happen
+                    const originalAnnouncementTime = currentIntervalStartTime + (nextShotAnnouncementDelay * 1000);
+                    const currentTime = performance.now();
+
+                    if (currentTime < originalAnnouncementTime) {
+                        // Speech has not happened yet, schedule it for the remaining time
+                        const remainingTimeToSpeak = originalAnnouncementTime - currentTime;
+                        const currentShotData = currentRoutineShots[currentShotIndex];
+                        const shotName = currentShotData.name;
+
+                        const resumeAnnounceShot = () => {
+                            if (!isRoutineRunning) return;
+                            speak(shotName, () => {
+                                setTimeout(() => {
+                                    if (!isRoutineRunning) return;
+                                    shotDisplay.classList.remove('text-fade-in');
+                                    shotDisplay.classList.add('text-fade-out');
+                                }, 500);
+                            });
+                        };
+                        setTimeout(resumeAnnounceShot, remainingTimeToSpeak);
+                    }
+                } else {
+                    console.warn("Attempted to resume routine, but it was not in an active or pausible state.");
+                }
+            } catch (error) {
+                console.error("Error resuming routine:", error);
+            }
+        }
+
+        /**
+         * Stops the routine completely, clears all timers, stops speech, and returns to the
+         * configuration screen. This acts as an "Exit" or "Cancel" function.
+         */
+        function stopRoutine() {
+            console.log("stopRoutine called."); // Debugging: Log when the function is called
+            try {
+                isRoutineRunning = false; // Set this flag to false FIRST
+                isPaused = false;
+                isResting = false; // Ensure resting flag is reset
+                // Clear all active timers
+                clearTimeout(countdownTimerId);
+                clearTimeout(shotTimerId);
+                clearTimeout(flashTimerId); // Clear the specific flash timer
+                clearTimeout(restTimerId); // Clear rest timer
+                stopProgressBarAnimation(); // Stop and reset progress bar
+                progressBarContainer.classList.add('hidden'); // Hide progress bar
+                // Stop any ongoing speech
+                if (synth && synth.speaking) {
+                    synth.cancel();
+                }
+                // Hide routine-specific displays
+                countdownDisplay.classList.add('hidden');
+                shotDisplay.classList.add('hidden');
+                shotCounterButton.classList.add('hidden'); // Hide shot counter button
+                // Ensure countdown display text is reset to avoid showing residual numbers on next start
+                countdownDisplay.textContent = "";
+
+                // Reset button visibility when stopping the routine
+                activeRoutineButtons.classList.add('hidden');
+                finishedRoutineButtons.classList.add('hidden');
+
+                showScreen('config'); // Return to the configuration screen
+                console.log("Routine Stopped.");
+            } catch (error) {
+                console.error("Error stopping routine:", error);
+            }
+        }
+
+        /**
+         * Handles the routine completion. Announces "Done", and changes control buttons
+         * to "Repeat" and "Exit", with similar timing to a shot announcement.
+         */
+        function finishRoutine() {
+            try {
+                isRoutineRunning = false;
+                isPaused = false;
+                isResting = false;
+                clearTimeout(countdownTimerId);
+                clearTimeout(shotTimerId);
+                clearTimeout(flashTimerId); // Clear the specific flash timer
+                clearTimeout(restTimerId);
+                stopProgressBarAnimation(); // Stop and reset progress bar
+                progressBarContainer.classList.add('hidden'); // Hide progress bar after completion
+
+                shotDisplay.textContent = "Done";
+                shotDisplay.classList.remove('hidden', 'text-fade-out');
+                shotDisplay.classList.add('text-fade-in');
+                shotCounterButton.classList.add('hidden'); // Hide shot counter button on finish
+
+                // Announce "Done" after the configured announcement delay
+                setTimeout(() => {
+                    speak("Done", () => {
+                        console.log("Series complete announced as Done.");
+                        // Optionally fade out "Done" after speech if desired
+                        setTimeout(() => {
+                            shotDisplay.classList.remove('text-fade-in');
+                            shotDisplay.classList.add('text-fade-out');
+                        }, 500);
+                    });
+                }, nextShotAnnouncementDelay * 1000); // Delay before speaking "Done"
+
+                activeRoutineButtons.classList.add('hidden');
+                finishedRoutineButtons.classList.remove('hidden');
+                console.log("Routine Finished.");
+            } catch (error) {
+                console.error("Error finishing routine:", error);
+            }
+        }
+
+        /**
+         * Restarts the routine from the initial countdown with the current configuration.
+         * This function is triggered by the "Repeat" button at the end of a routine.
+         */
+        function repeatRoutine() {
+            console.log("repeatRoutine called."); // Debugging: Log when the function is called
+            try {
+                startRoutine(); // Simply call startRoutine again to re-initialize and start
+            } catch (error) {
+                console.error("Error repeating routine:", error);
+            }
+        }
+
+
+        // New: Theme Toggle Functionality
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light'; // Default to light
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeToggleButtonIcon(savedTheme); // Update the icon based on the applied theme
+
+            // Also update the modal's theme when applying the theme
+            const modal = document.getElementById('customConfirmationModal');
+            if (modal) {
+                const modalContent = document.getElementById('modalContent');
+                const modalMessage = document.getElementById('modalMessage');
+                const modalCancelBtn = document.getElementById('modalCancelBtn');
+                const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                // Apply theme-dependent styles directly to modal elements
+                modalContent.style.backgroundColor = `var(--card-bg)`;
+                modalMessage.style.color = `var(--text-color)`;
+                
+                modalCancelBtn.style.backgroundColor = `var(--exit-btn-bg)`;
+                modalCancelBtn.style.color = `var(--text-color)`; // Ensure text color is theme-aware
+                modalCancelBtn.onmouseover = () => modalCancelBtn.style.backgroundColor = `var(--exit-btn-hover)`;
+                modalCancelBtn.onmouseout = () => modalCancelBtn.style.backgroundColor = `var(--exit-btn-bg)`;
+
+                modalConfirmBtn.style.backgroundColor = `var(--reset-btn-bg)`;
+                modalConfirmBtn.onmouseover = () => modalConfirmBtn.style.backgroundColor = `var(--reset-btn-hover)`;
+                modalConfirmBtn.onmouseout = () => modalConfirmBtn.style.backgroundColor = `var(--reset-btn-bg)`;
+            }
+        }
+
+        function updateThemeToggleButtonIcon(theme) {
+            if (theme === 'dark') {
+                // Sun/Eclipsed Moon icon is for dark mode (the one provided for "Turn off Normal mode")
+                moonIcon.classList.add('hidden'); // Hide moon (which is now the "Turn on Night mode" icon)
+                sunIcon.classList.remove('hidden'); // Show sun (which is now the "Turn off Normal mode" icon)
+            } else {
+                // Moon icon is for light mode (the one provided for "Turn on Night mode")
+                moonIcon.classList.remove('hidden'); // Show moon (which is now the "Turn on Night mode" icon)
+                sunIcon.classList.add('hidden'); // Hide sun (which is now the "Turn off Normal mode" icon)
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeToggleButtonIcon(newTheme); // Update the icon when toggling theme
+            // Re-apply styles to modal if it exists and is open
+            applySavedTheme(); // This will ensure the modal also updates its theme
+        }
+
+        // Event Listeners for configuration screen elements
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // Initialize speech and audio contexts on initial user interaction (e.g., first click anywhere)
+                // These are passive listeners that will attempt to resume the contexts.
+                initAudioContext();
+                initSpeechSynthesis();
+
+                // Load configuration on startup
+                loadConfigurationFromLocalStorage();
+
+                // Apply saved theme on page load
+                applySavedTheme();
+
+                countdownIntervalInput.addEventListener('input', () => updateSliderValue(countdownIntervalInput, countdownIntervalValueDisplay, ' seconds', 0));
+                countdownIntervalInput.addEventListener('input', saveConfiguration);
+
+                totalShotsInput.addEventListener('input', () => updateSliderValue(totalShotsInput, totalShotsValueDisplay, '', 0));
+                totalShotsInput.addEventListener('input', saveConfiguration);
+
+                shotIntervalInput.addEventListener('input', () => updateSliderValue(shotIntervalInput, shotIntervalValueDisplay, ' seconds', 1));
+                shotIntervalInput.addEventListener('input', saveConfiguration);
+
+                nextShotAnnouncementDelayInput.addEventListener('input', () => updateSliderValue(nextShotAnnouncementDelayInput, nextShotAnnouncementDelayValueDisplay, ' seconds', 2));
+                nextShotAnnouncementDelayInput.addEventListener('input', saveConfiguration);
+
+                randomOffsetInput.addEventListener('input', () => updateSliderValue(randomOffsetInput, randomOffsetValueDisplay, ' seconds', 2));
+                randomOffsetInput.addEventListener('input', saveConfiguration);
+
+                routineIntroInput.addEventListener('input', saveConfiguration);
+
+                // Add listeners for configuration screen elements
+                seriesOrderRadios.forEach(radio => {
+                    radio.addEventListener('change', saveConfiguration);
+                });
+                addSequenceButton.addEventListener('click', addSequence);
+                startRoutineButton.addEventListener('click', startRoutine);
+
+                // Add listeners for Copy/Paste/Reset/Open buttons
+                copyConfigButton.addEventListener('click', copyConfiguration);
+                pasteConfigButton.addEventListener('click', pasteConfiguration);
+                resetConfigButton.addEventListener('click', resetConfiguration);
+                openConfigButton.addEventListener('click', openConfigurationFromFile);
+
+                // Event listener for the new theme toggle button
+                themeToggleButton.addEventListener('click', toggleTheme);
+
+
+                // Debugging: Confirm button listeners are attached
+                console.log("Pause/Resume and Stop buttons event listeners attached.");
+                console.log("Repeat and Exit buttons event listeners attached.");
+
+                // Event listeners for routine execution screen control buttons
+                pauseResumeButton.addEventListener('click', togglePauseResume);
+                stopButton.addEventListener('click', stopRoutine);
+                repeatButton.addEventListener('click', repeatRoutine);
+                exitButton.addEventListener('click', stopRoutine);
+            } catch (error) {
+                console.error("Error during DOMContentLoaded setup:", error);
+            }
+        });
+    </script>
+</body>
+</html>
+
