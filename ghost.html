@@ -1622,7 +1622,7 @@
                 gainNode.gain.setValueAtTime(volume, audioContext.currentTime); // Set volume
 
                 oscillator.start(audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration); // Fade out
+                //gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration); // Fade out
                 oscillator.stop(audioContext.currentTime + beepDuration);
             } catch (error) {
                 console.error("Error playing beep:", error);
