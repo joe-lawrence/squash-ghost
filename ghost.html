@@ -507,7 +507,7 @@
             </button>
         </div>
         <div class="mt-4 text-center text-sm text-gray-500">
-            Debug build: no tones
+            Debug build: no beep, duck1
         </div>
     </div>
 
@@ -604,6 +604,9 @@
         let currentIntervalStartTime = 0; // Time when the current interval (shot or rest) started
         let currentIntervalDuration = 0; // The target duration of the current interval (in milliseconds)
         let pausedTimeElapsed = 0; // Time elapsed within the current interval when it was paused
+
+        // New: Timer for keeping SpeechSynthesis active (for audio ducking)
+        let keepAliveTimerId = null; // Timer ID for the silent phrase interval
 
 
         // DOM Elements - Cached for efficient access
@@ -966,6 +969,7 @@
 
             // If totalShots is less than total possible shots from all sequences, it's treated as a hard limit.
             // Otherwise, it's used to determine how many times to repeat the series.
+            // Or if configuredTotalShots is 0 (meaning unlimited), just add all shots.
             const configuredTotalShots = parseInt(totalShotsInput.value);
 
 
@@ -1557,6 +1561,9 @@
 
                 showScreen('routine'); // Switch to the routine execution screen
                 
+                // Start the SpeechSynthesis keep-alive mechanism
+                startSpeechKeepAlive();
+
                 // NEW: Speak "Get Ready" immediately when the routine starts
                 speak("Get Ready", () => {
                     if (!isRoutineRunning) return; // Safeguard after speech
@@ -1654,35 +1661,45 @@
                 utterance = new SpeechSynthesisUtterance(text);
                 utterance.pitch = 1;
                 utterance.rate = 1;
-                utterance.volume = 1;
 
-                utterance.onend = () => {
-                    console.log(`Speech "${text}" finished.`);
-                    if (isRoutineRunning) {
-                        callback && callback();
-                    } else {
-                        console.log("Speech finished, but routine was stopped. Callback skipped.");
-                    }
-                };
-                utterance.onerror = (event) => {
-                    if (event.error === 'interrupted') {
-                        console.info(`SpeechSynthesisUtterance: "${text}" was interrupted.`);
-                    } else {
-                        console.error("SpeechSynthesisUtterance error:", event.error, `for text: "${text}"`);
-                    }
-                    if (isRoutineRunning) {
-                        callback && callback();
-                    } else {
-                        console.log("Speech error, but routine was stopped. Callback skipped.");
-                    }
-                };
+                // For empty/silent utterances used for keep-alive, set volume to 0 and skip callbacks
+                if (text === '') {
+                    utterance.volume = 0; // Make it silent
+                    utterance.onend = null; // Do not log 'Speech finished' for silent utterances
+                    utterance.onerror = null; // Do not log 'Speech error' for silent utterances
+                } else {
+                    utterance.volume = 1; // Full volume for actual content
+                    utterance.onend = () => {
+                        console.log(`Speech "${text}" finished.`);
+                        // Only execute callback if routine is still running, to avoid race conditions on stop
+                        if (isRoutineRunning) {
+                            callback && callback();
+                        } else {
+                            console.log("Speech finished, but routine was stopped. Callback skipped.");
+                        }
+                    };
+                    utterance.onerror = (event) => {
+                        if (event.error === 'interrupted') {
+                            console.info(`SpeechSynthesisUtterance: "${text}" was interrupted.`);
+                        } else {
+                            console.error("SpeechSynthesisUtterance error:", event.error, `for text: "${text}"`);
+                        }
+                        if (isRoutineRunning) {
+                            callback && callback();
+                        } else {
+                            console.log("Speech error, but routine was stopped. Callback skipped.");
+                        }
+                    };
+                }
 
                 // Add a small delay before speaking again to allow the engine to clear state
                 // This setTimeout ensures that even if synth.cancel() isn't instant, the speak call is deferred.
                 setTimeout(() => {
-                     if (!isRoutineRunning) { // Double check if routine is still running after delay
+                     if (!isRoutineRunning && text !== '') { // Double check if routine is still running after delay for non-silent speech
                          console.log("Routine stopped during speech delay, skipping speech.");
-                         callback && callback();
+                         if (text !== '') { // Only execute callback if it's not a silent keep-alive phrase
+                             callback && callback();
+                         }
                          return;
                      }
                      synth.speak(utterance);
@@ -1691,7 +1708,9 @@
 
             } catch (error) {
                 console.error("Error speaking text:", error);
-                callback && callback();
+                if (text !== '') { // Only execute callback if it's not a silent keep-alive phrase
+                    callback && callback();
+                }
             }
         }
 
@@ -2076,6 +2095,9 @@
                 if (synth && synth.speaking) {
                     synth.cancel();
                 }
+                // Stop the SpeechSynthesis keep-alive mechanism
+                stopSpeechKeepAlive();
+
                 pauseIcon.classList.add('hidden');
                 resumeIcon.classList.remove('hidden');
                 console.log("Routine Paused.");
@@ -2096,6 +2118,9 @@
 
                 // Restart progress bar animation
                 startProgressBarAnimation();
+
+                // Restart the SpeechSynthesis keep-alive mechanism
+                startSpeechKeepAlive();
 
                 if (isResting) { // If paused during rest, resume rest countdown
                     updatePostSequenceRestDisplayLoop();
@@ -2194,6 +2219,9 @@
                 if (synth && synth.speaking) {
                     synth.cancel();
                 }
+                // Stop the SpeechSynthesis keep-alive mechanism
+                stopSpeechKeepAlive();
+
                 // Hide routine-specific displays
                 countdownDisplay.classList.add('hidden');
                 shotDisplay.classList.add('hidden');
@@ -2247,6 +2275,9 @@
 
                 activeRoutineButtons.classList.add('hidden');
                 finishedRoutineButtons.classList.remove('hidden');
+
+                // Stop the SpeechSynthesis keep-alive mechanism
+                stopSpeechKeepAlive();
                 console.log("Routine Finished.");
             } catch (error) {
                 console.error("Error finishing routine:", error);
@@ -2266,6 +2297,33 @@
             }
         }
 
+        /**
+         * Starts a periodic silent speech utterance to keep the SpeechSynthesis API active.
+         * This helps ensure system audio ducking remains enabled on platforms like iOS.
+         */
+        function startSpeechKeepAlive() {
+            if (keepAliveTimerId) {
+                clearInterval(keepAliveTimerId); // Clear any existing timer first
+            }
+            // Speak a silent empty phrase every 1 second if no other speech is active
+            keepAliveTimerId = setInterval(() => {
+                if (!synth.speaking && isRoutineRunning && !isPaused) {
+                    speak(''); // Speak an empty string silently
+                }
+            }, 1000); // Check every 1 second
+            console.log("SpeechSynthesis keep-alive started.");
+        }
+
+        /**
+         * Stops the periodic silent speech utterance.
+         */
+        function stopSpeechKeepAlive() {
+            if (keepAliveTimerId) {
+                clearInterval(keepAliveTimerId);
+                keepAliveTimerId = null;
+                console.log("SpeechSynthesis keep-alive stopped.");
+            }
+        }
 
         // New: Theme Toggle Functionality
         function applySavedTheme() {
