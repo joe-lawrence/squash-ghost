@@ -507,7 +507,7 @@
             </button>
         </div>
         <div class="mt-4 text-center text-sm text-gray-500">
-            Debug build: beep, duck1
+            Debug build: beep 3, duck1
         </div>
     </div>
 
@@ -597,7 +597,7 @@
         let shotTimerId = null;
         let flashTimerId = null; // Added a specific timer for the flash to manage its timing
         let restTimerId = null; // New timer for post-sequence rest
-        let beepDuration = 0.3; // Increased duration of the screen flash and beep tone in seconds
+        let beepDuration = 0.5; // Increased duration of the screen flash and beep tone in seconds
 
         // Progress bar specific variables
         let progressBarAnimationId = null; // For requestAnimationFrame
@@ -1604,7 +1604,7 @@
          * @param {number} [frequency=880] - The frequency of the beep in Hz. Default is 880Hz.
          * @param {number} [volume=0.5] - The volume of the beep (0.0 to 1.0). Default is 0.5.
          */
-        function playBeep(frequency = 880, volume = 0.5) {
+        function playBeep(frequency = 880, volume = 1.0) { // Increased volume from 0.5 to 1.0
             try {
                 if (!audioContext || audioContext.state === 'suspended') {
                     console.warn("AudioContext not ready for beep.");
@@ -1643,7 +1643,7 @@
                 const duration = beepDuration / 2; // Each tone lasts half the total beep duration
                 const frequency1 = 440; // A4
                 const frequency2 = 880; // A5 (one octave higher)
-                const volume = 0.5;
+                const volume = 1.0; // Increased volume from 0.5 to 1.0
 
                 // First tone
                 const oscillator1 = audioContext.createOscillator();
@@ -1791,7 +1791,7 @@
                 startProgressBarAnimation();
 
                 // Play beep for countdown start
-                playBeep(440, 0.5); // Add beep back here
+                playBeep(440, 1.0); // Beep on initial countdown display
                 flashScreen();
 
                 countdownTimerId = setTimeout(updateCountdownDisplayLoop, 1000);
@@ -1816,7 +1816,7 @@
                     countdownDisplay.classList.remove('text-fade-out');
                     countdownDisplay.classList.add('text-fade-in');
 
-                    playBeep(440, 0.5); // Add beep back here
+                    playBeep(440, 1.0); // Beep during countdown
                     flashScreen();
 
                     setTimeout(() => {
@@ -1910,7 +1910,7 @@
                 clearTimeout(flashTimerId); // Clear any previous flash timer
                 flashTimerId = setTimeout(() => {
                     if (!isRoutineRunning || isPaused) return; // Check routine state before executing
-                    playTwoToneBeep(); // Add beep back here
+                    playTwoToneBeep(); // Play two-tone beep for shot announcement
                     flashScreen();
                 }, beepAndFlashTriggerTime);
 
@@ -2021,7 +2021,7 @@
                 shotDisplay.innerHTML = `Rest<br>${restCountdownRemaining}`;
                 
                 if (restCountdownRemaining <= 10 && restCountdownRemaining > 0) {
-                    playBeep(440, 0.3); // Add beep back here
+                    playBeep(440, 1.0); // Beep during rest countdown
                 }
 
                 if (restCountdownRemaining > 0) {
@@ -2199,7 +2199,7 @@
                         clearTimeout(flashTimerId);
                         flashTimerId = setTimeout(() => {
                             if (!isRoutineRunning || isPaused) return; // Double-check state
-                            playTwoToneBeep(); // Add beep back here
+                            playTwoToneBeep(); // Play two-tone beep for shot announcement
                             flashScreen();
                         }, remainingBeepFlashDelay);
                     }
