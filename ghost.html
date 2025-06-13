@@ -507,7 +507,7 @@
             </button>
         </div>
         <div class="mt-4 text-center text-sm text-gray-500">
-            Debug build: beep 4, duck1
+            Debug build: beep 6, duck1
         </div>
     </div>
 
@@ -1622,7 +1622,7 @@
                 gainNode.gain.setValueAtTime(volume, audioContext.currentTime); // Set volume
 
                 oscillator.start(audioContext.currentTime);
-                //gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration); // Fade out
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration); // Fade out
                 oscillator.stop(audioContext.currentTime + beepDuration);
             } catch (error) {
                 console.error("Error playing beep:", error);
@@ -1640,7 +1640,7 @@
                     return;
                 }
 
-                const duration = beepDuration / 2; // Each tone lasts half the total beep duration
+                const duration = beepDuration;
                 const frequency1 = 440; // A4
                 const frequency2 = 880; // A5 (one octave higher)
                 const volume = 1.0; // Increased volume from 0.5 to 1.0
@@ -1666,8 +1666,8 @@
                 oscillator2.frequency.setValueAtTime(frequency2, audioContext.currentTime + duration); // Start second tone after first
                 gainNode2.gain.setValueAtTime(volume, audioContext.currentTime + duration);
                 oscillator2.start(audioContext.currentTime + duration);
-                gainNode2.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration); // Total duration
-                oscillator2.stop(audioContext.currentTime + beepDuration);
+                gainNode2.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + beepDuration *2); // Total duration
+                oscillator2.stop(audioContext.currentTime + beepDuration * 2);
             } catch (error) {
                 console.error("Error playing two-tone beep:", error);
             }
