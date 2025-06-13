@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squash Ghosting</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS for Inter font, if not using a specific font from Tailwind config -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f3f4f6; /* Light gray background */
+      color: #374151; /* Dark gray text */
+    }
+    .dark body {
+      background-color: #111827; /* Dark background */
+      color: #d1d5db; /* Light gray text for dark mode */
+    }
+    /* Basic styling for form elements to ensure consistent appearance */
+    textarea, input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #e5e7eb; /* Light gray background for input */
+      outline: none;
+      border-radius: 9999px; /* Fully rounded corners */
+    }
+    textarea:focus, input[type="range"]:focus {
+      border-color: #3b82f6; /* Blue border on focus */
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* Blue ring on focus */
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #4f46e5; /* Indigo thumb */
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: #4f46e5; /* Indigo thumb */
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950">
+  <!-- Main content wrapper, centered on the screen -->
+  <div class="flex items-center justify-center min-h-screen w-full">
+    <div id="configScreen" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-gray-200">
+      <h1 class="mb-8 text-center text-4xl font-bold text-gray-900 dark:text-white">Squash Ghosting</h1>
+
+      <div class="space-y-6">
+        <h2 class="mb-3 text-xl font-semibold text-gray-800 dark:text-gray-100">Sequence 1</h2>
+
+        <!-- Optional introduction textarea -->
+        <div>
+          <label for="introductionMessageSquash" class="sr-only">Optional introduction</label>
+          <textarea id="introductionMessageSquash" rows="1" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" placeholder="(Optional) introduction, i.e. 'Keep your racket up!'"></textarea>
+        </div>
+
+        <!-- Series order radio buttons -->
+        <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
+          <label class="inline-flex items-center">
+            <input type="radio" name="seriesOrderSquash" value="ordered" checked class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" />
+            <span class="ml-2 text-gray-700 dark:text-gray-300">In order</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="radio" name="seriesOrderSquash" value="randomized" class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" />
+            <span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span>
+          </label>
+        </div>
+
+        <!-- Shot selections textarea -->
+        <div>
+          <label for="shotSelectionsSquash" class="sr-only">Required shot selections</label>
+          <textarea
+            id="shotSelectionsSquash"
+            rows="4"
+            class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+            placeholder="(Required) shot selections, i.e.
+Front left
+Back right
+Mid left"
+          ></textarea>
+        </div>
+
+        <!-- Shot interval and random offset sliders -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <label for="shotIntervalSquash" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"> Shot Interval: <span id="shotIntervalValueSquash" class="font-semibold text-indigo-600">4.0 s</span> </label>
+            <input type="range" id="shotIntervalSquash" min="3.0" max="6.0" step="0.1" value="4.0" class="w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 accent-indigo-600" />
+          </div>
+
+          <div>
+            <label for="randomOffsetSquash" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"> Random Offset: <span id="randomOffsetValueSquash" class="font-semibold text-indigo-600">0.00 s</span> </label>
+            <input type="range" id="randomOffsetSquash" min="0.00" max="0.25" step="0.01" value="0.00" class="w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 accent-indigo-600" />
+          </div>
+        </div>
+
+        <!-- Accordion section -->
+        <div id="accordion-color-squash" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+          <!-- Shot limit accordion item -->
+          <h2 id="accordion-color-heading-1-squash">
+            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-2 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800 rounded-t-lg" data-accordion-target="#accordion-color-body-1-squash" aria-expanded="false" aria-controls="accordion-color-body-1-squash">
+              <span class="text-gray-700 dark:text-gray-300">Shot limit - none</span>
+              <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
+              </svg>
+            </button>
+          </h2>
+          <div id="accordion-color-body-1-squash" class="hidden" aria-labelledby="accordion-color-heading-1-squash">
+            <div class="border border-b-0 border-gray-200 p-2 dark:border-gray-700 dark:bg-gray-900">
+              <div>
+                <label for="shotLimitSquash" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"><span id="shotLimitValueSquash" class="font-semibold text-indigo-600">10 shots</span> </label>
+                <input type="range" id="shotLimitSquash" min="1" max="100" value="10" class="w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 accent-indigo-600" />
+              </div>
+            </div>
+          </div>
+          <!-- Time limit accordion item -->
+          <h2 id="accordion-color-heading-2-squash">
+            <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-2 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800 rounded-b-lg" data-accordion-target="#accordion-color-body-2-squash" aria-expanded="false" aria-controls="accordion-color-body-2-squash">
+              <span class="text-gray-700 dark:text-gray-300">Time limit - 3:00</span>
+              <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
+              </svg>
+            </button>
+          </h2>
+          <div id="accordion-color-body-2-squash" class="hidden" aria-labelledby="accordion-color-heading-2-squash">
+            <div class="border border-t-0 border-gray-200 p-2 dark:border-gray-700 dark:bg-gray-900">
+              <div>
+                <label for="timeLimitSquash" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"><span id="timeLimitValueSquash" class="font-semibold text-indigo-600">0:00</span> </label>
+                <input type="range" id="timeLimitSquash" min="0" max="300" value="0" class="w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 accent-indigo-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Sequence Rest slider -->
+        <div>
+          <label for="postSequenceRestSquash" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"> Post Sequence Rest: <span id="postSequenceRestValueSquash" class="font-semibold text-indigo-600">0 seconds</span> </label>
+          <input type="range" id="postSequenceRestSquash" min="0" max="300" value="0" class="w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 accent-indigo-600" />
+        </div>
+
+        <div class="flex justify-center mt-8">
+            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                Start Ghosting
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript to handle slider value updates and accordion functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      // Helper function to update slider value display
+      const setupSlider = (sliderId, valueSpanId, formatter) => {
+        const slider = document.getElementById(sliderId);
+        const valueSpan = document.getElementById(valueSpanId);
+
+        if (slider && valueSpan) {
+          slider.addEventListener('input', (event) => {
+            valueSpan.textContent = formatter(parseFloat(event.target.value));
+          });
+          // Set initial value
+          valueSpan.textContent = formatter(parseFloat(slider.value));
+        }
+      };
+
+      // Formatters for different sliders
+      const formatShotInterval = (value) => `${value.toFixed(1)} s`;
+      const formatRandomOffset = (value) => `${value.toFixed(2)} s`;
+      const formatPostSequenceRest = (value) => `${parseInt(value)} seconds`;
+      const formatShotLimit = (value) => `${parseInt(value)} shots`;
+      const formatTimeLimit = (value) => {
+        const minutes = Math.floor(value / 60);
+        const seconds = value % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      };
+
+      // Setup all sliders
+      setupSlider('shotIntervalSquash', 'shotIntervalValueSquash', formatShotInterval);
+      setupSlider('randomOffsetSquash', 'randomOffsetValueSquash', formatRandomOffset);
+      setupSlider('postSequenceRestSquash', 'postSequenceRestValueSquash', formatPostSequenceRest);
+      setupSlider('shotLimitSquash', 'shotLimitValueSquash', formatShotLimit);
+      setupSlider('timeLimitSquash', 'timeLimitValueSquash', formatTimeLimit);
+
+
+      // Accordion functionality for squash ghosting
+      const accordionButtonsSquash = document.querySelectorAll('#accordion-color-squash [data-accordion-target]');
+      accordionButtonsSquash.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetId = button.getAttribute('data-accordion-target');
+          const targetBody = document.querySelector(targetId);
+          const icon = button.querySelector('[data-accordion-icon]');
+
+          if (targetBody && icon) {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            // Close all other accordions within the same group
+            accordionButtonsSquash.forEach(otherButton => {
+              const otherTargetId = otherButton.getAttribute('data-accordion-target');
+              const otherTargetBody = document.querySelector(otherTargetId);
+              const otherIcon = otherButton.querySelector('[data-accordion-icon]');
+
+              if (otherButton !== button && otherButton.getAttribute('aria-expanded') === 'true') {
+                otherButton.setAttribute('aria-expanded', 'false');
+                otherTargetBody.classList.add('hidden');
+                otherIcon.classList.remove('rotate-0');
+                otherIcon.classList.add('rotate-180');
+              }
+            });
+
+            // Toggle the clicked accordion
+            if (isExpanded) {
+              button.setAttribute('aria-expanded', 'false');
+              targetBody.classList.add('hidden');
+              icon.classList.remove('rotate-0');
+              icon.classList.add('rotate-180');
+            } else {
+              button.setAttribute('aria-expanded', 'true');
+              targetBody.classList.remove('hidden');
+              icon.classList.remove('rotate-180');
+              icon.classList.add('rotate-0');
+            }
+          }
+        });
+      });
+
+      // Ensure the initially expanded accordion is visible (if any)
+      const initialExpandedButtonSquash = document.querySelector('#accordion-color-squash [aria-expanded="true"]');
+      if (initialExpandedButtonSquash) {
+        const targetId = initialExpandedButtonSquash.getAttribute('data-accordion-target');
+        const targetBody = document.querySelector(targetId);
+        if (targetBody) {
+          targetBody.classList.remove('hidden');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
