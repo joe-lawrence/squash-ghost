@@ -506,6 +506,9 @@
                 <svg id="sunIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="m806-235-57-57q17-16 31-34.5t25-38.5q-48-5-94-18t-88-35L416-625q-22-42-35-87.5T364-806q-20 11-38.5 25T291-750l-56-56q43-44 97.5-73T450-920q-18 99 11 193.5T561-561t165.5 100T920-450q-11 63-40.5 117.5T806-235M775-38 667-146q-34 13-69.5 19.5T524-120q-84 0-157.5-32t-128-86.5-86.5-128T120-524q0-38 6.5-73.5T146-667L39-774l57-57L832-95zM524-200q20 0 40-2.5t39-7.5L210-603q-5 20-7.5 39.5T200-524q0 135 94.5 229.5T524-200m-4-321"/></svg>
             </button>
         </div>
+        <div class="mt-4 text-center text-sm text-gray-500">
+            Debug build: no tones
+        </div>
     </div>
 
     <div id="routineScreen" class="hidden w-full h-screen flex flex-col justify-center items-center transition-colors duration-200">
@@ -1518,14 +1521,10 @@
                     return;
                 }
 
-                // Initialize audio and speech contexts on user interaction to comply with browser policies.
-                initAudioContext();
+                // Initialize speech context on user interaction to comply with browser policies.
                 initSpeechSynthesis();
 
-                // Explicitly resume audio and speech contexts as they might be suspended
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume().catch(e => console.error("Error resuming AudioContext on start:", e));
-                }
+                // Explicitly resume speech context as it might be suspended
                 if (synth && synth.paused) {
                     synth.resume(); // Ensure speech synthesis is not paused
                 }
@@ -1575,8 +1574,6 @@
                                 startShotProgression(); // Start shot progression AFTER routine intro finishes speaking
                             });
                         } else {
-                            // NEW ADDITION: Play a subtle beep if no countdown and no routine intro to help activate TTS on iOS.
-                            playBeep(440, 0.2); // Subtle beep
                             startShotProgression(); // No routine intro, start shot progression immediately
                         }
                     }
@@ -1594,29 +1591,9 @@
          * @param {number} [volume=0.5] - The volume of the beep (0.0 to 1.0). Default is 0.5.
          */
         function playBeep(frequency = 880, volume = 0.5) {
-            try {
-                if (!audioContext || audioContext.state === 'suspended') {
-                    console.warn("AudioContext not ready or suspended. Cannot play beep.");
-                    return;
-                }
-
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-
-                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + beepDuration);
-
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + beepDuration);
-            } catch (error) {
-                console.error("Error playing beep:", error);
-            }
+            // Function no longer plays any sound.
+            // This effectively removes single beeps.
+            return; 
         }
 
         /**
@@ -1624,47 +1601,9 @@
          * Consists of a lower tone followed by a higher tone.
          */
         function playTwoToneBeep() {
-            try {
-                if (!audioContext || audioContext.state === 'suspended') {
-                    console.warn("AudioContext not ready or suspended. Cannot play two-tone beep.");
-                    return;
-                }
-
-                const lowFrequency = 440;
-                const highFrequency = 880;
-                const volume = 0.5;
-                const singleBeepDuration = 0.2;
-                const shortGap = 0.05;
-
-                const oscillator1 = audioContext.createOscillator();
-                const gainNode1 = audioContext.createGain();
-                oscillator1.connect(gainNode1);
-                gainNode1.connect(audioContext.destination);
-
-                oscillator1.type = 'sine';
-                oscillator1.frequency.setValueAtTime(lowFrequency, audioContext.currentTime);
-
-                gainNode1.gain.setValueAtTime(volume, audioContext.currentTime);
-                gainNode1.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + singleBeepDuration);
-
-                oscillator1.start(audioContext.currentTime);
-                oscillator1.stop(audioContext.currentTime + singleBeepDuration);
-
-                const oscillator2 = audioContext.createOscillator();
-                const gainNode2 = audioContext.createGain();
-                oscillator2.connect(gainNode2);
-                gainNode2.connect(audioContext.destination);
-
-                oscillator2.type = 'sine';
-                oscillator2.frequency.setValueAtTime(highFrequency, audioContext.currentTime);
-
-                gainNode2.gain.setValueAtTime(volume, audioContext.currentTime);
-                // No exponential ramp for the second beep, for a sharper stop
-                oscillator2.start(audioContext.currentTime + singleBeepDuration + shortGap);
-                oscillator2.stop(audioContext.currentTime + singleBeepDuration + shortGap + singleBeepDuration);
-            } catch (error) {
-                console.error("Error playing two-tone beep:", error);
-            }
+            // Function no longer plays any sound.
+            // This effectively removes two-toned beeps.
+            return;
         }
 
 
@@ -1772,7 +1711,7 @@
                 pausedTimeElapsed = 0;
                 startProgressBarAnimation();
 
-                playTwoToneBeep();
+                // Removed beep from countdown start
                 flashScreen();
 
                 countdownTimerId = setTimeout(updateCountdownDisplayLoop, 1000);
@@ -1797,7 +1736,7 @@
                     countdownDisplay.classList.remove('text-fade-out');
                     countdownDisplay.classList.add('text-fade-in');
 
-                    playTwoToneBeep();
+                    // Removed beep from countdown loop
                     flashScreen();
 
                     setTimeout(() => {
@@ -1891,7 +1830,7 @@
                 clearTimeout(flashTimerId); // Clear any previous flash timer
                 flashTimerId = setTimeout(() => {
                     if (!isRoutineRunning || isPaused) return; // Check routine state before executing
-                    playTwoToneBeep();
+                    // playTwoToneBeep(); // Removed beep call
                     flashScreen();
                 }, beepAndFlashTriggerTime);
 
@@ -2002,7 +1941,7 @@
                 shotDisplay.innerHTML = `Rest<br>${restCountdownRemaining}`;
                 
                 if (restCountdownRemaining <= 10 && restCountdownRemaining > 0) {
-                    playBeep(440, 0.3);
+                    // playBeep(440, 0.3); // Removed beep call
                 }
 
                 if (restCountdownRemaining > 0) {
@@ -2174,7 +2113,7 @@
                         clearTimeout(flashTimerId);
                         flashTimerId = setTimeout(() => {
                             if (!isRoutineRunning || isPaused) return; // Double-check state
-                            playTwoToneBeep();
+                            // playTwoToneBeep(); // Removed beep call
                             flashScreen();
                         }, remainingBeepFlashDelay);
                     }
