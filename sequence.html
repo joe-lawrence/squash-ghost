@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Routine Shot Sequencing</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS for Inter font, if not using a specific font from Tailwind config -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950">
+  <!-- Main content wrapper, centered on the screen -->
+  <div class="relative grid min-h-screen grid-cols-[1fr_2.5rem_auto_2.5rem_1fr] grid-rows-[1fr_1px_auto_1px_1fr] bg-white [--pattern-fg:var(--color-gray-950)]/5 dark:bg-gray-950 dark:[--pattern-fg:var(--color-white)]/10">
+    <div class="col-start-3 row-start-3 flex max-w-lg flex-col bg-gray-100 p-2 dark:bg-white/10">
+      <div class="rounded-xl bg-white p-10 text-sm/7 text-gray-700 dark:bg-gray-950 dark:text-gray-300">
+
+        <div class="space-y-6">
+          <div class="border-b border-gray-200 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div class="rounded-lg border p-4">
+              <h2 class="mb-3 text-xl font-semibold">Sequence 1</h2>
+
+              <!-- Optional introduction textarea -->
+              <div>
+                <textarea id="introductionMessage" rows="1" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" placeholder="Optional introduction"></textarea>
+              </div>
+
+              <div class="my-3"></div>
+
+              <!-- Shot sequence textarea -->
+              <div>
+                <textarea
+                  id="shotSequence"
+                  rows="4"
+                  class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                  placeholder="Boast
+Drive
+Drop
+Cross-court"
+                ></textarea>
+              </div>
+
+              <div class="my-3"></div>
+
+              <!-- Series order radio buttons -->
+              <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
+                <label class="inline-flex items-center">
+                  <input type="radio" name="seriesOrder" value="ordered" checked class="form-radio rounded-full" />
+                  <span class="ml-2">In order</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full" />
+                  <span class="ml-2">Randomized</span>
+                </label>
+              </div>
+
+              <!-- Shot interval and random offset sliders -->
+              <div class="columns-2 gap-8">
+                <div>
+                  <label for="shotInterval" class="mb-1 block text-sm font-medium"> Shot Interval: <span id="shotIntervalValue" class="font-semibold text-indigo-600">4.0 s</span> </label>
+                  <input type="range" id="shotInterval" min="3.0" max="6.0" step="0.1" value="4.0" class="w-full" />
+                </div>
+
+                <div>
+                  <label for="randomOffset" class="mb-1 block text-sm font-medium"> Random Offset: <span id="randomOffsetValue" class="font-semibold text-indigo-600">0.00 s</span> </label>
+                  <input type="range" id="randomOffset" min="0.00" max="0.25" step="0.01" value="0.00" class="w-full" />
+                </div>
+              </div>
+
+              <div class="my-4"></div>
+
+
+
+
+<div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+  <h2 id="accordion-color-heading-1">
+    <button type="button" class="flex items-center justify-between w-full p-2 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 dark:border-gray-700 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-color-body-2" aria-expanded="false" aria-controls="accordion-color-body-2">
+      <span>Shot limit - none</span>
+      <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+      </svg>
+    </button>
+  </h2>
+  <div id="accordion-color-body-2" class="hidden" aria-labelledby="accordion-color-heading-2">
+    <div class="p-2 border border-b-0 border-gray-200 dark:border-gray-700">
+              <div>
+                <label for="postSequenceRest" class="mb-1 block text-sm font-medium"><span id="postSequenceRestValue" class="font-semibold text-indigo-600">10 shots</span> </label>
+                <input type="range" id="postSequenceRest" min="1" max="100" value="0" class="w-full" />
+              </div>
+    </div>
+  </div>
+  <h2 id="accordion-color-heading-2">
+    <button type="button" class="flex items-center justify-between w-full p-2 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 dark:border-gray-700 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-color-body-3" aria-expanded="false" aria-controls="accordion-color-body-3">
+      <span>Time limit - 3:00</span>
+      <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+      </svg>
+    </button>
+  </h2>
+  <div id="accordion-color-body-3" class="hidden" aria-labelledby="accordion-color-heading-3">
+    <div class="p-2 border border-t-0 border-gray-200 dark:border-gray-700">
+              <div>
+                <label for="postSequenceRest" class="mb-1 block text-sm font-medium"><span id="postSequenceRestValue" class="font-semibold text-indigo-600">2:30</span> </label>
+                <input type="range" id="postSequenceRest" min="1" max="100" value="0" class="w-full" />
+              </div>
+          </div>
+  </div>
+</div>
+
+
+
+              <div class="my-4"></div>
+
+              <!-- Post Sequence Rest slider -->
+              <div>
+                <!-- Removed dynamic IDs for simplicity and to match static HTML requirement -->
+                <label for="postSequenceRest" class="mb-1 block text-sm font-medium"> Post Sequence Rest: <span id="postSequenceRestValue" class="font-semibold text-indigo-600">0 seconds</span> </label>
+                <input type="range" id="postSequenceRest" min="0" max="300" value="0" class="w-full" />
+              </div>
+
+            </div>
+<div class="fixed bottom-0 z-50 w-full h-16 -translate-x-1/2 bg-white border-t border-gray-200 left-1/2 dark:bg-gray-700 dark:border-gray-600">
+    <div class="grid h-full max-w-lg grid-cols-6 mx-auto">
+        <button data-tooltip-target="tooltip-document" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
+            <svg class="w-5 h-5 mb-1 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M.188 5H5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707c-.358.362-.617.81-.753 1.3C.148 5.011.166 5 .188 5ZM14 8a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm2 7h-1v1a1 1 0 0 1-2 0v-1h-1a1 1 0 0 1 0-2h1v-1a1 1 0 0 1 2 0v1h1a1 1 0 0 1 0 2Z"/>
+                <path d="M6 14a7.969 7.969 0 0 1 10-7.737V2a1.97 1.97 0 0 0-1.933-2H7v5a2 2 0 0 1-2 2H.188A.909.909 0 0 1 0 6.962V18a1.969 1.969 0 0 0 1.933 2h6.793A7.976 7.976 0 0 1 6 14Z"/>
+            </svg>
+            <span class="sr-only">New document</span>
+        </button>
+        <div id="tooltip-document" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700">
+            New document
+            <div class="tooltip-arrow" data-popper-arrow></div>
+        </div>
+        <button data-tooltip-target="tooltip-bookmark" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
+            <svg class="w-5 h-5 mb-1 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 14 20">
+                <path d="M13 20a1 1 0 0 1-.64-.231L7 15.3l-5.36 4.469A1 1 0 0 1 0 19V2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v17a1 1 0 0 1-1 1Z"/>
+            </svg>
+            <span class="sr-only">Bookmark</span>
+        </button>
+        <div id="tooltip-bookmark" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700">
+            Bookmark
+            <div class="tooltip-arrow" data-popper-arrow></div>
+        </div>
+        <div class="flex items-center justify-center col-span-2">
+            <div class="flex items-center justify-between w-full text-gray-600 dark:text-gray-400 bg-gray-100 rounded-lg dark:bg-gray-600 max-w-[128px] mx-2">
+                <button type="button" class="inline-flex items-center justify-center h-8 px-1 w-6 bg-gray-100 rounded-s-lg dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-800">
+                    <svg class="w-2 h-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4"/>
+                    </svg>
+                    <span class="sr-only">Previous page</span>
+                </button>
+                <span class="shrink-0 mx-1 text-sm font-medium space-x-0.5 rtl:space-x-reverse">1 of 345</span>
+                <button type="button" class="inline-flex items-center justify-center h-8 px-1 w-6 bg-gray-100 rounded-e-lg dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-800">
+                    <svg class="w-2 h-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    <span class="sr-only">Next page</span>
+                </button>
+            </div>
+        </div>
+        <button data-tooltip-target="tooltip-settings" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
+            <svg class="w-5 h-5 mb-1 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12.25V1m0 11.25a2.25 2.25 0 0 0 0 4.5m0-4.5a2.25 2.25 0 0 1 0 4.5M4 19v-2.25m6-13.5V1m0 2.25a2.25 2.25 0 0 0 0 4.5m0-4.5a2.25 2.25 0 0 1 0 4.5M10 19V7.75m6 4.5V1m0 11.25a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM16 19v-2"/>
+            </svg>
+            <span class="sr-only">Settings</span>
+        </button>
+        <div id="tooltip-settings" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700">
+            Settings
+            <div class="tooltip-arrow" data-popper-arrow></div>
+        </div>
+        <button data-tooltip-target="tooltip-profile" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
+            <svg class="w-5 h-5 mb-1 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+            </svg>
+            <span class="sr-only">Profile</span>
+        </button>
+        <div id="tooltip-profile" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700">
+            Profile
+            <div class="tooltip-arrow" data-popper-arrow></div>
+        </div>
+    </div>
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript to handle slider value updates and accordion functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      // Update Shot Interval value display
+      const shotIntervalSlider = document.getElementById('shotInterval');
+      const shotIntervalValueSpan = document.getElementById('shotIntervalValue');
+      if (shotIntervalSlider && shotIntervalValueSpan) {
+        shotIntervalSlider.addEventListener('input', (event) => {
+          shotIntervalValueSpan.textContent = `${parseFloat(event.target.value).toFixed(1)} s`;
+        });
+        // Set initial value
+        shotIntervalValueSpan.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} s`;
+      }
+
+      // Update Random Offset value display
+      const randomOffsetSlider = document.getElementById('randomOffset');
+      const randomOffsetValueSpan = document.getElementById('randomOffsetValue');
+      if (randomOffsetSlider && randomOffsetValueSpan) {
+        randomOffsetSlider.addEventListener('input', (event) => {
+          randomOffsetValueSpan.textContent = `${parseFloat(event.target.value).toFixed(2)} s`;
+        });
+        // Set initial value
+        randomOffsetValueSpan.textContent = `${parseFloat(randomOffsetSlider.value).toFixed(2)} s`;
+      }
+
+      // Update Post Sequence Rest value display
+      const postSequenceRestSlider = document.getElementById('postSequenceRest');
+      const postSequenceRestValueSpan = document.getElementById('postSequenceRestValue');
+      if (postSequenceRestSlider && postSequenceRestValueSpan) {
+        postSequenceRestSlider.addEventListener('input', (event) => {
+          postSequenceRestValueSpan.textContent = `${parseInt(event.target.value)} seconds`;
+        });
+        // Set initial value
+        postSequenceRestValueSpan.textContent = `${parseInt(postSequenceRestSlider.value)} seconds`;
+      }
+
+
+      // Accordion functionality
+      const accordionButtons = document.querySelectorAll('[data-accordion-target]');
+      accordionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetId = button.getAttribute('data-accordion-target');
+          const targetBody = document.querySelector(targetId);
+          const icon = button.querySelector('[data-accordion-icon]');
+
+          if (targetBody && icon) {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            // Close all other accordions
+            accordionButtons.forEach(otherButton => {
+              const otherTargetId = otherButton.getAttribute('data-accordion-target');
+              const otherTargetBody = document.querySelector(otherTargetId);
+              const otherIcon = otherButton.querySelector('[data-accordion-icon]');
+
+              if (otherButton !== button && otherButton.getAttribute('aria-expanded') === 'true') {
+                otherButton.setAttribute('aria-expanded', 'false');
+                otherTargetBody.classList.add('hidden');
+                otherIcon.classList.remove('rotate-0'); // Assuming it starts at 180 degrees
+                otherIcon.classList.add('rotate-180');
+              }
+            });
+
+            // Toggle the clicked accordion
+            if (isExpanded) {
+              button.setAttribute('aria-expanded', 'false');
+              targetBody.classList.add('hidden');
+              icon.classList.remove('rotate-0');
+              icon.classList.add('rotate-180');
+            } else {
+              button.setAttribute('aria-expanded', 'true');
+              targetBody.classList.remove('hidden');
+              icon.classList.remove('rotate-180');
+              icon.classList.add('rotate-0');
+            }
+          }
+        });
+      });
+      // Ensure the initially expanded accordion is visible (if any)
+      const initialExpandedButton = document.querySelector('[data-accordion="open"] [aria-expanded="true"]');
+      if (initialExpandedButton) {
+        const targetId = initialExpandedButton.getAttribute('data-accordion-target');
+        const targetBody = document.querySelector(targetId);
+        if (targetBody) {
+          targetBody.classList.remove('hidden');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
