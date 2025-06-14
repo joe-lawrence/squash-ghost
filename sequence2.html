@@ -287,18 +287,18 @@ Mid left"
 
       // 2. Shot Interval Slider
       shotIntervalSlider.addEventListener('input', () => {
-        shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} seconds`;
+        shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} sec`;
       });
       // Initial update for shot interval
-      shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} seconds`;
+      shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} sec`;
 
       // 3. Random Offset Slider
       randomOffsetSlider.addEventListener('input', () => {
         const value = parseFloat(randomOffsetSlider.value).toFixed(2);
-        randomOffsetDisplay.textContent = value === '0.00' ? 'None' : `${value} seconds`;
+        randomOffsetDisplay.textContent = value === '0.00' ? 'None' : `${value} sec`;
       });
       // Initial update for random offset
-      randomOffsetDisplay.textContent = parseFloat(randomOffsetSlider.value).toFixed(2) === '0.00' ? 'None' : `${parseFloat(randomOffsetSlider.value).toFixed(2)} seconds`;
+      randomOffsetDisplay.textContent = parseFloat(randomOffsetSlider.value).toFixed(2) === '0.00' ? 'None' : `${parseFloat(randomOffsetSlider.value).toFixed(2)} sec`;
 
       // 4. Post Sequence Rest Slider
       postSequenceRestSlider.addEventListener('input', () => {
@@ -312,7 +312,7 @@ Mid left"
       const updateShotLimit = () => {
         let shotValue = parseInt(shotLimitSlider.value);
         if (shotValue > 0) {
-          shotLimitDisplay.textContent = `${shotValue} shots`;
+          shotLimitDisplay.textContent = `${shotValue}`;
           // If shot limit is set, clear the time limit
           timeLimitSlider.value = 0;
           timeLimitDisplay.textContent = 'None';
