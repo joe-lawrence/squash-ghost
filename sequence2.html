@@ -24,6 +24,8 @@
       cursor: pointer;
       box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3); /* Ring around thumb */
       transition: background 0.15s ease-in-out;
+      /* Fix for iOS Safari vertical alignment */
+      margin-top: -6px; /* Adjust as needed for precise alignment */
     }
     input[type="range"]::-moz-range-thumb {
       width: 20px;
@@ -71,12 +73,10 @@
       <h2 class="mb-3 text-xl font-semibold text-gray-800 dark:text-white">Sequence 1</h2>
 
       <div>
-        <label for="introductionMessage" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Introduction Message (Optional)</label>
         <textarea id="introductionMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" placeholder="(Optional) introduction, i.e. 'Keep your racket up!'"></textarea>
       </div>
 
       <div>
-        <label for="shotSelections" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Shot Selections (Required)</label>
         <textarea
           id="shotSelections"
           rows="4"
