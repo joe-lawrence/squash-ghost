@@ -72,25 +72,67 @@
     <div class="space-y-4">
       <h2 class="mb-3 text-xl font-semibold text-gray-800 dark:text-white">Sequence 1</h2>
 
-      <div>
-        <textarea id="introductionMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" placeholder="(Optional) introduction, i.e. 'Keep your racket up!'"></textarea>
-      </div>
-
-      <div>
-        <textarea
-          id="shotSelections"
-          rows="4"
-          class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-          placeholder="(Required) shot selections, i.e.
-Front left
-Back right
-Mid left"
-        ></textarea>
-      </div>
 
       <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+
+        <!-- Intro -->
+        <h2 id="accordion-heading-intro">
+          <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-1" aria-expanded="false" aria-controls="accordion-color-body-1">
+            <span class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16">
+               <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+               <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+              </svg>
+              Introduction - <span id="introDisplay" class="font-semibold text-indigo-600 dark:text-indigo-400">None</span>
+            </span>
+            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
+            </svg>
+          </button>
+        <h2>
+        <div id="accordion-color-body-1" class="hidden" aria-labelledby="accordion-heading-intro">
+          <div class="rounded-b-lg border border-gray-200 p-3 dark:border-gray-700">
+            <div>
+              <label for="seriesOrder" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Optional introduction speech at the start of the sequence, i.e. "Keep your racket up!":</label>
+              <div>
+                <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shot selections-->
+        <h2 id="accordion-heading-selections">
+          <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-selections" aria-expanded="false" aria-controls="accordion-heading-selections">
+            <span class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+              </svg>
+              Shot selections
+            </span>
+            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
+            </svg>
+          </button>
+        <h2>
+        <div id="accordion-body-selections" class="hidden" aria-labelledby="accordion-heading-selections">
+          <div class="rounded-b-lg border border-gray-200 p-3 dark:border-gray-700">
+            <div>
+              <textarea
+                id="shotSelections"
+                rows="4"
+                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                placeholder="(Required) shot selections, i.e.
+      Front left
+      Back right
+      Mid left"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
         <!-- Shot sequence -->
-        <h2 id="accordion-color-heading-1">
+        <h2 id="accordion-heading-shot-sequence">
           <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-1" aria-expanded="false" aria-controls="accordion-color-body-1">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16">
@@ -103,7 +145,7 @@ Mid left"
             </svg>
           </button>
         <h2>
-        <div id="accordion-color-body-1" class="hidden" aria-labelledby="accordion-color-heading-1">
+        <div id="accordion-color-body-1" class="hidden" aria-labelledby="accordion-heading-shot-sequence">
           <div class="rounded-b-lg border border-gray-200 p-3 dark:border-gray-700">
             <div>
               <label for="seriesOrder" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">How to iterate through this sequence shot selections:</label>
@@ -122,7 +164,7 @@ Mid left"
         </div>
 
         <!-- Interval -->
-        <h2 id="accordion-color-heading-2">
+        <h2 id="accordion-heading-shot-interval">
           <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-2" aria-expanded="false" aria-controls="accordion-color-body-2">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16">
@@ -135,7 +177,7 @@ Mid left"
             </svg>
           </button>
         </h2>
-        <div id="accordion-color-body-2" class="hidden" aria-labelledby="accordion-color-heading-2">
+        <div id="accordion-color-body-2" class="hidden" aria-labelledby="accordion-heading-shot-interval">
           <div class="border border-b-0 border-gray-200 p-3 dark:border-gray-700">
             <div>
               <label for="shotInterval" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Time between each shot:</label>
@@ -145,7 +187,7 @@ Mid left"
         </div>
 
         <!-- Random offset -->
-        <h2 id="accordion-color-heading-3">
+        <h2 id="accordion-heading-interval-fuzz">
           <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-3" aria-expanded="false" aria-controls="accordion-color-body-3">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dice-5" viewBox="0 0 16 16">
@@ -159,7 +201,7 @@ Mid left"
             </svg>
           </button>
         </h2>
-        <div id="accordion-color-body-3" class="hidden" aria-labelledby="accordion-color-heading-3">
+        <div id="accordion-color-body-3" class="hidden" aria-labelledby="accordion-heading-interval-fuzz">
           <div class="border border-b-0 border-gray-200 p-3 dark:border-gray-700">
             <label for="randomOffset" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Random interval offset range (plus/minus):</label>
             <div>
@@ -169,7 +211,7 @@ Mid left"
         </div>
 
         <!-- Shot limit -->
-        <h2 id="accordion-color-heading-4">
+        <h2 id="accordion-heading-shot-limit">
           <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-4" aria-expanded="false" aria-controls="accordion-color-body-4">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16">
@@ -182,7 +224,7 @@ Mid left"
             </svg>
           </button>
         </h2>
-        <div id="accordion-color-body-4" class="hidden" aria-labelledby="accordion-color-heading-4">
+        <div id="accordion-color-body-4" class="hidden" aria-labelledby="accordion-heading-shot-limit">
           <div class="border border-b-0 border-gray-200 p-3 dark:border-gray-700">
             <label for="shotLimit" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Maximum number of shots to play in this sequence:</label>
             <div>
@@ -193,7 +235,7 @@ Mid left"
         </div>
 
         <!-- Time Limit -->
-        <h2 id="accordion-color-heading-5">
+        <h2 id="accordion-heading-time-limit">
           <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-5" aria-expanded="false" aria-controls="accordion-color-body-5">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock" viewBox="0 0 16 16">
@@ -207,7 +249,7 @@ Mid left"
             </svg>
           </button>
         </h2>
-        <div id="accordion-color-body-5" class="hidden" aria-labelledby="accordion-color-heading-5">
+        <div id="accordion-color-body-5" class="hidden" aria-labelledby="accordion-heading-time-limit">
           <div class="border border-t-0 border-gray-200 p-3 dark:border-gray-700">
             <label for="timeLimit" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Maximum time to play shots in this sequence:</label>
             <div>
@@ -217,8 +259,34 @@ Mid left"
           </div>
         </div>
 
+        <!-- Outro -->
+        <h2 id="accordion-heading-outro">
+          <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-1" aria-expanded="false" aria-controls="accordion-color-body-1">
+            <span class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-right-text" viewBox="0 0 16 16">
+                <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
+                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+              </svg>
+              Introduction - <span id="outroDisplay" class="font-semibold text-indigo-600 dark:text-indigo-400">None</span>
+            </span>
+            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
+            </svg>
+          </button>
+        <h2>
+        <div id="accordion-color-body-1" class="hidden" aria-labelledby="accordion-heading-outro">
+          <div class="rounded-b-lg border border-gray-200 p-3 dark:border-gray-700">
+            <div>
+              <label for="seriesOrder" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Optional outro speech at the end of the sequence, i.e. "Good sequence!":</label>
+              <div>
+                <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Post Sequence Rest -->
-        <h2 id="accordion-color-heading-6">
+        <h2 id="accordion-heading-post-rest">
           <button type="button" class="flex w-full items-center justify-between gap-3 rounded-b-lg border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-color-body-6" aria-expanded="false" aria-controls="accordion-color-body-6">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-battery-charging" viewBox="0 0 16 16">
@@ -234,7 +302,7 @@ Mid left"
             </svg>
           </button>
         </h2>
-        <div id="accordion-color-body-6" class="hidden" aria-labelledby="accordion-color-heading-6">
+        <div id="accordion-color-body-6" class="hidden" aria-labelledby="accordion-heading-post-rest">
           <div class="border border-t-0 border-gray-200 p-3 dark:border-gray-700">
             <label for="postSequenceRest" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Resting time after this sequence:</label>
             <div>
