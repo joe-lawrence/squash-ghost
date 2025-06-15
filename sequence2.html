@@ -84,13 +84,18 @@
       <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
         <!-- Pattern Heading with Icons -->
         <div class="space-y-4">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center space-x-2">
-              <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
-              </button>
-              <h2 id="pattern-label" class="text-lg font-semibold text-gray-800 dark:text-white">Pattern 1 / 1</h2>
+          <div class="relative flex items-center justify-between mb-3">
+            <!-- Col 1: Left justified nav-first -->
+            <div>
+                <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
+                </button>
             </div>
+            <!-- Col 2: Centered N / M counter (absolutely positioned) -->
+            <div class="absolute left-1/2 -translate-x-1/2">
+                <h2 id="pattern-index-label" class="text-lg font-semibold text-gray-800 dark:text-white">1 / 1</h2>
+            </div>
+            <!-- Col 3: Right justified nav-prev and nav-next -->
             <div class="flex space-x-2">
               <button id="nav-prev" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/></svg>
@@ -100,6 +105,8 @@
               </button>
             </div>
           </div>
+          <!-- New editable pattern name - Left Justified -->
+          <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
           <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
              <!-- Options -->
@@ -281,6 +288,7 @@
 
       const getNewSequenceData = () => ({
         id: Date.now() + Math.random(), // Unique ID for the element
+        patternName: 'New Pattern', // Added new pattern name
         shotOptions: 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right',
         announceShots: true,
         introMessage: '',
@@ -310,7 +318,8 @@
         newSequenceEl.classList.remove('hidden');
         sequencesContainer.appendChild(newSequenceEl);
 
-        const patternLabel = newSequenceEl.querySelector('#pattern-label');
+        const patternIndexLabel = newSequenceEl.querySelector('#pattern-index-label');
+        const patternNameDisplay = newSequenceEl.querySelector('#pattern-name-display');
         const shotOptions = newSequenceEl.querySelector('#shotOptions');
         const announceShots = newSequenceEl.querySelector('#announceShots');
         const introMessage = newSequenceEl.querySelector('#introMessage');
@@ -322,7 +331,12 @@
         const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
         const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
-        patternLabel.textContent = `Pattern ${activeSequenceIndex + 1} / ${sequences.length}`;
+        // Update pattern index label to be just "N / M" and centered
+        patternIndexLabel.textContent = `${activeSequenceIndex + 1} / ${sequences.length}`;
+        
+        // Update pattern name display
+        patternNameDisplay.textContent = currentData.patternName; 
+        
         shotOptions.value = currentData.shotOptions;
         announceShots.checked = currentData.announceShots;
         introMessage.value = currentData.introMessage;
@@ -338,6 +352,9 @@
         handleLimitTypeChange(newSequenceEl);
         initFlowbite();
         updateNavButtons();
+
+        // Add event listener for pattern name editing
+        patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
       };
       
       const saveCurrentSequenceState = () => {
@@ -464,6 +481,8 @@
       const addSequence = (e) => {
         saveCurrentSequenceState();
         const newSequence = getNewSequenceData();
+        // Set a default pattern name including the new index
+        newSequence.patternName = `Pattern ${sequences.length + 1}`; 
         sequences.push(newSequence);
         activeSequenceIndex = sequences.length - 1;
         renderCurrentSequence();
@@ -476,6 +495,7 @@
         const currentData = sequences[activeSequenceIndex];
         const clonedData = JSON.parse(JSON.stringify(currentData));
         clonedData.id = Date.now() + Math.random();
+        clonedData.patternName = `${clonedData.patternName} (Clone)`; // Append clone suffix
         sequences.splice(activeSequenceIndex + 1, 0, clonedData);
         activeSequenceIndex++;
         renderCurrentSequence();
@@ -489,6 +509,17 @@
           if (activeSequenceIndex >= sequences.length) {
               activeSequenceIndex = sequences.length - 1;
           }
+          // After deletion, re-index pattern names for clarity
+          sequences.forEach((seq, index) => {
+              if (!seq.patternName.startsWith('Pattern ')) { // Only re-index if not custom named
+                  // Try to preserve " (Clone)" if it exists
+                  const cloneSuffix = seq.patternName.includes(' (Clone)') ? ' (Clone)' : '';
+                  seq.patternName = `Pattern ${index + 1}${cloneSuffix}`;
+              } else {
+                  // If it was a default pattern name, update its number
+                  seq.patternName = `Pattern ${index + 1}`;
+              }
+          });
           renderCurrentSequence();
       };
       
@@ -496,6 +527,7 @@
           if (sequences.length === 0) return;
           const currentId = sequences[activeSequenceIndex].id;
           sequences[activeSequenceIndex] = { ...getNewSequenceData(), id: currentId };
+          sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`; // Reset pattern name
           renderCurrentSequence();
       };
 
@@ -504,6 +536,36 @@
           saveCurrentSequenceState();
           activeSequenceIndex = index;
           renderCurrentSequence();
+      };
+
+      // Function to handle pattern name editing
+      const editPatternName = (currentData, displayElement) => {
+          const inputElement = document.createElement('input');
+          inputElement.type = 'text';
+          inputElement.value = currentData.patternName;
+          // Apply Tailwind classes for left justification and styling
+          inputElement.className = 'text-xl font-bold text-indigo-700 dark:text-indigo-300 w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1';
+
+          // Replace display element with input
+          displayElement.parentNode.replaceChild(inputElement, displayElement);
+          inputElement.focus();
+
+          const saveAndRevert = () => {
+              let newName = inputElement.value.trim();
+              if (newName === '') {
+                  newName = 'Unnamed Pattern'; // Default if empty
+              }
+              currentData.patternName = newName;
+              renderCurrentSequence(); // Re-render to show updated label
+          };
+
+          inputElement.addEventListener('blur', saveAndRevert);
+          inputElement.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                  saveAndRevert();
+                  inputElement.blur(); // Remove focus after Enter
+              }
+          });
       };
       
       // --- EVENT LISTENERS ---
@@ -565,6 +627,7 @@
       // --- INITIALIZATION ---
       const initialize = () => {
         sequences.push(getNewSequenceData());
+        sequences[0].patternName = "Pattern 1"; // Initialize the first pattern with a name
         renderCurrentSequence();
       };
 
