@@ -69,6 +69,11 @@
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
     }
+
+    /* Fix for "sticky" button effect on iOS Safari */
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
@@ -463,7 +468,7 @@
         activeSequenceIndex = sequences.length - 1;
         renderCurrentSequence();
         focusOnTop();
-        e.currentTarget.blur();
+        e.currentTarget.blur(); // Remove focus after click
       };
 
       const cloneSequence = (e) => {
@@ -475,7 +480,7 @@
         activeSequenceIndex++;
         renderCurrentSequence();
         focusOnTop();
-        e.currentTarget.blur();
+        e.currentTarget.blur(); // Remove focus after click
       };
       
       const deleteSequence = () => {
@@ -526,6 +531,7 @@
           if (e.target.closest('#nav-first')) showSequence(0);
           if (e.target.closest('#nav-prev')) showSequence(activeSequenceIndex - 1);
           if (e.target.closest('#nav-next')) showSequence(activeSequenceIndex + 1);
+          e.target.closest('button')?.blur(); // Remove focus from nav buttons after click
       });
 
       // Confirmation Modal Logic
