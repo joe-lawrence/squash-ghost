@@ -50,7 +50,7 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    /* Disable styles for range input (kept for general range styling, but not used by shot/time limit) */
+    /* Disable styles for range input */
     input[type="range"]:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -69,13 +69,10 @@
   <div id="configScreen" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
     <h1 class="mb-8 text-center text-4xl font-bold text-gray-900 dark:text-white">Squash Ghosting</h1>
 
-    <div class="space-y-4">
-
     <!-- Pattern Heading with Icons -->
     <div class="space-y-4">
-      <!-- Pattern 1 Heading with Icons - Updated to two columns -->
       <div class="flex items-center justify-between mb-3">
-        <!-- Left Column: Double Chevron Up Icon Button and Pattern 1 Heading -->
+        <!-- Left Column: Double Chevron Up Icon Button and Pattern Heading -->
         <div class="flex items-center space-x-2">
           <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
@@ -93,35 +90,6 @@
         </div>
       </div>
 
-
-    <!-- Centered row of icon buttons -->
-    <div class="flex justify-center space-x-4 mt-8">
-      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14m-7-7v14"/></svg>
-        <span class="text-xs mt-1">Add</span>
-      </button>
-      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/>
-          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-        </svg>
-        <span class="text-xs mt-1">Clone</span>
-      </button>
-      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-        <span class="text-xs mt-1">Import</span>
-      </button>
-      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-        <span class="text-xs mt-1">Save</span>
-      </button>
-      <div class="w-4"></div>
-      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        <span class="text-xs mt-1">Delete</span>
-      </button>
-    </div>
-  </div>
 
       <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
 
@@ -157,25 +125,33 @@ Back right</textarea>
           </div>
         </div>
 
-        <!-- Intro -->
-        <h2 id="accordion-heading-intro">
-          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-intro-body" aria-expanded="false" aria-controls="accordion-intro-body">
+        <!-- Narration (Combined Intro and Outro) -->
+        <h2 id="accordion-heading-narration">
+          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16">
                <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
               </svg>
-              <span class="font-bold">Introduction - </span><span id="introDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
+              <span class="font-bold">Narration - </span><span id="narrationDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
             </span>
             <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
             </svg>
           </button>
         </h2>
-        <div id="accordion-intro-body" class="hidden" aria-labelledby="accordion-heading-intro">
+        <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
           <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts, i.e. "Keep your racket up!"</p>
+            <div class="mb-4">
+              <label class="inline-flex items-center">
+                <input type="checkbox" id="announceShots" checked class="form-checkbox rounded text-blue-600 focus:ring-blue-500" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span>
+              </label>
+            </div>
+            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
             <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+            <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
+            <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
           </div>
         </div>
 
@@ -192,7 +168,7 @@ Back right</textarea>
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
             </svg>
           </button>
-        </h2>
+        <h2>
         <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
           <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
             <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
@@ -211,121 +187,62 @@ Back right</textarea>
           </div>
         </div>
 
-        <!-- Interval -->
+        <!-- Interval (Combined with Random Offset) -->
         <h2 id="accordion-heading-interval">
           <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" />
               </svg>
-              <span class="font-bold">Interval - </span><span id="shotIntervalDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">4.0 seconds</span>
+              <span class="font-bold">Interval - </span><span id="intervalCombinedDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
             </span>
             <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
             </svg>
           </button>
-        </h2>
+        <h2>
         <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
           <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
             <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
             <div>
               <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" value="4.0" class="w-full accent-blue-600" />
             </div>
-          </div>
-        </div>
-
-        <!-- Random offset -->
-        <h2 id="accordion-heading-random-offset">
-          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-random-offset-body" aria-expanded="false" aria-controls="accordion-random-offset-body">
-            <span class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dice-5" viewBox="0 0 16 16">
-                <path d="M13 1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2zM3 0a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V3a3 3 0 0 0-3-3z" />
-                <path d="M5.5 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m8 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m-8 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4-4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
-              </svg>
-              <span class="font-bold">Random Offset - </span><span id="randomOffsetDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
-            </span>
-            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
-            </svg>
-          </button>
-        </h2>
-        <div id="accordion-random-offset-body" class="hidden" aria-labelledby="accordion-heading-random-offset">
-          <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Random variation to shot intervals</p>
+            <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p> <!-- Changed text here -->
             <div>
-              <input type="range" id="randomOffset" min="0.00" max="0.25" step="0.01" value="0.00" class="w-full accent-blue-600" />
+              <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" value="0.0" class="w-full accent-blue-600" /> <!-- Changed min, max, and step here -->
             </div>
           </div>
         </div>
 
-        <!-- Shot limit -->
-        <h2 id="accordion-heading-shot-limit">
-          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-shot-limit-body" aria-expanded="false" aria-controls="accordion-shot-limit-body">
+        <!-- Limits (Combined Shot and Time Limit) -->
+        <h2 id="accordion-heading-limits">
+          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
             <span class="flex items-center gap-2">
+              <!-- Updated SVG icon for Limits -->
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16">
-                <path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z" />
+                <path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/>
               </svg>
-              <span class="font-bold">Shot limit - </span><span id="shotLimitDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
+              <span class="font-bold">Limits - </span><span id="limitsDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
             </span>
             <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
             </svg>
           </button>
-        </h2>
-        <div id="accordion-shot-limit-body" class="hidden" aria-labelledby="accordion-heading-shot-limit">
+        <h2>
+        <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
           <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Maximum number of shots to play in this pattern</p>
-            <div>
-              <!-- Adjusted min and max for shotLimit -->
-              <input type="range" id="shotLimit" min="0" max="100" value="0" class="w-full accent-blue-600" />
+            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Set limits for the pattern</p>
+            <div class="mb-4">
+              <label for="limitTypeSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Limit Type</label>
+              <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
+                <option value="none">None</option>
+                <option value="shot">Max Shots</option>
+                <option value="time">Max Time</option>
+              </select>
             </div>
-          </div>
-        </div>
-
-        <!-- Time Limit -->
-        <h2 id="accordion-heading-time-limit">
-          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-time-limit-body" aria-expanded="false" aria-controls="accordion-time-limit-body">
-            <span class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock" viewBox="0 0 16 16">
-                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z" />
-                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0" />
-              </svg>
-              <span class="font-bold">Time limit - </span><span id="timeLimitDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
-            </span>
-            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
-            </svg>
-          </button>
-        </h2>
-        <div id="accordion-time-limit-body" class="hidden" aria-labelledby="accordion-heading-time-limit">
-          <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Maximum duration for this pattern</p>
             <div>
-              <!-- Adjusted min and max for timeLimit -->
-              <input type="range" id="timeLimit" min="0" max="3600" value="0" class="w-full accent-blue-600" />
+              <input type="range" id="patternLimitSlider" min="0" max="100" value="0" class="w-full accent-blue-600 mt-2" disabled/>
             </div>
-          </div>
-        </div>
-
-        <!-- Outro -->
-        <h2 id="accordion-heading-outro">
-          <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-outro-body" aria-expanded="false" aria-controls="accordion-outro-body">
-            <span class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-right-text" viewBox="0 0 16 16">
-                <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
-                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
-              </svg>
-              <span class="font-bold">Outro - </span><span id="outroDisplay" class="font-normal text-indigo-600 dark:text-indigo-400">None</span>
-            </span>
-            <svg data-accordion-icon class="h-3 w-3 shrink-0 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
-            </svg>
-          </button>
-        </h2>
-        <div id="accordion-outro-body" class="hidden" aria-labelledby="accordion-heading-outro">
-          <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends, i.e. "Good job!"</p>
-            <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
           </div>
         </div>
 
@@ -343,7 +260,7 @@ Back right</textarea>
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
             </svg>
           </button>
-        </h2>
+        <h2>
         <div id="accordion-post-rest-body" class="hidden" aria-labelledby="accordion-heading-post-rest">
           <div class="rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
             <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
@@ -353,6 +270,40 @@ Back right</textarea>
           </div>
         </div>
       </div>
+
+    <!-- Centered row of icon buttons -->
+    <div class="flex justify-center space-x-4 mt-8">
+      <!-- Add -->
+      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14m-7-7v14"/></svg>
+        <span class="text-xs mt-1">Add</span>
+      </button>
+      <!-- Clone -->
+      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/>
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+        </svg>
+        <span class="text-xs mt-1">Clone</span>
+      </button>
+      <!-- Import -->
+      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+        <span class="text-xs mt-1">Import</span>
+      </button>
+      <!-- Save -->
+      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+        <span class="text-xs mt-1">Save</span>
+      </button>
+      <!-- -->
+      <div class="w-4"></div>
+      <button class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <span class="text-xs mt-1">Delete</span>
+      </button>
+    </div>
+  </div>
     </div>
 
 
@@ -370,17 +321,10 @@ Back right</textarea>
       const sequencingRadios = document.querySelectorAll('input[name="seriesOrder"]');
       const sequencingOrderDisplay = document.getElementById('sequencingOrderDisplay');
 
+      // Combined Interval and Random Offset
       const shotIntervalSlider = document.getElementById('shotInterval');
-      const shotIntervalDisplay = document.getElementById('shotIntervalDisplay');
-
       const randomOffsetSlider = document.getElementById('randomOffset');
-      const randomOffsetDisplay = document.getElementById('randomOffsetDisplay');
-
-      const shotLimitSlider = document.getElementById('shotLimit');
-      const shotLimitDisplay = document.getElementById('shotLimitDisplay');
-
-      const timeLimitSlider = document.getElementById('timeLimit');
-      const timeLimitDisplay = document.getElementById('timeLimitDisplay');
+      const intervalCombinedDisplay = document.getElementById('intervalCombinedDisplay');
 
       const postSequenceRestSlider = document.getElementById('postSequenceRest');
       const postSequenceRestDisplay = document.getElementById('postSequenceRestDisplay');
@@ -388,6 +332,18 @@ Back right</textarea>
       // New elements for Options tab
       const shotOptionsTextarea = document.getElementById('shotOptions');
       const optionsCountDisplay = document.getElementById('optionsCountDisplay');
+
+      // New elements for combined Limits tab
+      const limitsDisplay = document.getElementById('limitsDisplay');
+      const limitTypeSelect = document.getElementById('limitTypeSelect');
+      const patternLimitSlider = document.getElementById('patternLimitSlider');
+
+      // New elements for Narration tab
+      const announceShotsCheckbox = document.getElementById('announceShots');
+      const introMessageTextarea = document.getElementById('introMessage');
+      const outroMessageTextarea = document.getElementById('outroMessage');
+      const narrationDisplay = document.getElementById('narrationDisplay');
+
 
       // Function to update the Options tab display
       const updateShotOptionsDisplay = () => {
@@ -408,68 +364,100 @@ Back right</textarea>
       sequencingOrderDisplay.textContent = document.querySelector('input[name="seriesOrder"]:checked').value === 'in-order' ? 'In order' : 'Randomized';
 
 
-      // 2. Shot Interval Slider
-      shotIntervalSlider.addEventListener('input', () => {
-        shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} sec`;
-      });
-      // Initial update for shot interval
-      shotIntervalDisplay.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)} sec`;
+      // 2. Combined Interval and Random Offset
+      const updateIntervalDisplay = () => {
+        const intervalValue = parseFloat(shotIntervalSlider.value).toFixed(1);
+        const randomOffsetValue = parseFloat(randomOffsetSlider.value).toFixed(1);
 
-      // 3. Random Offset Slider
-      randomOffsetSlider.addEventListener('input', () => {
-        const value = parseFloat(randomOffsetSlider.value).toFixed(2);
-        randomOffsetDisplay.textContent = value === '0.00' ? 'None' : `${value} sec`;
-      });
-      // Initial update for random offset
-      randomOffsetDisplay.textContent = parseFloat(randomOffsetSlider.value).toFixed(2) === '0.00' ? 'None' : `${parseFloat(randomOffsetSlider.value).toFixed(2)} sec`;
+        if (randomOffsetValue === '0.0') {
+          intervalCombinedDisplay.textContent = `${intervalValue} sec`;
+        } else {
+          intervalCombinedDisplay.textContent = `${intervalValue} sec +/- ${randomOffsetValue}`;
+        }
+      };
 
-      // 4. Post Pattern Rest Slider
+      shotIntervalSlider.addEventListener('input', updateIntervalDisplay);
+      randomOffsetSlider.addEventListener('input', updateIntervalDisplay);
+
+      // Initial update for combined interval
+      updateIntervalDisplay();
+
+
+      // 3. Post Pattern Rest Slider
       postSequenceRestSlider.addEventListener('input', () => {
         postSequenceRestDisplay.textContent = formatTime(parseInt(postSequenceRestSlider.value));
       });
       // Initial update for post pattern rest
       postSequenceRestDisplay.textContent = formatTime(parseInt(postSequenceRestSlider.value));
 
+      // 4. Combined Limits (Shot Limit and Time Limit)
+      const updateLimitsDisplay = () => {
+        const selectedType = limitTypeSelect.value;
+        const sliderValue = parseInt(patternLimitSlider.value);
 
-      // 5. Shot Limit and Time Limit (Mutually Exclusive - one sets the other to 0/None)
-      const updateShotLimit = () => {
-        let shotValue = parseInt(shotLimitSlider.value);
-        if (shotValue > 0) {
-          shotLimitDisplay.textContent = `${shotValue}`;
-          // If shot limit is set, clear the time limit
-          timeLimitSlider.value = 0;
-          timeLimitDisplay.textContent = 'None';
-        } else {
-          shotLimitDisplay.textContent = 'None';
+        if (selectedType === 'shot') {
+          limitsDisplay.textContent = sliderValue > 0 ? `${sliderValue} shots` : 'None';
+        } else if (selectedType === 'time') {
+          limitsDisplay.textContent = sliderValue > 0 ? formatTime(sliderValue) : 'None';
+        } else { // 'none'
+          limitsDisplay.textContent = 'None';
         }
       };
 
-      const updateTimeLimit = () => {
-        let timeValue = parseInt(timeLimitSlider.value);
-        if (timeValue > 0) {
-          timeLimitDisplay.textContent = formatTime(timeValue);
-          // If time limit is set, clear the shot limit
-          shotLimitSlider.value = 0;
-          shotLimitDisplay.textContent = 'None';
-        } else {
-          timeLimitDisplay.textContent = 'None';
+      const handleLimitTypeChange = () => {
+        const selectedType = limitTypeSelect.value;
+
+        if (selectedType === 'none') {
+          patternLimitSlider.disabled = true;
+          patternLimitSlider.value = 0;
+        } else if (selectedType === 'shot') {
+          patternLimitSlider.disabled = false;
+          patternLimitSlider.min = 0;
+          patternLimitSlider.max = 100;
+          patternLimitSlider.value = 20; // Default for Max Shots
+          // Ensure other limit type is conceptually unset (its slider value would be 0 if it existed separately)
+        } else if (selectedType === 'time') {
+          patternLimitSlider.disabled = false;
+          patternLimitSlider.min = 0;
+          patternLimitSlider.max = 1800; // 30 minutes (30 * 60)
+          patternLimitSlider.value = 300; // Default for Max Time (5 minutes)
+          // Ensure other limit type is conceptually unset
         }
+        updateLimitsDisplay();
       };
 
-      shotLimitSlider.addEventListener('input', updateShotLimit);
-      timeLimitSlider.addEventListener('input', updateTimeLimit);
+      // Event listeners for the new elements
+      limitTypeSelect.addEventListener('change', handleLimitTypeChange);
+      patternLimitSlider.addEventListener('input', updateLimitsDisplay);
 
-      // Initial updates for Shot Limit and Time Limit on load
-      // Check which one (if any) has an initial value > 0 and update accordingly
-      if (parseInt(timeLimitSlider.value) > 0) {
-        updateTimeLimit();
-      } else if (parseInt(shotLimitSlider.value) > 0) {
-        updateShotLimit();
-      } else {
-        // If both are 0 or unset, ensure both displays show 'None'
-        shotLimitDisplay.textContent = 'None';
-        timeLimitDisplay.textContent = 'None';
-      }
+      // Initial setup for limits on load
+      // Set the default selection to 'None' and disable the slider
+      limitTypeSelect.value = 'none';
+      handleLimitTypeChange(); // Call to initialize slider state and display
+
+      // 5. Narration (Combined Intro and Outro)
+      const updateNarrationDisplay = () => {
+        const narrationParts = [];
+        if (announceShotsCheckbox.checked) {
+          narrationParts.push('Shots');
+        }
+        if (introMessageTextarea.value.trim().length > 0) {
+          narrationParts.push('Intro');
+        }
+        if (outroMessageTextarea.value.trim().length > 0) {
+          narrationParts.push('Outro');
+        }
+
+        narrationDisplay.textContent = narrationParts.length > 0 ? narrationParts.join(', ') : 'None';
+      };
+
+      announceShotsCheckbox.addEventListener('change', updateNarrationDisplay);
+      introMessageTextarea.addEventListener('input', updateNarrationDisplay);
+      outroMessageTextarea.addEventListener('input', updateNarrationDisplay);
+
+      // Initial call for Narration tab display
+      updateNarrationDisplay();
+
 
       // Initial call for Options tab display
       updateShotOptionsDisplay();
