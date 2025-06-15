@@ -84,7 +84,7 @@
               <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
               </button>
-              <h2 id="pattern-label" class="text-xl font-semibold text-gray-800 dark:text-white">Pattern 1 / 1</h2>
+              <h2 id="pattern-label" class="text-lg font-semibold text-gray-800 dark:text-white">Pattern 1 / 1</h2>
             </div>
             <div class="flex space-x-2">
               <button id="nav-prev" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -264,6 +264,7 @@
       let activeSequenceIndex = 0;
       const sequencesContainer = document.getElementById('sequences-container');
       const sequenceTemplate = document.getElementById('sequence-template');
+      const appContainer = document.getElementById('app-container');
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
@@ -287,6 +288,12 @@
         postSequenceRest: 0
       });
 
+      const focusOnTop = () => {
+        if(appContainer) {
+          appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+      
       // --- CORE RENDERING & DATA SYNC ---
       const renderCurrentSequence = () => {
         sequencesContainer.innerHTML = '';
@@ -455,6 +462,7 @@
         sequences.push(newSequence);
         activeSequenceIndex = sequences.length - 1;
         renderCurrentSequence();
+        focusOnTop();
       };
 
       const cloneSequence = () => {
@@ -465,6 +473,7 @@
         sequences.splice(activeSequenceIndex + 1, 0, clonedData);
         activeSequenceIndex++;
         renderCurrentSequence();
+        focusOnTop();
       };
       
       const deleteSequence = () => {
@@ -548,6 +557,7 @@
               resetCurrentSequence();
           }
           modal.classList.add('hidden');
+          focusOnTop();
       });
 
       // --- INITIALIZATION ---
