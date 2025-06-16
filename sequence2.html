@@ -74,6 +74,16 @@
     button {
       -webkit-tap-highlight-color: transparent;
     }
+
+    /* Custom style for selected row */
+    .selected-row {
+        background-color: #e0e7ff; /* Light indigo for selection */
+        border-left: 4px solid #4f46e5; /* Accent border */
+    }
+    .dark .selected-row {
+        background-color: #374151; /* Darker gray for dark mode selection */
+        border-left-color: #6366f1; /* Dark mode accent */
+    }
   </style>
 </head>
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
@@ -327,6 +337,7 @@
       // --- STATE MANAGEMENT ---
       let sequences = [];
       let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
+      let selectedPatternId = null; // Store the ID of the selected row for focus tracking
       const tableViewContainer = document.getElementById('table-view-container');
       const patternEditorContainer = document.getElementById('pattern-editor-container');
       const sequencesContainer = document.getElementById('sequences-container'); // This is where the template clone goes
@@ -457,31 +468,46 @@
 
           sequences.forEach((pattern, index) => {
               const row = document.createElement('tr');
+              // Add pattern ID to the row for easier identification
+              row.dataset.patternId = pattern.id;
               row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600');
               row.dataset.index = index; // Store the index for easy access
+
+              // Apply 'selected-row' class if this pattern is currently selected
+              if (pattern.id === selectedPatternId) {
+                  row.classList.add('selected-row');
+              }
 
               row.innerHTML = `
                   <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center space-x-2">
-                          <div class="flex flex-row space-x-1"> <!-- Changed from flex-col to flex-row and added space-x-1 -->
+                          <div class="flex flex-row items-center space-x-1"> <!-- Changed from flex-col to flex-row and added space-x-1 -->
                               <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
                               </button>
                               <button class="down-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === sequences.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === sequences.length - 1 ? 'disabled' : ''}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                               </button>
+                              <span class="pattern-name-clickable flex-grow font-medium text-gray-900 dark:text-white cursor-pointer">${pattern.patternName}</span>
                           </div>
-                          <span class="pattern-name-clickable flex-grow font-medium text-gray-900 dark:text-white cursor-pointer">${pattern.patternName}</span>
                       </div>
                   </td>
                   <td class="px-4 py-3 text-right">
                       <button class="delete-pattern-btn p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                       </button>
                   </td>
               `;
               patternsTableBody.appendChild(row);
           });
+
+          // After rendering, if there's a selected pattern, ensure its row is visible
+          if (selectedPatternId) {
+              const selectedRow = patternsTableBody.querySelector(`[data-pattern-id="${selectedPatternId}"]`);
+              if (selectedRow) {
+                  selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+          }
       };
 
       // --- PATTERN EDITOR RENDERING & DATA SYNC ---
@@ -732,6 +758,9 @@
       };
 
       const movePattern = (index, direction) => {
+          // Store the ID of the pattern being moved to re-select it after re-render
+          const patternIdToSelect = sequences[index].id;
+
           if (direction === 'up' && index > 0) {
               [sequences[index], sequences[index - 1]] = [sequences[index - 1], sequences[index]];
               // activeSequenceIndex also needs to be updated if the moved pattern was the active one
@@ -743,6 +772,7 @@
               if (activeSequenceIndex === index) activeSequenceIndex++;
               else if (activeSequenceIndex === index + 1) activeSequenceIndex--;
           }
+          selectedPatternId = patternIdToSelect; // Set the ID of the pattern to be selected
           renderTableView(); // Re-render the table after reordering
       };
 
@@ -754,6 +784,7 @@
               // After reset, if it was in editor view, it will re-render the editor for the reset pattern.
               // If in table view, it will re-render the table with the single reset pattern.
               // So, no explicit showView('table') needed here, resetCurrentSequence handles its view.
+              selectedPatternId = sequences.length > 0 ? sequences[0].id : null; // Select the reset pattern
               return;
           }
 
@@ -774,6 +805,9 @@
               activeSequenceIndex--;
           }
 
+          // Update selectedPatternId based on the new activeSequenceIndex
+          selectedPatternId = activeSequenceIndex !== -1 ? sequences[activeSequenceIndex].id : null;
+
           // Now decide which view to render
           if (sequences.length === 0 || activeSequenceIndex === -1) {
               showView('table'); // No patterns or no active pattern, go to table
@@ -789,6 +823,7 @@
           const currentId = sequences[activeSequenceIndex].id;
           sequences[activeSequenceIndex] = { ...getNewSequenceData(), id: currentId };
           sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
+          selectedPatternId = sequences[activeSequenceIndex].id; // Ensure the reset pattern is selected
           renderPatternEditor();
       };
 
@@ -798,6 +833,7 @@
              saveCurrentSequenceState(); // Save current state before switching
           }
           activeSequenceIndex = index;
+          selectedPatternId = sequences[index].id; // Set the selected pattern ID
           showView('editor');
       };
 
@@ -876,6 +912,7 @@
                       ...importedData,
                       id: currentPatternId,
                     };
+                    selectedPatternId = sequences[activeSequenceIndex].id; // Select the imported pattern
                     renderPatternEditor();
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" imported successfully.`);
                 } else {
@@ -883,6 +920,7 @@
                     importedData.id = Date.now() + Math.random();
                     sequences.push(importedData);
                     activeSequenceIndex = sequences.length - 1;
+                    selectedPatternId = importedData.id; // Select the new pattern
                     showView('editor');
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" added as new pattern.`);
                 }
@@ -927,6 +965,7 @@
               if (isValidWorkoutFile(importedWorkout)) {
                 sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
                 activeSequenceIndex = -1; // Go back to table view
+                selectedPatternId = null; // Clear selection when loading all
                 showView('table');
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
               } else {
@@ -991,6 +1030,7 @@
               sequences.push(getNewSequenceData());
               sequences[0].patternName = "Pattern 1";
               activeSequenceIndex = -1; // Reset to table view
+              selectedPatternId = null; // Clear selection
               showView('table');
               modal.classList.add('hidden');
               confirmBtn.removeEventListener('click', onConfirm);
@@ -1012,13 +1052,29 @@
       // --- EVENT LISTENERS ---
 
       // Table View Buttons
-      document.getElementById('new-pattern-btn').addEventListener('click', addSequence);
+      document.getElementById('new-pattern-btn').addEventListener('click', () => {
+        addSequence();
+        // After adding, if in table view, select the newly added row
+        if (!patternEditorContainer.classList.contains('hidden')) { // If currently in editor view, don't set focus on table
+            // Already in editor view, new pattern appended to sequences, renderEditor updates N/M count
+        } else { // If in table view
+            selectedPatternId = sequences[sequences.length - 1].id; // Select the last added pattern
+            renderTableView();
+        }
+      });
       // Event delegation for table body clicks (including new buttons)
       patternsTableBody.addEventListener('click', (e) => {
           const row = e.target.closest('tr');
           if (!row) return;
 
           const index = parseInt(row.dataset.index);
+          const patternId = sequences[index].id;
+
+          // Remove selected-row from all rows first
+          patternsTableBody.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+          // Add selected-row to the clicked row
+          row.classList.add('selected-row');
+          selectedPatternId = patternId; // Update the globally selected pattern ID
 
           if (e.target.closest('.up-arrow-btn')) {
               movePattern(index, 'up');
@@ -1050,8 +1106,7 @@
               newConfirmBtn.addEventListener('click', () => {
                   deleteSequence(index); // Pass the specific index to delete
                   modal.classList.add('hidden');
-                  // After delete, render table view again
-                  showView('table');
+                  // After delete, render table view again (handled by deleteSequence)
                   focusOnTop();
               });
               newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -1118,6 +1173,7 @@
           saveCurrentSequenceState(); // Save before going back to list
           activeSequenceIndex = -1; // No active pattern in editor
           showView('table');
+          selectedPatternId = null; // Clear selection when going back to table without an active edit
       });
 
       // Global buttons for all patterns
@@ -1157,6 +1213,7 @@
         sequences.push(getNewSequenceData());
         sequences[0].patternName = "Pattern 1";
         activeSequenceIndex = -1; // Ensure no pattern is active on initial load
+        selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('table'); // Start with the table view
       };
 
