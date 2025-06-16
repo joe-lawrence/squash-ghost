@@ -182,8 +182,10 @@
               <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
                 <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" class="w-full accent-blue-600" />
-                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
+                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">± random fuzz</p>
                 <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600" />
+                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">(Next shot announcement lead-in)</p>
+                <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600" />
               </div>
             </div>
 
@@ -199,9 +201,8 @@
             </h2>
             <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
               <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Set limits for the pattern</p>
                 <div class="mb-4">
-                  <label for="limitTypeSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Limit Type</label>
+                  <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
                   <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
                     <option value="none">None</option>
                     <option value="shot">Max Shots</option>
@@ -312,6 +313,7 @@
         seriesOrder: 'in-order',
         shotInterval: 4.0,
         randomOffset: 0.0,
+        nextShotAnnouncement: 1.25, // New property with default value
         limitType: 'none',
         patternLimit: 0,
         postSequenceRest: 0
@@ -332,7 +334,7 @@
       const isValidPatternConfig = (data) => {
         const requiredProps = [
           'patternName', 'shotOptions', 'announceShots', 'introMessage', 'outroMessage',
-          'seriesOrder', 'shotInterval', 'randomOffset', 'limitType', 'patternLimit', 'postSequenceRest'
+          'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'limitType', 'patternLimit', 'postSequenceRest'
         ];
         const hasAllProps = requiredProps.every(prop => Object.prototype.hasOwnProperty.call(data, prop));
 
@@ -347,6 +349,7 @@
             !['in-order', 'randomized'].includes(data.seriesOrder) ||
             typeof data.shotInterval !== 'number' ||
             typeof data.randomOffset !== 'number' ||
+            typeof data.nextShotAnnouncement !== 'number' || // Added type check for new property
             !['none', 'shot', 'time'].includes(data.limitType) ||
             typeof data.patternLimit !== 'number' ||
             typeof data.postSequenceRest !== 'number') {
@@ -399,6 +402,7 @@
         const seriesOrderRadios = newSequenceEl.querySelectorAll('input[name="seriesOrder"]');
         const shotInterval = newSequenceEl.querySelector('#shotInterval');
         const randomOffset = newSequenceEl.querySelector('#randomOffset');
+        const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement'); // Get the new slider
         const limitTypeSelect = newSequenceEl.querySelector('#limitTypeSelect');
         const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
         const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
@@ -416,12 +420,14 @@
         seriesOrderRadios.forEach(radio => radio.checked = radio.value === currentData.seriesOrder);
         shotInterval.value = currentData.shotInterval;
         randomOffset.value = currentData.randomOffset;
+        nextShotAnnouncement.value = currentData.nextShotAnnouncement; // Set value for new slider
         limitTypeSelect.value = currentData.limitType;
         patternLimitSlider.value = currentData.patternLimit;
         postSequenceRest.value = currentData.postSequenceRest;
 
         updateAllDisplays(newSequenceEl);
         handleLimitTypeChange(newSequenceEl);
+        handleAnnounceShotsChange(newSequenceEl); // Call this to set initial state of new slider
         // Flowbite initialization needs to happen after the elements are in the DOM
         // and the hidden classes are correctly applied/removed.
         initFlowbite();
@@ -445,6 +451,7 @@
         currentData.seriesOrder = currentEl.querySelector('input[name="seriesOrder"]:checked').value;
         currentData.shotInterval = parseFloat(currentEl.querySelector('#shotInterval').value);
         currentData.randomOffset = parseFloat(currentEl.querySelector('#randomOffset').value);
+        currentData.nextShotAnnouncement = parseFloat(currentEl.querySelector('#nextShotAnnouncement').value); // Save new slider value
         currentData.limitType = currentEl.querySelector('#limitTypeSelect').value;
         currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
@@ -486,20 +493,13 @@
         const display = context.querySelector('#intervalCombinedDisplay');
         const interval = parseFloat(context.querySelector('#shotInterval').value).toFixed(1);
         const offset = parseFloat(context.querySelector('#randomOffset').value).toFixed(1);
-        display.textContent = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
-      };
+        const nextShotAnnounce = parseFloat(context.querySelector('#nextShotAnnouncement').value).toFixed(1); // Get new slider value
 
-      const updateLimitsDisplay = (context) => {
-        const display = context.querySelector('#limitsDisplay');
-        const type = context.querySelector('#limitTypeSelect').value;
-        const value = parseInt(context.querySelector('#patternLimitSlider').value);
-        if (type === 'shot') {
-          display.textContent = value > 0 ? `${value} shots` : 'None';
-        } else if (type === 'time') {
-          display.textContent = value > 0 ? formatTime(value) : 'None';
-        } else {
-          display.textContent = 'None';
+        let text = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
+        if (context.querySelector('#announceShots').checked) { // Only show if announceShots is checked
+            text += ` (${nextShotAnnounce}s)`;
         }
+        display.textContent = text;
       };
 
       const handleLimitTypeChange = (context) => {
@@ -522,6 +522,42 @@
             if (parseInt(slider.value) === 0) slider.value = 300;
         }
         updateLimitsDisplay(context);
+      };
+
+      const handleAnnounceShotsChange = (context) => {
+          const announceShotsCheckbox = context.querySelector('#announceShots');
+          const nextShotAnnouncementSlider = context.querySelector('#nextShotAnnouncement');
+          const shotIntervalSlider = context.querySelector('#shotInterval');
+
+          nextShotAnnouncementSlider.disabled = !announceShotsCheckbox.checked;
+
+          if (announceShotsCheckbox.checked) {
+              const currentShotInterval = parseFloat(shotIntervalSlider.value);
+              nextShotAnnouncementSlider.max = Math.max(0.0, currentShotInterval - 0.1); // Max is shotInterval - 0.1
+              if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
+                  nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
+              }
+              if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
+                nextShotAnnouncementSlider.value = 1.25; // Default to 1.25 if enabled and within range
+              }
+          } else {
+              nextShotAnnouncementSlider.value = 0; // Reset value when disabled
+          }
+          updateIntervalDisplay(context); // Update display to reflect changes
+      };
+
+
+      const updateLimitsDisplay = (context) => {
+        const display = context.querySelector('#limitsDisplay');
+        const type = context.querySelector('#limitTypeSelect').value;
+        const value = parseInt(context.querySelector('#patternLimitSlider').value);
+        if (type === 'shot') {
+          display.textContent = value > 0 ? `${value} shots` : 'None';
+        } else if (type === 'time') {
+          display.textContent = value > 0 ? formatTime(value) : 'None';
+        } else {
+          display.textContent = 'None';
+        }
       };
 
       const updatePostRestDisplay = (context) => {
@@ -859,7 +895,7 @@
           const currentEl = sequencesContainer.firstChild;
           if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
           if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
-          if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset')) updateIntervalDisplay(currentEl);
+          if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) updateIntervalDisplay(currentEl);
           if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
           if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
       });
@@ -868,7 +904,7 @@
           const currentEl = sequencesContainer.firstChild;
           if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
           if (e.target.closest('#limitTypeSelect')) handleLimitTypeChange(currentEl);
-          if (e.target.closest('#announceShots')) updateNarrationDisplay(currentEl);
+          if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl); // Call new handler for announceShots
       });
 
       // Confirmation Modal Logic (still global, but its buttons are now managed via direct IDs)
