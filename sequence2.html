@@ -277,10 +277,7 @@
         </div>
         <!-- Centered row of icon buttons - For current pattern in editor -->
         <div class="flex justify-center space-x-4 mt-8">
-            <button id="add-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14m-7-7v14"/></svg>
-                <span class="text-xs mt-1">Add</span>
-            </button>
+            <!-- Removed 'Add' and 'Delete' buttons as per request -->
             <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 <span class="text-xs mt-1">Clone</span>
@@ -293,17 +290,12 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
                 <span class="text-xs mt-1">Save</span>
             </button>
-            <div class="w-4"></div>
-            <button id="delete-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                <span class="text-xs mt-1">Delete</span>
-            </button>
         </div>
     </div>
 
 
     <!-- Global Controls for all patterns -->
-    <div class="flex justify-center space-x-4 mt-8">
+    <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden"> <!-- Added ID here -->
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
         <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button>
@@ -344,6 +336,7 @@
       const sequenceTemplate = document.getElementById('sequence-template');
       const patternsTableBody = document.getElementById('patterns-table-body');
       const appContainer = document.getElementById('app-container');
+      const globalControls = document.getElementById('global-controls'); // Get the global controls div
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
@@ -354,7 +347,7 @@
         const formattedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
 
         if (totalSeconds < 60) {
-          return `0:${formattedSeconds} sec`;
+          return `${minutes}:${formattedSeconds} min`;
         } else {
           return `${minutes}:${formattedSeconds} min`;
         }
@@ -444,11 +437,15 @@
           if (view === 'table') {
               tableViewContainer.classList.remove('hidden');
               patternEditorContainer.classList.add('hidden');
+              // Show global buttons when in table view.
+              globalControls.classList.remove('hidden');
               renderTableView();
               focusOnTop();
           } else if (view === 'editor') {
               tableViewContainer.classList.add('hidden');
               patternEditorContainer.classList.remove('hidden');
+              // Hide global buttons when in editor.
+              globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
           }
@@ -1119,9 +1116,7 @@
 
       // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
-          if (e.target.closest('#add-btn')) {
-              addSequence(); // Add a new pattern and open its editor
-          }
+          // No "Add" or "Delete" buttons in the editor anymore, so this logic is not needed for them.
           if (e.target.closest('#clone-btn')) {
               cloneSequence(); // Clone current pattern and open its editor
           }
@@ -1132,35 +1127,6 @@
           if (e.target.closest('#save-btn')) {
               savePatternConfig();
               e.target.closest('button')?.blur();
-          }
-          if (e.target.closest('#delete-btn')) {
-              const modal = document.getElementById('confirmation-modal');
-              const modalTitle = document.getElementById('modal-title');
-              const modalText = document.getElementById('modal-text');
-              const confirmBtn = document.getElementById('confirm-btn');
-              const cancelBtn = document.getElementById('cancel-btn');
-
-              modalTitle.textContent = 'Confirm Deletion';
-              modalText.textContent = 'Are you sure you want to delete this pattern? This action cannot be undone.';
-              confirmBtn.textContent = 'Delete';
-              confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
-              modal.classList.remove('hidden');
-              e.target.closest('button')?.blur();
-
-              // Clear previous listeners and add new ones for the specific action
-              confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-              cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-              const newConfirmBtn = document.getElementById('confirm-btn');
-              const newCancelBtn = document.getElementById('cancel-btn');
-
-              newConfirmBtn.addEventListener('click', () => {
-                  // This delete button is in the editor, so it deletes the currently active sequence
-                  deleteSequence(activeSequenceIndex);
-                  modal.classList.add('hidden');
-                  // The deleteSequence function now handles view switching after deletion
-                  focusOnTop();
-              });
-              newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
           }
           if (e.target.closest('#nav-first')) showSequenceInEditor(0);
           if (e.target.closest('#nav-prev')) showSequenceInEditor(activeSequenceIndex - 1);
@@ -1177,6 +1143,7 @@
       });
 
       // Global buttons for all patterns
+      // These listeners remain, but the buttons are hidden when in editor view.
       document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
