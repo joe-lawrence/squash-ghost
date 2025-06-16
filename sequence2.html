@@ -88,6 +88,15 @@
 </head>
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
   <div id="app-container" class="w-full max-w-2xl">
+    <!-- App Title -->
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
+
+    <!-- Start Workout Button (visible in table view) -->
+    <div id="start-workout-container" class="mb-6 hidden">
+      <button id="start-workout-btn" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
+        Start (00:00)
+      </button>
+    </div>
 
     <!-- Table View Container -->
     <div id="table-view-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
@@ -150,7 +159,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        </h2>
+                        <h2>
                         <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
@@ -236,7 +245,7 @@
                                 <div class="mb-4">
                                     <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
                                     <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                                        <option value="none">None</option>
+                                        <!-- Removed 'None' option -->
                                         <option value="shot">Max Shots</option>
                                         <option value="time">Max Time</option>
                                     </select>
@@ -329,38 +338,52 @@
       const globalControls = document.getElementById('global-controls'); // Get the global controls div
       const movePatternToggleButton = document.getElementById('move-pattern-toggle-btn');
       const deletePatternToggleButton = document.getElementById('delete-pattern-toggle-btn'); // New delete button
+      const startWorkoutButton = document.getElementById('start-workout-btn'); // Start Workout button
+      const startWorkoutContainer = document.getElementById('start-workout-container'); // Start Workout button container
 
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
-        if (totalSeconds === 0) return 'None';
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = Math.round(totalSeconds % 60); // Round seconds to nearest whole number
+        const roundedSeconds = Math.round(totalSeconds); // Ensure we're working with whole seconds
 
+        if (roundedSeconds === 0) return 'None'; // Changed to display "None" for 0 seconds
+
+        const minutes = Math.floor(roundedSeconds / 60);
+        const seconds = roundedSeconds % 60;
+
+        const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
         const formattedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
 
-        if (totalSeconds < 60) {
-          return `${minutes}:${formattedSeconds} min`;
+        if (minutes === 0) {
+            return `${formattedMinutes}:${formattedSeconds} sec`;
         } else {
-          return `${minutes}:${formattedSeconds} min`;
+            return `${formattedMinutes}:${formattedSeconds} min`;
         }
       };
 
-      const getNewSequenceData = () => ({
-        id: Date.now() + Math.random(), // Unique ID for the element
-        patternName: 'New Pattern', // Added new pattern name
-        shotOptions: 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right',
-        announceShots: true,
-        introMessage: '',
-        outroMessage: '',
-        seriesOrder: 'in-order',
-        shotInterval: 4.0,
-        randomOffset: 0.0,
-        nextShotAnnouncement: 1.25, // New property with default value
-        limitType: 'none',
-        patternLimit: 0,
-        postSequenceRest: 0
-      });
+      const getNewSequenceData = () => {
+        const defaultShotOptions = 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right';
+        const defaultShotOptionsCount = defaultShotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+        const defaultShotInterval = 4.0; // Keep consistent with existing default
+
+        return {
+          id: Date.now() + Math.random(),
+          patternName: 'New Pattern',
+          shotOptions: defaultShotOptions,
+          announceShots: true,
+          introMessage: '',
+          outroMessage: '',
+          seriesOrder: 'in-order',
+          shotInterval: defaultShotInterval,
+          randomOffset: 0.0,
+          nextShotAnnouncement: 1.25,
+          limitType: 'shot', // Default to 'shot'
+          patternLimit: defaultShotOptionsCount, // Default to shotOptions count for Max Shots
+          postSequenceRest: 0,
+          previousShotLimit: defaultShotOptionsCount, // Initialize with default shots
+          previousTimeLimit: defaultShotOptionsCount * defaultShotInterval // Initialize with default time
+        };
+      };
 
       const focusOnTop = () => {
         if(appContainer) {
@@ -393,7 +416,7 @@
             typeof data.shotInterval !== 'number' ||
             typeof data.randomOffset !== 'number' ||
             typeof data.nextShotAnnouncement !== 'number' || // Added type check for new property
-            !['none', 'shot', 'time'].includes(data.limitType) ||
+            !['shot', 'time'].includes(data.limitType) || // Updated to not include 'none'
             typeof data.patternLimit !== 'number' ||
             typeof data.postSequenceRest !== 'number') {
             return false;
@@ -465,8 +488,9 @@
           const loadAllBtn = document.getElementById('load-all-btn');
           const saveAllBtn = document.getElementById('save-all-btn');
           const resetAllBtn = document.getElementById('reset-all-btn'); // Global reset should always be enabled
+          const startWorkoutBtn = document.getElementById('start-workout-btn'); // Start button
 
-          // Editor buttons (might not exist if in table view)
+          // Editor buttons (Clone, Import, Save) - now correctly referenced by their IDs directly
           const backToListBtn = document.getElementById('back-to-list-btn');
           const cloneBtn = document.getElementById('clone-btn');
           const importBtn = document.getElementById('import-btn');
@@ -474,8 +498,8 @@
 
           // Buttons affected by any active mode (excluding the mode's own toggle and global reset)
           const elementsToToggleDisable = [
-              newPatternBtn, loadAllBtn, saveAllBtn, backToListBtn,
-              cloneBtn, importBtn, saveBtn
+              newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn, // Global buttons
+              backToListBtn, cloneBtn, importBtn, saveBtn // Editor specific buttons
           ];
 
           elementsToToggleDisable.forEach(element => {
@@ -536,37 +560,32 @@
 
           // Disable/enable elements inside the editor if it's visible
           if (!patternEditorContainer.classList.contains('hidden')) {
-              sequencesContainer.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
-                  accordionBtn.disabled = disableAllMainActions;
-                  if (disableAllMainActions) {
-                      accordionBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                  } else {
-                      accordionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                  }
-              });
+              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element
+              if (currentEl) {
+                  // Accordion buttons and input fields inside the editor
+                  currentEl.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
+                      accordionBtn.disabled = disableAllMainActions;
+                      accordionBtn.classList.toggle('opacity-50', disableAllMainActions);
+                      accordionBtn.classList.toggle('cursor-not-allowed', disableAllMainActions);
+                  });
 
-              sequencesContainer.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inputField => {
-                  // Re-evaluate current disabled state of range sliders that are conditionally disabled
-                  // (e.g. nextShotAnnouncement based on announceShots)
-                  const isInternallyDisabled = (inputField.id === 'nextShotAnnouncement' && !sequencesContainer.querySelector('#announceShots').checked) ||
-                                               (inputField.id === 'patternLimitSlider' && sequencesContainer.querySelector('#limitTypeSelect').value === 'none');
+                  currentEl.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inputField => {
+                      const isInternallyDisabled = (inputField.id === 'nextShotAnnouncement' && !currentEl.querySelector('#announceShots').checked);
+                      inputField.disabled = disableAllMainActions || isInternallyDisabled;
+                      inputField.classList.toggle('opacity-50', disableAllMainActions || isInternallyDisabled);
+                      inputField.classList.toggle('cursor-not-allowed', disableAllMainActions || isInternallyDisabled);
+                  });
 
-                  inputField.disabled = disableAllMainActions || isInternallyDisabled;
-                  if (disableAllMainActions || isInternallyDisabled) {
-                      inputField.classList.add('opacity-50', 'cursor-not-allowed');
-                  } else {
-                      inputField.classList.remove('opacity-50', 'cursor-not-allowed');
+                  const patternNameDisplay = currentEl.querySelector('#pattern-name-display');
+                  if (patternNameDisplay) {
+                    if (disableAllMainActions) {
+                        patternNameDisplay.classList.remove('cursor-pointer');
+                        patternNameDisplay.style.pointerEvents = 'none';
+                    } else {
+                        patternNameDisplay.classList.add('cursor-pointer');
+                        patternNameDisplay.style.pointerEvents = 'auto';
+                    }
                   }
-              });
-              const patternNameDisplay = sequencesContainer.querySelector('#pattern-name-display');
-              if (patternNameDisplay) {
-                if (disableAllMainActions) {
-                    patternNameDisplay.classList.remove('cursor-pointer');
-                    patternNameDisplay.style.pointerEvents = 'none';
-                } else {
-                    patternNameDisplay.classList.add('cursor-pointer');
-                    patternNameDisplay.style.pointerEvents = 'auto';
-                }
               }
           }
       };
@@ -576,22 +595,44 @@
       const showView = (view) => {
           if (view === 'table') {
               tableViewContainer.classList.remove('hidden');
+              startWorkoutContainer.classList.remove('hidden'); // Show start button
               patternEditorContainer.classList.add('hidden');
               // Show global buttons when in table view.
               globalControls.classList.remove('hidden');
               renderTableView();
+              calculateTotalWorkoutTime(); // Update time when showing table view
               focusOnTop();
-              toggleOtherButtons(); // Apply state after view change
+              setInteractionMode(null); // Ensure modes are off when switching to table view
           } else if (view === 'editor') {
               tableViewContainer.classList.add('hidden');
+              startWorkoutContainer.classList.add('hidden'); // Hide start button
               patternEditorContainer.classList.remove('hidden');
               // Hide global buttons when in editor.
               globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
-              toggleOtherButtons(); // Apply state after view change
+              setInteractionMode(null); // Ensure modes are off when switching to editor view
           }
       };
+
+      // --- ESTIMATED WORKOUT TIME CALCULATION ---
+      const calculateTotalWorkoutTime = () => {
+          let totalTime = 0;
+          sequences.forEach(pattern => {
+              let patternDuration = 0;
+
+              // Now, limitType will always be 'shot' or 'time'
+              if (pattern.limitType === 'time') {
+                  patternDuration = pattern.patternLimit;
+              } else if (pattern.limitType === 'shot') {
+                  patternDuration = pattern.patternLimit * pattern.shotInterval;
+              }
+              totalTime += patternDuration;
+              totalTime += pattern.postSequenceRest; // Add post-sequence rest
+          });
+          startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
+      };
+
 
       // --- TABLE VIEW RENDERING ---
       const renderTableView = () => {
@@ -696,7 +737,7 @@
         postSequenceRest.value = currentData.postSequenceRest;
 
         updateAllDisplays(newSequenceEl);
-        handleLimitTypeChange(newSequenceEl);
+        handleLimitTypeChange(newSequenceEl); // Re-run to ensure slider values/min/max are correct
         handleAnnounceShotsChange(newSequenceEl);
         initFlowbite(); // Re-initialize Flowbite for new accordion elements
 
@@ -712,6 +753,13 @@
         const currentEl = sequencesContainer.firstChild; // The cloned template is always the first child
         if (!currentEl) return;
 
+        // Save the current patternLimit to the appropriate 'previous' field before updating currentData
+        if (currentData.limitType === 'shot') {
+            currentData.previousShotLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
+        } else if (currentData.limitType === 'time') {
+            currentData.previousTimeLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
+        }
+
         currentData.shotOptions = currentEl.querySelector('#shotOptions').value;
         currentData.announceShots = currentEl.querySelector('#announceShots').checked;
         currentData.introMessage = currentEl.querySelector('#introMessage').value;
@@ -723,6 +771,9 @@
         currentData.limitType = currentEl.querySelector('#limitTypeSelect').value;
         currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
+
+        // Recalculate total workout time if any pattern data changes
+        calculateTotalWorkoutTime();
       };
 
       // --- UI UPDATE FUNCTIONS (These largely remain the same, but now act on the current editor's elements) ---
@@ -773,23 +824,54 @@
       const handleLimitTypeChange = (context) => {
         const select = context.querySelector('#limitTypeSelect');
         const slider = context.querySelector('#patternLimitSlider');
-        const type = select.value;
+        const currentPattern = sequences[activeSequenceIndex]; // Get current pattern data from state
+        const newLimitType = select.value; // The new type selected by the user
+        const oldLimitType = currentPattern.limitType; // The type *before* this change
 
-        if (type === 'none') {
-            slider.disabled = true;
-            slider.value = 0;
-        } else if (type === 'shot') {
-            slider.disabled = false;
+        // Save the current patternLimit to the appropriate 'previous' field before updating currentPattern.limitType
+        if (oldLimitType === 'shot') {
+            currentPattern.previousShotLimit = currentPattern.patternLimit;
+        } else if (oldLimitType === 'time') {
+            currentPattern.previousTimeLimit = currentPattern.patternLimit;
+        }
+
+        // Set slider properties and value based on the newLimitType
+        slider.disabled = false; // Slider is always enabled when a limit type is selected
+
+        if (newLimitType === 'shot') {
             slider.min = 0;
             slider.max = 100;
-            if (parseInt(slider.value) === 0) slider.value = 20;
-        } else if (type === 'time') {
-            slider.disabled = false;
-            slider.min = 0;
-            slider.max = 1800;
-            if (parseInt(slider.value) === 0) slider.value = 300;
+            // Restore previous shot limit, or calculate default if not available/valid
+            let proposedValue = currentPattern.previousShotLimit;
+            // If no stored value, or it's 0 (invalid for default), or if switching from time-based default to shot
+            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'time') {
+                const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+                proposedValue = shotOptionsCount; // Default to current shot options count
+            }
+            slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
+
+        } else if (newLimitType === 'time') {
+            const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+            const estimatedTimeForOptions = shotOptionsCount * currentPattern.shotInterval;
+
+            slider.min = Math.max(1, Math.round(currentPattern.shotInterval)); // Minimum of 1s or rounded interval
+            slider.max = 1800; // 30 minutes in seconds
+
+            // Restore previous time limit, or calculate default if not available/valid
+            let proposedValue = currentPattern.previousTimeLimit;
+            // If no stored value, or it's 0 (invalid for default), or if switching from shot-based default to time
+            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'shot') {
+                 proposedValue = Math.round(estimatedTimeForOptions); // Default to calculated time
+            }
+            slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
         }
+
+        // Update the current pattern's limitType and patternLimit in the state
+        currentPattern.limitType = newLimitType;
+        currentPattern.patternLimit = parseInt(slider.value);
+
         updateLimitsDisplay(context);
+        calculateTotalWorkoutTime(); // Recalculate total time on limit change
       };
 
       const handleAnnounceShotsChange = (context) => {
@@ -819,11 +901,9 @@
         const type = context.querySelector('#limitTypeSelect').value;
         const value = parseInt(context.querySelector('#patternLimitSlider').value);
         if (type === 'shot') {
-          display.textContent = value > 0 ? `${value} shots` : 'None';
+          display.textContent = `${value} shots`;
         } else if (type === 'time') {
-          display.textContent = value > 0 ? formatTime(value) : 'None';
-        } else {
-          display.textContent = 'None';
+          display.textContent = formatTime(value);
         }
       };
 
@@ -853,6 +933,7 @@
             selectedPatternId = newSequence.id; // Select the newly added pattern
             renderTableView();
         }
+        calculateTotalWorkoutTime(); // Recalculate total time after adding
         focusOnTop(); // Keep consistency with previous behavior
       };
 
@@ -877,6 +958,7 @@
         } else { // If currently in table view
             renderTableView(); // Re-render the table
         }
+        calculateTotalWorkoutTime(); // Recalculate total time after cloning
         focusOnTop(); // Keep consistency
       };
 
@@ -897,6 +979,7 @@
           }
           selectedPatternId = patternIdToSelect; // Set the ID of the pattern to be selected
           renderTableView(); // Re-render the table after reordering
+          calculateTotalWorkoutTime(); // Recalculate total time after moving
       };
 
       const deleteSequence = (indexToDelete) => {
@@ -914,6 +997,7 @@
               } else {
                   renderPatternEditor(); // Re-render editor with reset pattern
               }
+              calculateTotalWorkoutTime(); // Recalculate total time after reset
               return;
           }
 
@@ -943,6 +1027,7 @@
           } else {
               renderPatternEditor(); // Re-render the new active sequence in editor
           }
+          calculateTotalWorkoutTime(); // Recalculate total time after deleting
           focusOnTop(); // Keep consistent
       };
 
@@ -954,6 +1039,7 @@
           sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
           selectedPatternId = sequences[activeSequenceIndex].id; // Ensure the reset pattern is selected
           renderPatternEditor();
+          calculateTotalWorkoutTime(); // Recalculate total time after resetting current
       };
 
       const showSequenceInEditor = (index) => {
@@ -986,6 +1072,7 @@
               }
               currentData.patternName = newName;
               renderPatternEditor(); // Re-render to show updated label
+              calculateTotalWorkoutTime(); // Recalculate total time after name change (though it doesn't affect time)
           };
 
           inputElement.addEventListener('blur', saveAndRevert);
@@ -1019,6 +1106,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showAlert('Pattern Saved', `Pattern "${currentPattern.patternName}" saved successfully.`);
+        calculateTotalWorkoutTime(); // Recalculate total time after saving
       };
 
       const importPatternConfig = () => {
@@ -1061,6 +1149,7 @@
                     showView('editor');
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" added as new pattern.`);
                 }
+                calculateTotalWorkoutTime(); // Recalculate total time after import
               } else {
                 showAlert('Import Error', 'Invalid pattern configuration file. Please select a valid .pattern.json file.');
               }
@@ -1108,6 +1197,7 @@
                 selectedPatternId = null; // Clear selection when loading all
                 showView('table');
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
+                calculateTotalWorkoutTime(); // Recalculate total time after loading all
               } else {
                 showAlert('Load Error', 'Invalid workout file. Please select a valid .workout.json file containing an array of patterns.');
               }
@@ -1152,6 +1242,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showAlert('Workout Saved', `Successfully saved ${sequences.length} patterns to a workout file.`);
+        calculateTotalWorkoutTime(); // Recalculate total time after saving all
       };
 
       const clearAllPatterns = () => {
@@ -1180,7 +1271,8 @@
               modal.classList.add('hidden');
               confirmBtn.removeEventListener('click', onConfirm);
               cancelBtn.removeEventListener('click', onCancel);
-              showAlert('Patterns Cleared', 'All patterns have been cleared and reset to a single default.');
+              // Removed the showAlert for "Patterns Cleared" here
+              calculateTotalWorkoutTime(); // Recalculate total time after clearing all
           };
 
           const onCancel = () => {
@@ -1205,13 +1297,18 @@
               // 2. The delete toggle button itself or its children
               // 3. Inside the patterns table body (which contains move/delete chevrons/buttons)
               // 4. Inside any modal (alert or confirmation)
+              // 5. The start workout button
+              // 6. Inside the pattern editor container itself (which contains clone/import/save buttons, back button, and the sequence content)
               if (e.target !== movePatternToggleButton &&
                   !movePatternToggleButton.contains(e.target) &&
                   e.target !== deletePatternToggleButton &&
                   !deletePatternToggleButton.contains(e.target) &&
                   !patternsTableBody.contains(e.target) &&
                   !e.target.closest('#confirmation-modal') &&
-                  !e.target.closest('#alert-modal')
+                  !e.target.closest('#alert-modal') &&
+                  e.target !== startWorkoutButton &&
+                  !startWorkoutButton.contains(e.target) &&
+                  !patternEditorContainer.contains(e.target) // Changed to patternEditorContainer
               ) {
                   setInteractionMode(null); // Turn off all modes
               }
@@ -1300,24 +1397,23 @@
       });
 
 
-      // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
-      sequencesContainer.addEventListener('click', (e) => {
-          if (e.target.closest('#clone-btn')) {
-              setInteractionMode(null); // Turn off any mode before cloning
-              cloneSequence();
-          }
-          if (e.target.closest('#import-btn')) {
-              setInteractionMode(null); // Turn off any mode before importing
-              importPatternConfig();
-              e.target.closest('button')?.blur();
-          }
-          if (e.target.closest('#save-btn')) {
-              setInteractionMode(null); // Turn off any mode before saving
-              savePatternConfig();
-              e.target.closest('button')?.blur();
-          }
-          e.target.closest('button')?.blur();
+      // Pattern Editor Buttons (direct children of patternEditorContainer)
+      document.getElementById('clone-btn').addEventListener('click', () => {
+          setInteractionMode(null); // Turn off any mode before cloning
+          cloneSequence();
+          document.getElementById('clone-btn').blur(); // Blur the button after click
       });
+      document.getElementById('import-btn').addEventListener('click', () => {
+          setInteractionMode(null); // Turn off any mode before importing
+          importPatternConfig();
+          document.getElementById('import-btn').blur(); // Blur the button after click
+      });
+      document.getElementById('save-btn').addEventListener('click', () => {
+          setInteractionMode(null); // Turn off any mode before saving
+          savePatternConfig();
+          document.getElementById('save-btn').blur(); // Blur the button after click
+      });
+
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
@@ -1332,17 +1428,37 @@
       document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
+      document.getElementById('start-workout-btn').addEventListener('click', () => {
+        showAlert('Workout Start', 'This feature is not yet implemented.');
+      });
+
 
       // Event listeners for inputs/changes within the currently rendered sequence editor
       sequencesContainer.addEventListener('input', (e) => {
           // Ensure we only save/update if the editor is visible and an element inside it triggered the event
           if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
-              saveCurrentSequenceState();
               const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return;
+              if (!currentEl) return; // Ensure currentEl is valid
+
+              // Check if the change is a limit type change, if so, saveCurrentSequenceState will be called by handleLimitTypeChange
+              if (e.target.closest('#limitTypeSelect')) {
+                  // handleLimitTypeChange will save state and update pattern.limitType and pattern.patternLimit
+                  // No need to call saveCurrentSequenceState here explicitly as handleLimitTypeChange does it
+                  handleLimitTypeChange(currentEl); // Pass currentEl directly
+              } else {
+                  saveCurrentSequenceState(); // Save for all other inputs
+              }
+
               if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
               if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
-              if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) updateIntervalDisplay(currentEl);
+              if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
+                  updateIntervalDisplay(currentEl);
+                  // If shot interval changes, it might affect the default for Max Time, so re-evaluate limits
+                  // Only re-call handleLimitTypeChange if the current limit type is 'time'
+                  if (sequences[activeSequenceIndex].limitType === 'time') {
+                     handleLimitTypeChange(currentEl); // This will update patternLimit if type is 'time'
+                  }
+              }
               if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
               if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
           }
@@ -1350,11 +1466,16 @@
       sequencesContainer.addEventListener('change', (e) => {
           // Ensure we only save/update if the editor is visible and an element inside it triggered the event
           if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
-              saveCurrentSequenceState();
               const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return;
+              if (!currentEl) return; // Ensure currentEl is valid
+
+              if (e.target.closest('#limitTypeSelect')) {
+                  handleLimitTypeChange(currentEl); // Pass currentEl directly
+              } else {
+                  saveCurrentSequenceState(); // Save for other changes
+              }
+              
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
-              if (e.target.closest('#limitTypeSelect')) handleLimitTypeChange(currentEl);
               if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
           }
       });
@@ -1368,6 +1489,7 @@
         selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('table'); // Start with the table view
         toggleOtherButtons(); // Ensure all other buttons are enabled initially
+        calculateTotalWorkoutTime(); // Initial calculation of total time
       };
 
       initialize();
