@@ -126,29 +126,7 @@
         <div id="sequences-container" class="overflow-hidden">
             <!-- Sequence Template - Keep it hidden and clone for editing -->
             <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-2 shadow-lg dark:bg-gray-800 hidden">
-                <!-- Pattern Heading with Icons -->
                 <div class="space-y-4">
-                    <div class="relative flex items-center justify-between mb-3">
-                        <!-- Col 1: Left justified nav-first -->
-                        <div>
-                            <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
-                            </button>
-                        </div>
-                        <!-- Col 2: Centered N / M counter (absolutely positioned) -->
-                        <div class="absolute left-1/2 -translate-x-1/2">
-                            <h2 id="pattern-index-label" class="text-lg font-semibold text-gray-800 dark:text-white">1 / 1</h2>
-                        </div>
-                        <!-- Col 3: Right justified nav-prev and nav-next -->
-                        <div class="flex space-x-2">
-                            <button id="nav-prev" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/></svg>
-                            </button>
-                            <button id="nav-next" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
-                            </button>
-                        </div>
-                    </div>
                     <!-- New editable pattern name - Left Justified -->
                     <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
@@ -277,7 +255,6 @@
         </div>
         <!-- Centered row of icon buttons - For current pattern in editor -->
         <div class="flex justify-center space-x-4 mt-8">
-            <!-- Removed 'Add' and 'Delete' buttons as per request -->
             <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 <span class="text-xs mt-1">Clone</span>
@@ -522,7 +499,7 @@
         newSequenceEl.classList.remove('hidden');
         sequencesContainer.appendChild(newSequenceEl);
 
-        const patternIndexLabel = newSequenceEl.querySelector('#pattern-index-label');
+        // const patternIndexLabel = newSequenceEl.querySelector('#pattern-index-label'); // Removed
         const patternNameDisplay = newSequenceEl.querySelector('#pattern-name-display');
         const shotOptions = newSequenceEl.querySelector('#shotOptions');
         const announceShots = newSequenceEl.querySelector('#announceShots');
@@ -536,7 +513,7 @@
         const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
         const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
-        patternIndexLabel.textContent = `${activeSequenceIndex + 1} / ${sequences.length}`;
+        // patternIndexLabel.textContent = `${activeSequenceIndex + 1} / ${sequences.length}`; // Removed
         patternNameDisplay.textContent = currentData.patternName;
         shotOptions.value = currentData.shotOptions;
         announceShots.checked = currentData.announceShots;
@@ -554,7 +531,7 @@
         handleLimitTypeChange(newSequenceEl);
         handleAnnounceShotsChange(newSequenceEl);
         initFlowbite(); // Re-initialize Flowbite for new accordion elements
-        updateNavButtons();
+        // updateNavButtons(); // Removed
 
         // Add event listener for pattern name editing
         patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
@@ -688,26 +665,8 @@
         display.textContent = formatTime(value);
       };
 
-      const updateNavButtons = () => {
-        const currentEl = sequencesContainer.firstChild;
-        if (!currentEl) return;
+      // Removed updateNavButtons as navigation elements are removed from editor
 
-        const navFirst = currentEl.querySelector('#nav-first');
-        const navPrev = currentEl.querySelector('#nav-prev');
-        const navNext = currentEl.querySelector('#nav-next');
-
-        navFirst.disabled = activeSequenceIndex === 0;
-        navPrev.disabled = activeSequenceIndex === 0;
-        navNext.disabled = activeSequenceIndex >= sequences.length - 1;
-
-        [navFirst, navPrev, navNext].forEach(btn => {
-            if(btn.disabled) {
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        });
-      };
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
@@ -723,7 +682,7 @@
         // Do NOT change activeSequenceIndex or force editor view
         // Instead, re-render the current view to reflect the added pattern
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
-            renderPatternEditor(); // Re-render the current pattern (updates N/M counter)
+            renderPatternEditor(); // Re-render the current pattern (updates N/M counter, though removed now)
         } else { // If currently in table view
             renderTableView(); // Re-render the table
         }
@@ -1116,7 +1075,6 @@
 
       // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
-          // No "Add" or "Delete" buttons in the editor anymore, so this logic is not needed for them.
           if (e.target.closest('#clone-btn')) {
               cloneSequence(); // Clone current pattern and open its editor
           }
@@ -1128,9 +1086,7 @@
               savePatternConfig();
               e.target.closest('button')?.blur();
           }
-          if (e.target.closest('#nav-first')) showSequenceInEditor(0);
-          if (e.target.closest('#nav-prev')) showSequenceInEditor(activeSequenceIndex - 1);
-          if (e.target.closest('#nav-next')) showSequenceInEditor(activeSequenceIndex + 1);
+          // Removed event listeners for nav-first, nav-prev, nav-next
           e.target.closest('button')?.blur();
       });
 
@@ -1143,7 +1099,6 @@
       });
 
       // Global buttons for all patterns
-      // These listeners remain, but the buttons are hidden when in editor view.
       document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
