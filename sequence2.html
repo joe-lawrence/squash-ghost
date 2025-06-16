@@ -85,14 +85,7 @@
 
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">Name</th>
-                        <th scope="col" class="px-6 py-3">Seq</th>
-                        <th scope="col" class="px-6 py-3">Length</th>
-                        <th scope="col" class="px-6 py-3">Rest</th>
-                    </tr>
-                </thead>
+                <!-- Removed thead as per request -->
                 <tbody id="patterns-table-body">
                     <!-- Pattern rows will be dynamically inserted here -->
                 </tbody>
@@ -456,32 +449,36 @@
           if (sequences.length === 0) {
               const noPatternsRow = document.createElement('tr');
               noPatternsRow.classList.add('bg-white', 'dark:bg-gray-800');
-              noPatternsRow.innerHTML = `<td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No patterns configured. Click "New Pattern" to add one.</td>`;
+              // Adjusted colspan for the "No patterns" message
+              noPatternsRow.innerHTML = `<td colspan="2" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No patterns configured. Click "New Pattern" to add one.</td>`;
               patternsTableBody.appendChild(noPatternsRow);
               return;
           }
 
           sequences.forEach((pattern, index) => {
               const row = document.createElement('tr');
-              row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600', 'cursor-pointer');
+              row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600');
               row.dataset.index = index; // Store the index for easy access
 
-              // Determine the 'Length' display based on limitType
-              let lengthDisplay = '';
-              if (pattern.limitType === 'none') {
-                  const shotCount = pattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
-                  lengthDisplay = `${shotCount} shots`;
-              } else if (pattern.limitType === 'shot') {
-                  lengthDisplay = `${pattern.patternLimit} shots`;
-              } else if (pattern.limitType === 'time') {
-                  lengthDisplay = formatTime(pattern.patternLimit);
-              }
-
               row.innerHTML = `
-                  <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${pattern.patternName}</th>
-                  <td class="px-6 py-4">${pattern.seriesOrder === 'in-order' ? 'In Order' : 'Randomized'}</td>
-                  <td class="px-6 py-4">${lengthDisplay}</td>
-                  <td class="px-6 py-4">${formatTime(pattern.postSequenceRest)}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center space-x-2">
+                          <div class="flex flex-row space-x-1"> <!-- Changed from flex-col to flex-row and added space-x-1 -->
+                              <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
+                              </button>
+                              <button class="down-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === sequences.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === sequences.length - 1 ? 'disabled' : ''}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                              </button>
+                          </div>
+                          <span class="pattern-name-clickable flex-grow font-medium text-gray-900 dark:text-white cursor-pointer">${pattern.patternName}</span>
+                      </div>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                      <button class="delete-pattern-btn p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                      </button>
+                  </td>
               `;
               patternsTableBody.appendChild(row);
           });
@@ -691,12 +688,23 @@
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
-        saveCurrentSequenceState(); // Save changes to the current pattern before adding a new one
+        // Save current pattern state ONLY if in editor view
+        if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
+            saveCurrentSequenceState();
+        }
+
         const newSequence = getNewSequenceData();
         newSequence.patternName = `Pattern ${sequences.length + 1}`;
         sequences.push(newSequence);
-        activeSequenceIndex = sequences.length - 1;
-        showView('editor');
+
+        // Do NOT change activeSequenceIndex or force editor view
+        // Instead, re-render the current view to reflect the added pattern
+        if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
+            renderPatternEditor(); // Re-render the current pattern (updates N/M counter)
+        } else { // If currently in table view
+            renderTableView(); // Re-render the table
+        }
+        focusOnTop(); // Keep consistency with previous behavior
       };
 
       const cloneSequence = () => {
@@ -704,29 +712,77 @@
             showAlert('Clone Error', 'No pattern selected to clone.');
             return;
         }
-        saveCurrentSequenceState();
+        saveCurrentSequenceState(); // Always save current state when cloning
+
         const currentData = sequences[activeSequenceIndex];
         const clonedData = JSON.parse(JSON.stringify(currentData));
         clonedData.id = Date.now() + Math.random();
         clonedData.patternName = `${clonedData.patternName} (Clone)`;
         sequences.splice(activeSequenceIndex + 1, 0, clonedData);
-        activeSequenceIndex++;
-        showView('editor');
+
+        // Do NOT change activeSequenceIndex or force editor view for the cloned pattern
+        // Instead, re-render the current view to reflect the added pattern
+        if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
+            activeSequenceIndex++; // Increment index so the cloned item appears after the current one
+            renderPatternEditor(); // Re-render the new current pattern (which is now the cloned one)
+        } else { // If currently in table view
+            renderTableView(); // Re-render the table
+        }
+        focusOnTop(); // Keep consistency
       };
 
-      const deleteSequence = () => {
+      const movePattern = (index, direction) => {
+          if (direction === 'up' && index > 0) {
+              [sequences[index], sequences[index - 1]] = [sequences[index - 1], sequences[index]];
+              // activeSequenceIndex also needs to be updated if the moved pattern was the active one
+              if (activeSequenceIndex === index) activeSequenceIndex--;
+              else if (activeSequenceIndex === index - 1) activeSequenceIndex++;
+          } else if (direction === 'down' && index < sequences.length - 1) {
+              [sequences[index], sequences[index + 1]] = [sequences[index + 1], sequences[index]];
+              // activeSequenceIndex also needs to be updated if the moved pattern was the active one
+              if (activeSequenceIndex === index) activeSequenceIndex++;
+              else if (activeSequenceIndex === index + 1) activeSequenceIndex--;
+          }
+          renderTableView(); // Re-render the table after reordering
+      };
+
+      const deleteSequence = (indexToDelete) => {
+          // If only one pattern, clear and reset instead of deleting entirely
           if (sequences.length <= 1) {
-              // If only one pattern left, reset it instead of deleting
-              resetCurrentSequence();
+              resetCurrentSequence(); // This will show a message about resetting the last pattern
               showAlert('Pattern Reset', 'Last pattern reset to default settings.');
+              // After reset, if it was in editor view, it will re-render the editor for the reset pattern.
+              // If in table view, it will re-render the table with the single reset pattern.
+              // So, no explicit showView('table') needed here, resetCurrentSequence handles its view.
               return;
           }
-          sequences.splice(activeSequenceIndex, 1);
-          if (activeSequenceIndex >= sequences.length) {
-              activeSequenceIndex = sequences.length - 1;
+
+          // Save active pattern's state BEFORE modification if it's the one being deleted
+          if (activeSequenceIndex === indexToDelete) {
+              saveCurrentSequenceState(); // Save state of the pattern *about to be deleted* if it was active
           }
-          showView('editor'); // Stay in editor mode for the new active sequence
+
+          sequences.splice(indexToDelete, 1);
+
+          // Adjust activeSequenceIndex based on the deletion
+          if (activeSequenceIndex === indexToDelete) {
+              // If the deleted item was the active one
+              activeSequenceIndex = Math.max(0, indexToDelete - 1); // Move to previous, or 0 if first was deleted
+              if (sequences.length === 0) activeSequenceIndex = -1; // No patterns left
+          } else if (activeSequenceIndex > indexToDelete) {
+              // If an item *before* the active one was deleted
+              activeSequenceIndex--;
+          }
+
+          // Now decide which view to render
+          if (sequences.length === 0 || activeSequenceIndex === -1) {
+              showView('table'); // No patterns or no active pattern, go to table
+          } else {
+              renderPatternEditor(); // Re-render the new active sequence in editor
+          }
+          focusOnTop(); // Keep consistent
       };
+
 
       const resetCurrentSequence = () => {
           if (activeSequenceIndex === -1 || sequences.length === 0) return;
@@ -738,7 +794,9 @@
 
       const showSequenceInEditor = (index) => {
           if (index < 0 || index >= sequences.length) return;
-          saveCurrentSequenceState(); // Save current state before switching
+          if (activeSequenceIndex !== -1) { // Only save if there was an active sequence
+             saveCurrentSequenceState(); // Save current state before switching
+          }
           activeSequenceIndex = index;
           showView('editor');
       };
@@ -955,12 +1013,54 @@
 
       // Table View Buttons
       document.getElementById('new-pattern-btn').addEventListener('click', addSequence);
-      document.getElementById('patterns-table-body').addEventListener('click', (e) => {
+      // Event delegation for table body clicks (including new buttons)
+      patternsTableBody.addEventListener('click', (e) => {
           const row = e.target.closest('tr');
-          if (row && row.dataset.index !== undefined) {
-              showSequenceInEditor(parseInt(row.dataset.index));
+          if (!row) return;
+
+          const index = parseInt(row.dataset.index);
+
+          if (e.target.closest('.up-arrow-btn')) {
+              movePattern(index, 'up');
+              e.target.closest('button')?.blur();
+          } else if (e.target.closest('.down-arrow-btn')) {
+              movePattern(index, 'down');
+              e.target.closest('button')?.blur();
+          } else if (e.target.closest('.delete-pattern-btn')) {
+              // Delete confirmation modal trigger
+              const modal = document.getElementById('confirmation-modal');
+              const modalTitle = document.getElementById('modal-title');
+              const modalText = document.getElementById('modal-text');
+              const confirmBtn = document.getElementById('confirm-btn');
+              const cancelBtn = document.getElementById('cancel-btn');
+
+              modalTitle.textContent = 'Confirm Deletion';
+              modalText.textContent = `Are you sure you want to delete pattern "${sequences[index].patternName}"? This action cannot be undone.`;
+              confirmBtn.textContent = 'Delete';
+              confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
+              modal.classList.remove('hidden');
+              e.target.closest('button')?.blur();
+
+              // Clear previous listeners and add new ones for the specific action
+              confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+              cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+              const newConfirmBtn = document.getElementById('confirm-btn');
+              const newCancelBtn = document.getElementById('cancel-btn');
+
+              newConfirmBtn.addEventListener('click', () => {
+                  deleteSequence(index); // Pass the specific index to delete
+                  modal.classList.add('hidden');
+                  // After delete, render table view again
+                  showView('table');
+                  focusOnTop();
+              });
+              newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+          } else if (e.target.closest('.pattern-name-clickable')) {
+              showSequenceInEditor(index);
           }
       });
+
 
       // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
@@ -999,14 +1099,10 @@
               const newCancelBtn = document.getElementById('cancel-btn');
 
               newConfirmBtn.addEventListener('click', () => {
-                  deleteSequence();
+                  // This delete button is in the editor, so it deletes the currently active sequence
+                  deleteSequence(activeSequenceIndex);
                   modal.classList.add('hidden');
-                  // After delete, decide whether to go back to table or stay in editor
-                  if (sequences.length === 0 || activeSequenceIndex === -1) { // If no patterns left or delete resulted in no active pattern
-                    showView('table'); // Go back to table view
-                  } else {
-                    renderPatternEditor(); // Re-render the new active sequence in editor
-                  }
+                  // The deleteSequence function now handles view switching after deletion
                   focusOnTop();
               });
               newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -1060,6 +1156,7 @@
       const initialize = () => {
         sequences.push(getNewSequenceData());
         sequences[0].patternName = "Pattern 1";
+        activeSequenceIndex = -1; // Ensure no pattern is active on initial load
         showView('table'); // Start with the table view
       };
 
