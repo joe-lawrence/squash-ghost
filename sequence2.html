@@ -103,6 +103,12 @@
         </div>
 
         <div class="flex justify-center space-x-4">
+            <!-- New Delete Pattern Toggle Button -->
+            <button id="delete-pattern-toggle-btn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-state="off">
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </span>
+            </button>
             <button id="move-pattern-toggle-btn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-state="off">
                 <span class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
@@ -248,7 +254,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        <h2>
+                        </h2>
                         <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
                             <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
                             <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
@@ -311,7 +317,8 @@
       let sequences = [];
       let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
       let selectedPatternId = null; // Store the ID of the selected row for focus tracking
-      let isMoveModeOn = false; // New state for move mode
+      let isMoveModeOn = false; // State for move mode
+      let isDeleteModeOn = false; // New state for delete mode
 
       const tableViewContainer = document.getElementById('table-view-container');
       const patternEditorContainer = document.getElementById('pattern-editor-container');
@@ -321,6 +328,7 @@
       const appContainer = document.getElementById('app-container');
       const globalControls = document.getElementById('global-controls'); // Get the global controls div
       const movePatternToggleButton = document.getElementById('move-pattern-toggle-btn');
+      const deletePatternToggleButton = document.getElementById('delete-pattern-toggle-btn'); // New delete button
 
 
       // --- UTILITY FUNCTIONS ---
@@ -417,107 +425,142 @@
           };
       };
 
-      // Function to turn off move mode
-      const turnOffMoveMode = () => {
-          if (isMoveModeOn) {
-              isMoveModeOn = false;
-              movePatternToggleButton.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
-              movePatternToggleButton.classList.remove('bg-blue-600', 'text-white');
-              movePatternToggleButton.dataset.state = 'off';
-              toggleOtherButtons(false); // Re-enable other buttons
-              renderTableView(); // Re-render table to hide move buttons
+      // Function to set interaction mode (move, delete, or null for off)
+      const setInteractionMode = (mode) => {
+          const wasMoveModeOn = isMoveModeOn;
+          const wasDeleteModeOn = isDeleteModeOn;
+
+          isMoveModeOn = (mode === 'move');
+          isDeleteModeOn = (mode === 'delete');
+
+          // Update toggle button visuals
+          movePatternToggleButton.classList.toggle('bg-blue-600', isMoveModeOn);
+          movePatternToggleButton.classList.toggle('text-white', isMoveModeOn);
+          movePatternToggleButton.classList.toggle('bg-gray-200', !isMoveModeOn);
+          movePatternToggleButton.classList.toggle('text-gray-700', !isMoveModeOn);
+          movePatternToggleButton.classList.toggle('dark:bg-gray-700', !isMoveModeOn);
+          movePatternToggleButton.classList.toggle('dark:text-gray-300', !isMoveModeOn);
+          movePatternToggleButton.dataset.state = isMoveModeOn ? 'on' : 'off';
+
+          deletePatternToggleButton.classList.toggle('bg-red-600', isDeleteModeOn);
+          deletePatternToggleButton.classList.toggle('text-white', isDeleteModeOn);
+          deletePatternToggleButton.classList.toggle('bg-gray-200', !isDeleteModeOn);
+          deletePatternToggleButton.classList.toggle('text-gray-700', !isDeleteModeOn);
+          deletePatternToggleButton.classList.toggle('dark:bg-gray-700', !isDeleteModeOn);
+          deletePatternToggleButton.classList.toggle('dark:text-gray-300', !isDeleteModeOn);
+          deletePatternToggleButton.dataset.state = isDeleteModeOn ? 'on' : 'off';
+
+          // Only re-render table and toggle other buttons if a mode state actually changed
+          if (wasMoveModeOn !== isMoveModeOn || wasDeleteModeOn !== isDeleteModeOn) {
+              renderTableView(); // Re-render table to show/hide specific buttons
+              toggleOtherButtons(); // Apply global disabling based on new mode state
           }
       };
 
-      // Function to disable/enable other buttons and elements
-      const toggleOtherButtons = (disable) => {
-          const buttonsToToggle = [
-              document.getElementById('new-pattern-btn'),
-              document.getElementById('load-all-btn'),
-              document.getElementById('save-all-btn'),
-              document.getElementById('clone-btn'),
-              document.getElementById('import-btn'),
-              document.getElementById('save-btn'), // Editor save button
+      // Function to disable/enable other buttons and elements based on active mode
+      const toggleOtherButtons = () => {
+          const disableAllMainActions = isMoveModeOn || isDeleteModeOn;
+
+          const newPatternBtn = document.getElementById('new-pattern-btn');
+          const loadAllBtn = document.getElementById('load-all-btn');
+          const saveAllBtn = document.getElementById('save-all-btn');
+          const resetAllBtn = document.getElementById('reset-all-btn'); // Global reset should always be enabled
+
+          // Editor buttons (might not exist if in table view)
+          const backToListBtn = document.getElementById('back-to-list-btn');
+          const cloneBtn = document.getElementById('clone-btn');
+          const importBtn = document.getElementById('import-btn');
+          const saveBtn = document.getElementById('save-btn');
+
+          // Buttons affected by any active mode (excluding the mode's own toggle and global reset)
+          const elementsToToggleDisable = [
+              newPatternBtn, loadAllBtn, saveAllBtn, backToListBtn,
+              cloneBtn, importBtn, saveBtn
           ];
 
-          buttonsToToggle.forEach(button => {
-              if (button) { // Ensure the button exists before trying to modify
-                  button.disabled = disable;
-                  if (disable) {
-                      button.classList.add('opacity-50', 'cursor-not-allowed');
+          elementsToToggleDisable.forEach(element => {
+              if (element) {
+                  element.disabled = disableAllMainActions;
+                  if (disableAllMainActions) {
+                      element.classList.add('opacity-50', 'cursor-not-allowed');
                   } else {
-                      button.classList.remove('opacity-50', 'cursor-not-allowed');
+                      element.classList.remove('opacity-50', 'cursor-not-allowed');
                   }
               }
           });
 
-          // Handle delete buttons in table rows
+          // Specific handling for mode toggle buttons (mutually exclusive)
+          if (movePatternToggleButton) {
+              movePatternToggleButton.disabled = isDeleteModeOn;
+              if (isDeleteModeOn) {
+                  movePatternToggleButton.classList.add('opacity-50', 'cursor-not-allowed');
+              } else {
+                  movePatternToggleButton.classList.remove('opacity-50', 'cursor-not-allowed');
+              }
+          }
+          if (deletePatternToggleButton) {
+              deletePatternToggleButton.disabled = isMoveModeOn;
+              if (isMoveModeOn) {
+                  deletePatternToggleButton.classList.add('opacity-50', 'cursor-not-allowed');
+              } else {
+                  deletePatternToggleButton.classList.remove('opacity-50', 'cursor-not-allowed');
+              }
+          }
+
+          // Global Reset button is special, it's never disabled by these modes
+          if (resetAllBtn) {
+            resetAllBtn.disabled = false;
+            resetAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+
+          // Handle delete buttons and pattern names in table rows
           patternsTableBody.querySelectorAll('.delete-pattern-btn').forEach(button => {
-              button.disabled = disable;
-              if (disable) {
+              // Delete button in row should only be enabled when delete mode is ON
+              button.disabled = !isDeleteModeOn;
+              if (!isDeleteModeOn) {
                   button.classList.add('opacity-50', 'cursor-not-allowed');
               } else {
                   button.classList.remove('opacity-50', 'cursor-not-allowed');
               }
           });
 
-          // Handle pattern name clickable
           patternsTableBody.querySelectorAll('.pattern-name-clickable').forEach(span => {
-              if (disable) {
+              if (disableAllMainActions) { // If any mode is on, pattern name should not be clickable to enter editor
                   span.classList.remove('cursor-pointer');
-                  span.style.pointerEvents = 'none'; // Disable click
+                  span.style.pointerEvents = 'none';
               } else {
                   span.classList.add('cursor-pointer');
-                  span.style.pointerEvents = 'auto'; // Enable click
+                  span.style.pointerEvents = 'auto';
               }
           });
 
-          // Disable/enable accordion buttons in editor view
+          // Disable/enable elements inside the editor if it's visible
           if (!patternEditorContainer.classList.contains('hidden')) {
               sequencesContainer.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
-                  accordionBtn.disabled = disable;
-                  if (disable) {
+                  accordionBtn.disabled = disableAllMainActions;
+                  if (disableAllMainActions) {
                       accordionBtn.classList.add('opacity-50', 'cursor-not-allowed');
                   } else {
                       accordionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                   }
               });
 
-              // Disable/enable inputs and textareas within the active editor
-              sequencesContainer.querySelectorAll('input, textarea, select').forEach(inputField => {
-                  // Keep range inputs for shot/random/nextShotAnnouncement enabled if they're part of options/interval,
-                  // unless they are explicitly disabled by their own logic (e.g., nextShotAnnouncement based on announceShots)
-                  if (!inputField.closest('#shotOptions') &&
-                      !inputField.closest('#introMessage') &&
-                      !inputField.closest('#outroMessage') &&
-                      !inputField.closest('input[name="seriesOrder"]') &&
-                      !inputField.closest('#limitTypeSelect') &&
-                      !inputField.closest('#patternLimitSlider') &&
-                      !inputField.closest('#postSequenceRest') &&
-                      !inputField.closest('#shotInterval') &&
-                      !inputField.closest('#randomOffset') &&
-                      !inputField.closest('#nextShotAnnouncement')
-                      ) {
-                      inputField.disabled = disable;
-                      if (disable) {
-                          inputField.classList.add('opacity-50', 'cursor-not-allowed');
-                      } else {
-                          inputField.classList.remove('opacity-50', 'cursor-not-allowed');
-                      }
-                  } else if (inputField.type !== 'range') { // Explicitly handle non-range inputs inside accordions
-                      inputField.disabled = disable;
-                      if (disable) {
-                          inputField.classList.add('opacity-50', 'cursor-not-allowed');
-                      } else {
-                          inputField.classList.remove('opacity-50', 'cursor-not-allowed');
-                      }
+              sequencesContainer.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inputField => {
+                  // Re-evaluate current disabled state of range sliders that are conditionally disabled
+                  // (e.g. nextShotAnnouncement based on announceShots)
+                  const isInternallyDisabled = (inputField.id === 'nextShotAnnouncement' && !sequencesContainer.querySelector('#announceShots').checked) ||
+                                               (inputField.id === 'patternLimitSlider' && sequencesContainer.querySelector('#limitTypeSelect').value === 'none');
+
+                  inputField.disabled = disableAllMainActions || isInternallyDisabled;
+                  if (disableAllMainActions || isInternallyDisabled) {
+                      inputField.classList.add('opacity-50', 'cursor-not-allowed');
+                  } else {
+                      inputField.classList.remove('opacity-50', 'cursor-not-allowed');
                   }
               });
-
-              // Also disable pattern name display for editing
               const patternNameDisplay = sequencesContainer.querySelector('#pattern-name-display');
               if (patternNameDisplay) {
-                if (disable) {
+                if (disableAllMainActions) {
                     patternNameDisplay.classList.remove('cursor-pointer');
                     patternNameDisplay.style.pointerEvents = 'none';
                 } else {
@@ -538,7 +581,7 @@
               globalControls.classList.remove('hidden');
               renderTableView();
               focusOnTop();
-              toggleOtherButtons(isMoveModeOn); // Apply state after view change
+              toggleOtherButtons(); // Apply state after view change
           } else if (view === 'editor') {
               tableViewContainer.classList.add('hidden');
               patternEditorContainer.classList.remove('hidden');
@@ -546,7 +589,7 @@
               globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
-              toggleOtherButtons(isMoveModeOn); // Apply state after view change
+              toggleOtherButtons(); // Apply state after view change
           }
       };
 
@@ -589,7 +632,7 @@
                       </div>
                   </td>
                   <td class="px-4 py-3 text-right">
-                      <button class="delete-pattern-btn p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
+                      <button class="delete-pattern-btn p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400 ${isDeleteModeOn ? '' : 'hidden'}"> <!-- Conditional visibility for delete button -->
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                       </button>
                   </td>
@@ -604,8 +647,8 @@
                   selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               }
           }
-          // Ensure delete buttons are toggled correctly after rendering
-          toggleOtherButtons(isMoveModeOn);
+          // Ensure other buttons are toggled correctly after rendering
+          toggleOtherButtons();
       };
 
       // --- PATTERN EDITOR RENDERING & DATA SYNC ---
@@ -623,7 +666,6 @@
         newSequenceEl.classList.remove('hidden');
         sequencesContainer.appendChild(newSequenceEl);
 
-        // const patternIndexLabel = newSequenceEl.querySelector('#pattern-index-label'); // Removed
         const patternNameDisplay = newSequenceEl.querySelector('#pattern-name-display');
         const shotOptions = newSequenceEl.querySelector('#shotOptions');
         const announceShots = newSequenceEl.querySelector('#announceShots');
@@ -637,7 +679,6 @@
         const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
         const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
-        // patternIndexLabel.textContent = `${activeSequenceIndex + 1} / ${sequences.length}`; // Removed
         patternNameDisplay.textContent = currentData.patternName;
         shotOptions.value = currentData.shotOptions;
         announceShots.checked = currentData.announceShots;
@@ -655,11 +696,10 @@
         handleLimitTypeChange(newSequenceEl);
         handleAnnounceShotsChange(newSequenceEl);
         initFlowbite(); // Re-initialize Flowbite for new accordion elements
-        // updateNavButtons(); // Removed
 
         // Add event listener for pattern name editing
         patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
-        toggleOtherButtons(isMoveModeOn); // Apply state after view change
+        toggleOtherButtons(); // Apply state after view change
       };
 
       const saveCurrentSequenceState = () => {
@@ -790,8 +830,6 @@
         display.textContent = formatTime(value);
       };
 
-      // Removed updateNavButtons as navigation elements are removed from editor
-
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
@@ -807,10 +845,10 @@
         // Do NOT change activeSequenceIndex or force editor view
         // Instead, re-render the current view to reflect the added pattern
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
-            renderPatternEditor(); // Re-render the current pattern (updates N/M counter, though removed now)
+            renderPatternEditor();
         } else { // If in table view
             selectedPatternId = newSequence.id; // Select the newly added pattern
-            renderTableView(); // Re-render the table
+            renderTableView();
         }
         focusOnTop(); // Keep consistency with previous behavior
       };
@@ -861,12 +899,18 @@
       const deleteSequence = (indexToDelete) => {
           // If only one pattern, clear and reset instead of deleting entirely
           if (sequences.length <= 1) {
-              resetCurrentSequence(); // This will show a message about resetting the last pattern
+              const currentPatternId = sequences.length > 0 ? sequences[0].id : null;
+              sequences = []; // Clear array
+              sequences.push({ ...getNewSequenceData(), id: currentPatternId }); // Add new default, keeping old ID if exists
+              sequences[0].patternName = "Pattern 1"; // Reset name
+              activeSequenceIndex = 0; // The single pattern becomes active at index 0
+              selectedPatternId = sequences[0].id; // Select the reset pattern
               showAlert('Pattern Reset', 'Last pattern reset to default settings.');
-              // After reset, if it was in editor view, it will re-render the editor for the reset pattern.
-              // If in table view, it will re-render the table with the single reset pattern.
-              // So, no explicit showView('table') needed here, resetCurrentSequence handles its view.
-              selectedPatternId = sequences.length > 0 ? sequences[0].id : null; // Select the reset pattern
+              if (patternEditorContainer.classList.contains('hidden')) {
+                  showView('table'); // Ensure table view is rendered to show the single pattern
+              } else {
+                  renderPatternEditor(); // Re-render editor with reset pattern
+              }
               return;
           }
 
@@ -921,8 +965,8 @@
 
       // Function to handle pattern name editing
       const editPatternName = (currentData, displayElement) => {
-          // Turn off move mode if editing pattern name
-          turnOffMoveMode();
+          // Turn off interaction modes before editing pattern name
+          setInteractionMode(null);
 
           const inputElement = document.createElement('input');
           inputElement.type = 'text';
@@ -952,8 +996,8 @@
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS ---
       const savePatternConfig = () => {
-        // Turn off move mode
-        turnOffMoveMode();
+        // Turn off interaction modes
+        setInteractionMode(null);
         if (activeSequenceIndex === -1 || sequences.length === 0) {
           showAlert('Save Error', 'No pattern selected to save.');
           return;
@@ -975,8 +1019,8 @@
       };
 
       const importPatternConfig = () => {
-        // Turn off move mode
-        turnOffMoveMode();
+        // Turn off interaction modes
+        setInteractionMode(null);
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -1036,8 +1080,8 @@
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
       const loadAllPatterns = () => {
-        // Turn off move mode
-        turnOffMoveMode();
+        // Turn off interaction modes
+        setInteractionMode(null);
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -1082,8 +1126,8 @@
       };
 
       const saveAllPatterns = () => {
-        // Turn off move mode
-        turnOffMoveMode();
+        // Turn off interaction modes
+        setInteractionMode(null);
         // If in editor view, save current pattern before saving all
         if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
           saveCurrentSequenceState();
@@ -1108,8 +1152,8 @@
       };
 
       const clearAllPatterns = () => {
-          // Turn off move mode first
-          turnOffMoveMode();
+          // Turn off interaction modes first
+          setInteractionMode(null);
 
           const modal = document.getElementById('confirmation-modal');
           const modalTitle = document.getElementById('modal-title');
@@ -1149,51 +1193,45 @@
 
       // --- EVENT LISTENERS ---
 
-      // Global click listener to turn off move mode if an unrelated element is clicked
+      // Global click listener to turn off modes if an unrelated element is clicked
       document.addEventListener('click', (e) => {
-          // If move mode is on, and the clicked element is not the toggle button itself,
-          // and not inside the patterns table body, and not inside a modal, then turn off move mode.
-          if (isMoveModeOn &&
-              e.target !== movePatternToggleButton &&
-              !movePatternToggleButton.contains(e.target) &&
-              !patternsTableBody.contains(e.target) &&
-              !e.target.closest('#confirmation-modal') &&
-              !e.target.closest('#alert-modal')
+          // Only turn off modes if a mode is currently ON
+          if (isMoveModeOn || isDeleteModeOn) {
+              // Check if the click target is NOT:
+              // 1. The move toggle button itself or its children
+              // 2. The delete toggle button itself or its children
+              // 3. Inside the patterns table body (which contains move/delete chevrons/buttons)
+              // 4. Inside any modal (alert or confirmation)
+              if (e.target !== movePatternToggleButton &&
+                  !movePatternToggleButton.contains(e.target) &&
+                  e.target !== deletePatternToggleButton &&
+                  !deletePatternToggleButton.contains(e.target) &&
+                  !patternsTableBody.contains(e.target) &&
+                  !e.target.closest('#confirmation-modal') &&
+                  !e.target.closest('#alert-modal')
               ) {
-              turnOffMoveMode();
+                  setInteractionMode(null); // Turn off all modes
+              }
           }
       });
 
 
       // Table View Buttons
       document.getElementById('new-pattern-btn').addEventListener('click', () => {
-        turnOffMoveMode(); // Turn off move mode before adding new pattern
+        setInteractionMode(null); // Turn off any mode before adding new pattern
         addSequence();
-        // After adding, if in table view, select the newly added row
-        if (!patternEditorContainer.classList.contains('hidden')) { // If currently in editor view, don't set focus on table
-            // Already in editor view, new pattern appended to sequences, renderEditor updates N/M count
-        } else { // If in table view
-            selectedPatternId = sequences[sequences.length - 1].id; // Select the last added pattern
-            renderTableView();
-        }
       });
 
       // Toggle move pattern mode
       movePatternToggleButton.addEventListener('click', () => {
-          isMoveModeOn = !isMoveModeOn;
-          if (isMoveModeOn) {
-              movePatternToggleButton.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
-              movePatternToggleButton.classList.add('bg-blue-600', 'text-white');
-              movePatternToggleButton.dataset.state = 'on';
-              toggleOtherButtons(true); // Disable other buttons when move mode is ON
-          } else {
-              movePatternToggleButton.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
-              movePatternToggleButton.classList.remove('bg-blue-600', 'text-white');
-              movePatternToggleButton.dataset.state = 'off';
-              toggleOtherButtons(false); // Enable other buttons when move mode is OFF
-          }
-          renderTableView(); // Re-render table to show/hide move buttons
+          setInteractionMode(isMoveModeOn ? null : 'move');
       });
+
+      // Toggle delete pattern mode
+      deletePatternToggleButton.addEventListener('click', () => {
+          setInteractionMode(isDeleteModeOn ? null : 'delete');
+      });
+
 
       // Event delegation for table body clicks (including new buttons)
       patternsTableBody.addEventListener('click', (e) => {
@@ -1218,39 +1256,42 @@
               e.target.closest('button')?.blur();
               e.stopPropagation(); // Prevent event from bubbling up to document listener
           } else if (e.target.closest('.delete-pattern-btn')) {
-              // Turn off move mode before showing delete confirmation
-              turnOffMoveMode();
-              // Delete confirmation modal trigger
-              const modal = document.getElementById('confirmation-modal');
-              const modalTitle = document.getElementById('modal-title');
-              const modalText = document.getElementById('modal-text');
-              const confirmBtn = document.getElementById('confirm-btn');
-              const cancelBtn = document.getElementById('cancel-btn');
+              // If delete mode is on, proceed with delete confirmation
+              if (isDeleteModeOn) {
+                  const modal = document.getElementById('confirmation-modal');
+                  const modalTitle = document.getElementById('modal-title');
+                  const modalText = document.getElementById('modal-text');
+                  const confirmBtn = document.getElementById('confirm-btn');
+                  const cancelBtn = document.getElementById('cancel-btn');
 
-              modalTitle.textContent = 'Confirm Deletion';
-              modalText.textContent = `Are you sure you want to delete pattern "${sequences[index].patternName}"? This action cannot be undone.`;
-              confirmBtn.textContent = 'Delete';
-              confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
-              modal.classList.remove('hidden');
-              e.target.closest('button')?.blur();
+                  modalTitle.textContent = 'Confirm Deletion';
+                  modalText.textContent = `Are you sure you want to delete pattern "${sequences[index].patternName}"? This action cannot be undone.`;
+                  confirmBtn.textContent = 'Delete';
+                  confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
+                  modal.classList.remove('hidden');
+                  e.target.closest('button')?.blur();
 
-              // Clear previous listeners and add new ones for the specific action
-              confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-              cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-              const newConfirmBtn = document.getElementById('confirm-btn');
-              const newCancelBtn = document.getElementById('cancel-btn');
+                  // Clear previous listeners and add new ones for the specific action
+                  confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+                  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+                  const newConfirmBtn = document.getElementById('confirm-btn');
+                  const newCancelBtn = document.getElementById('cancel-btn');
 
-              newConfirmBtn.addEventListener('click', () => {
-                  deleteSequence(index); // Pass the specific index to delete
-                  modal.classList.add('hidden');
-                  // After delete, render table view again (handled by deleteSequence)
-                  focusOnTop();
-              });
-              newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-
+                  newConfirmBtn.addEventListener('click', () => {
+                      deleteSequence(index); // Pass the specific index to delete
+                      modal.classList.add('hidden');
+                      focusOnTop();
+                  });
+                  newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+                  e.stopPropagation(); // Prevent turning off delete mode
+              } else {
+                  // If delete mode is not on, and someone tries to click the hidden delete button
+                  // This case should ideally not happen due to 'hidden' class, but good for robustness
+                  setInteractionMode(null); // Turn off any active mode
+              }
           } else if (e.target.closest('.pattern-name-clickable')) {
-              // Turn off move mode before showing editor
-              turnOffMoveMode();
+              // Turn off any mode before showing editor
+              setInteractionMode(null);
               showSequenceInEditor(index);
           }
       });
@@ -1259,26 +1300,25 @@
       // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
           if (e.target.closest('#clone-btn')) {
-              turnOffMoveMode(); // Turn off move mode before cloning
-              cloneSequence(); // Clone current pattern and open its editor
+              setInteractionMode(null); // Turn off any mode before cloning
+              cloneSequence();
           }
           if (e.target.closest('#import-btn')) {
-              turnOffMoveMode(); // Turn off move mode before importing
+              setInteractionMode(null); // Turn off any mode before importing
               importPatternConfig();
               e.target.closest('button')?.blur();
           }
           if (e.target.closest('#save-btn')) {
-              turnOffMoveMode(); // Turn off move mode before saving
+              setInteractionMode(null); // Turn off any mode before saving
               savePatternConfig();
               e.target.closest('button')?.blur();
           }
-          // Removed event listeners for nav-first, nav-prev, nav-next
           e.target.closest('button')?.blur();
       });
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
-          turnOffMoveMode(); // Turn off move mode before going back to list
+          setInteractionMode(null); // Turn off any mode before going back to list
           saveCurrentSequenceState(); // Save before going back to list
           activeSequenceIndex = -1; // No active pattern in editor
           showView('table');
@@ -1324,7 +1364,7 @@
         activeSequenceIndex = -1; // Ensure no pattern is active on initial load
         selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('table'); // Start with the table view
-        toggleOtherButtons(false); // Ensure all other buttons are enabled initially
+        toggleOtherButtons(); // Ensure all other buttons are enabled initially
       };
 
       initialize();
