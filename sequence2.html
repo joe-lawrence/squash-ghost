@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Squash Ghosting Configuration</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Flowbite CDN for accordion functionality -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <style>
     /* Custom font for a clean look */
@@ -89,32 +87,31 @@
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
   <div id="app-container" class="w-full max-w-2xl">
 
-    <!-- Table View Container -->
     <div id="table-view-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Workout Patterns</h2>
 
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <!-- Removed thead as per request -->
                 <tbody id="patterns-table-body">
-                    <!-- Pattern rows will be dynamically inserted here -->
-                </tbody>
+                    </tbody>
             </table>
         </div>
 
         <div class="flex justify-center space-x-4">
-            <button id="new-pattern-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
+            <button id="move-pattern-toggle-btn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-state="off">
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
+                </span>
+            </button>
+            <button id="new-pattern-btn" class="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
                 <span class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
-                    New Pattern
                 </span>
             </button>
         </div>
     </div>
 
-    <!-- Pattern Editor Container -->
     <div id="pattern-editor-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
-        <!-- Back to List Button -->
         <div class="mb-4">
             <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
@@ -122,16 +119,12 @@
             </button>
         </div>
 
-        <!-- This div will contain the dynamically generated sequences -->
         <div id="sequences-container" class="overflow-hidden">
-            <!-- Sequence Template - Keep it hidden and clone for editing -->
             <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-2 shadow-lg dark:bg-gray-800 hidden">
                 <div class="space-y-4">
-                    <!-- New editable pattern name - Left Justified -->
                     <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
                     <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
-                        <!-- Options -->
                         <h2 id="accordion-heading-options">
                             <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
                                 <span class="flex items-center gap-2">
@@ -150,7 +143,6 @@
                             </div>
                         </div>
 
-                        <!-- Narration -->
                         <h2 id="accordion-heading-narration">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
                                 <span class="flex items-center gap-2">
@@ -170,7 +162,6 @@
                             </div>
                         </div>
 
-                        <!-- Sequencing -->
                         <h2 id="accordion-heading-sequencing">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
                                 <span class="flex items-center gap-2">
@@ -190,7 +181,6 @@
                             </div>
                         </div>
 
-                        <!-- Interval -->
                         <h2 id="accordion-heading-interval">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
                                 <span class="flex items-center gap-2">
@@ -211,7 +201,6 @@
                             </div>
                         </div>
 
-                        <!-- Limits -->
                         <h2 id="accordion-heading-limits">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
                                 <span class="flex items-center gap-2">
@@ -235,7 +224,6 @@
                             </div>
                         </div>
 
-                        <!-- Post Pattern Rest -->
                         <h2 id="accordion-heading-post-rest">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
                                 <span class="flex items-center gap-2">
@@ -253,7 +241,6 @@
                 </div>
             </div>
         </div>
-        <!-- Centered row of icon buttons - For current pattern in editor -->
         <div class="flex justify-center space-x-4 mt-8">
             <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -271,14 +258,12 @@
     </div>
 
 
-    <!-- Global Controls for all patterns -->
     <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden">
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
         <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button>
     </div>
 
-    <!-- The Confirmation Modal (for delete/reset) -->
     <div id="confirmation-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h3 id="modal-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Deletion</h3>
@@ -290,7 +275,6 @@
         </div>
     </div>
 
-    <!-- Custom Alert Modal -->
     <div id="alert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h3 id="alert-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alert</h3>
@@ -307,6 +291,8 @@
       let sequences = [];
       let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
       let selectedPatternId = null; // Store the ID of the selected row for focus tracking
+      let isMoveModeOn = false; // New state for move mode
+
       const tableViewContainer = document.getElementById('table-view-container');
       const patternEditorContainer = document.getElementById('pattern-editor-container');
       const sequencesContainer = document.getElementById('sequences-container'); // This is where the template clone goes
@@ -314,6 +300,8 @@
       const patternsTableBody = document.getElementById('patterns-table-body');
       const appContainer = document.getElementById('app-container');
       const globalControls = document.getElementById('global-controls'); // Get the global controls div
+      const movePatternToggleButton = document.getElementById('move-pattern-toggle-btn');
+
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
@@ -455,15 +443,14 @@
               row.innerHTML = `
                   <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center space-x-2">
-                          <div class="flex flex-row items-center space-x-1"> <!-- Changed from flex-col to flex-row and added space-x-1 -->
-                              <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
+                          <div class="flex flex-row items-center space-x-1 ${isMoveModeOn ? '' : 'hidden'}"> <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
                               </button>
                               <button class="down-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === sequences.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === sequences.length - 1 ? 'disabled' : ''}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                               </button>
-                              <span class="pattern-name-clickable flex-grow font-medium text-gray-900 dark:text-white cursor-pointer">${pattern.patternName}</span>
                           </div>
+                          <span class="pattern-name-clickable flex-grow font-medium text-gray-900 dark:text-white cursor-pointer">${pattern.patternName}</span>
                       </div>
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -1018,6 +1005,22 @@
             renderTableView();
         }
       });
+
+      // Toggle move pattern mode
+      movePatternToggleButton.addEventListener('click', () => {
+          isMoveModeOn = !isMoveModeOn;
+          if (isMoveModeOn) {
+              movePatternToggleButton.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+              movePatternToggleButton.classList.add('bg-blue-600', 'text-white');
+              movePatternToggleButton.dataset.state = 'on';
+          } else {
+              movePatternToggleButton.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+              movePatternToggleButton.classList.remove('bg-blue-600', 'text-white');
+              movePatternToggleButton.dataset.state = 'off';
+          }
+          renderTableView(); // Re-render table to show/hide move buttons
+      });
+
       // Event delegation for table body clicks (including new buttons)
       patternsTableBody.addEventListener('click', (e) => {
           const row = e.target.closest('tr');
@@ -1144,4 +1147,3 @@
   </script>
 </body>
 </html>
-
