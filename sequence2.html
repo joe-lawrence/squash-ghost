@@ -78,183 +78,226 @@
 </head>
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
   <div id="app-container" class="w-full max-w-2xl">
-    <!-- This div will contain the dynamically generated sequences -->
-    <div id="sequences-container" class="overflow-hidden">
-      <!-- Sequence Template -->
-      <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
-        <!-- Pattern Heading with Icons -->
-        <div class="space-y-4">
-          <div class="relative flex items-center justify-between mb-3">
-            <!-- Col 1: Left justified nav-first -->
-            <div>
-                <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
-                </button>
-            </div>
-            <!-- Col 2: Centered N / M counter (absolutely positioned) -->
-            <div class="absolute left-1/2 -translate-x-1/2">
-                <h2 id="pattern-index-label" class="text-lg font-semibold text-gray-800 dark:text-white">1 / 1</h2>
-            </div>
-            <!-- Col 3: Right justified nav-prev and nav-next -->
-            <div class="flex space-x-2">
-              <button id="nav-prev" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/></svg>
-              </button>
-              <button id="nav-next" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
-              </button>
-            </div>
-          </div>
-          <!-- New editable pattern name - Left Justified -->
-          <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
-          <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
-             <!-- Options -->
-            <h2 id="accordion-heading-options">
-              <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
-                  <span class="font-bold">Options - </span><span id="optionsCountDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
-              <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
-                <div>
-                  <textarea id="shotOptions" rows="4" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-                </div>
-              </div>
-            </div>
+    <!-- Table View Container -->
+    <div id="table-view-container" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Workout Patterns</h2>
 
-            <!-- Narration -->
-            <h2 id="accordion-heading-narration">
-              <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
-                  <span class="font-bold">Narration - </span><span id="narrationDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
-              <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="announceShots" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
-                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
-                <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
-                <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-              </div>
-            </div>
-
-            <!-- Sequencing -->
-            <h2 id="accordion-heading-sequencing">
-              <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" /></svg>
-                  <span class="font-bold">Sequencing - </span><span id="sequencingOrderDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
-              <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
-                <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
-                  <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="in-order" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
-                  <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Interval -->
-            <h2 id="accordion-heading-interval">
-              <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
-                  <span class="font-bold">Interval - </span><span id="intervalCombinedDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
-              <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
-                <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" class="w-full accent-blue-600" />
-                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
-                <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600" />
-                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
-                <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600" />
-              </div>
-            </div>
-
-            <!-- Limits -->
-            <h2 id="accordion-heading-limits">
-              <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
-                  <span class="font-bold">Limits - </span><span id="limitsDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
-              <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                <div class="mb-4">
-                  <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
-                  <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                    <option value="none">None</option>
-                    <option value="shot">Max Shots</option>
-                    <option value="time">Max Time</option>
-                  </select>
-                </div>
-                <input type="range" id="patternLimitSlider" min="0" max="100" class="w-full accent-blue-600 mt-2" />
-              </div>
-            </div>
-
-            <!-- Post Pattern Rest -->
-            <h2 id="accordion-heading-post-rest">
-              <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
-                  <span class="font-bold">Post Pattern Rest - </span><span id="postSequenceRestDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                </span>
-                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-              </button>
-            </h2>
-            <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
-              <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
-              <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
-            </div>
-          </div>
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Name</th>
+                        <th scope="col" class="px-6 py-3">Seq</th>
+                        <th scope="col" class="px-6 py-3">Length</th>
+                        <th scope="col" class="px-6 py-3">Rest</th>
+                    </tr>
+                </thead>
+                <tbody id="patterns-table-body">
+                    <!-- Pattern rows will be dynamically inserted here -->
+                </tbody>
+            </table>
         </div>
-        <!-- Centered row of icon buttons - Now inside sequence-template -->
-        <div class="flex justify-center space-x-4 mt-8">
-          <button id="add-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14m-7-7v14"/></svg>
-            <span class="text-xs mt-1">Add</span>
-          </button>
-          <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            <span class="text-xs mt-1">Clone</span>
-          </button>
-          <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-            <span class="text-xs mt-1">Import</span>
-          </button>
-          <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-            <span class="text-xs mt-1">Save</span>
-          </button>
-          <div class="w-4"></div>
-          <button id="delete-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            <span class="text-xs mt-1">Delete</span>
-          </button>
+
+        <div class="flex justify-center space-x-4">
+            <button id="new-pattern-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
+                    New Pattern
+                </span>
+            </button>
         </div>
-      </div>
     </div>
+
+    <!-- Pattern Editor Container -->
+    <div id="pattern-editor-container" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
+        <!-- Back to List Button -->
+        <div class="mb-4">
+            <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
+                <span class="text-sm">Back to List</span>
+            </button>
+        </div>
+
+        <!-- This div will contain the dynamically generated sequences -->
+        <div id="sequences-container" class="overflow-hidden">
+            <!-- Sequence Template - Keep it hidden and clone for editing -->
+            <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
+                <!-- Pattern Heading with Icons -->
+                <div class="space-y-4">
+                    <div class="relative flex items-center justify-between mb-3">
+                        <!-- Col 1: Left justified nav-first -->
+                        <div>
+                            <button id="nav-first" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m17 11-5-5-5 5m10 7-5-5-5 5"/></svg>
+                            </button>
+                        </div>
+                        <!-- Col 2: Centered N / M counter (absolutely positioned) -->
+                        <div class="absolute left-1/2 -translate-x-1/2">
+                            <h2 id="pattern-index-label" class="text-lg font-semibold text-gray-800 dark:text-white">1 / 1</h2>
+                        </div>
+                        <!-- Col 3: Right justified nav-prev and nav-next -->
+                        <div class="flex space-x-2">
+                            <button id="nav-prev" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/></svg>
+                            </button>
+                            <button id="nav-next" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- New editable pattern name - Left Justified -->
+                    <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
+
+                    <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+                        <!-- Options -->
+                        <h2 id="accordion-heading-options">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
+                                    <span class="font-bold">Options - </span><span id="optionsCountDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
+                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
+                                <div>
+                                    <textarea id="shotOptions" rows="4" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Narration -->
+                        <h2 id="accordion-heading-narration">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
+                                    <span class="font-bold">Narration - </span><span id="narrationDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
+                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="announceShots" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
+                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
+                                <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
+                                <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Sequencing -->
+                        <h2 id="accordion-heading-sequencing">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" /></svg>
+                                    <span class="font-bold">Sequencing - </span><span id="sequencingOrderDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
+                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
+                                <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
+                                    <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="in-order" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interval -->
+                        <h2 id="accordion-heading-interval">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
+                                    <span class="font-bold">Interval - </span><span id="intervalCombinedDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
+                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
+                                <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" class="w-full accent-blue-600" />
+                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
+                                <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600" />
+                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
+                                <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600" />
+                            </div>
+                        </div>
+
+                        <!-- Limits -->
+                        <h2 id="accordion-heading-limits">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
+                                    <span class="font-bold">Limits - </span><span id="limitsDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
+                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                <div class="mb-4">
+                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
+                                    <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
+                                        <option value="none">None</option>
+                                        <option value="shot">Max Shots</option>
+                                        <option value="time">Max Time</option>
+                                    </select>
+                                </div>
+                                <input type="range" id="patternLimitSlider" min="0" max="100" class="w-full accent-blue-600 mt-2" />
+                            </div>
+                        </div>
+
+                        <!-- Post Pattern Rest -->
+                        <h2 id="accordion-heading-post-rest">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
+                                <span class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
+                                    <span class="font-bold">Post Pattern Rest - </span><span id="postSequenceRestDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                        </h2>
+                        <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
+                            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
+                            <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Centered row of icon buttons - For current pattern in editor -->
+        <div class="flex justify-center space-x-4 mt-8">
+            <button id="add-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14m-7-7v14"/></svg>
+                <span class="text-xs mt-1">Add</span>
+            </button>
+            <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span class="text-xs mt-1">Clone</span>
+            </button>
+            <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+                <span class="text-xs mt-1">Import</span>
+            </button>
+            <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+                <span class="text-xs mt-1">Save</span>
+            </button>
+            <div class="w-4"></div>
+            <button id="delete-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                <span class="text-xs mt-1">Delete</span>
+            </button>
+        </div>
+    </div>
+
 
     <!-- Global Controls for all patterns -->
     <div class="flex justify-center space-x-4 mt-8">
@@ -290,9 +333,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       // --- STATE MANAGEMENT ---
       let sequences = [];
-      let activeSequenceIndex = 0;
-      const sequencesContainer = document.getElementById('sequences-container');
+      let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
+      const tableViewContainer = document.getElementById('table-view-container');
+      const patternEditorContainer = document.getElementById('pattern-editor-container');
+      const sequencesContainer = document.getElementById('sequences-container'); // This is where the template clone goes
       const sequenceTemplate = document.getElementById('sequence-template');
+      const patternsTableBody = document.getElementById('patterns-table-body');
       const appContainer = document.getElementById('app-container');
 
       // --- UTILITY FUNCTIONS ---
@@ -389,10 +435,66 @@
           };
       };
 
-      // --- CORE RENDERING & DATA SYNC ---
-      const renderCurrentSequence = () => {
-        sequencesContainer.innerHTML = '';
-        if (sequences.length === 0) return;
+      // --- VIEW MANAGEMENT ---
+      const showView = (view) => {
+          if (view === 'table') {
+              tableViewContainer.classList.remove('hidden');
+              patternEditorContainer.classList.add('hidden');
+              renderTableView();
+              focusOnTop();
+          } else if (view === 'editor') {
+              tableViewContainer.classList.add('hidden');
+              patternEditorContainer.classList.remove('hidden');
+              renderPatternEditor();
+              focusOnTop();
+          }
+      };
+
+      // --- TABLE VIEW RENDERING ---
+      const renderTableView = () => {
+          patternsTableBody.innerHTML = ''; // Clear existing rows
+          if (sequences.length === 0) {
+              const noPatternsRow = document.createElement('tr');
+              noPatternsRow.classList.add('bg-white', 'dark:bg-gray-800');
+              noPatternsRow.innerHTML = `<td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No patterns configured. Click "New Pattern" to add one.</td>`;
+              patternsTableBody.appendChild(noPatternsRow);
+              return;
+          }
+
+          sequences.forEach((pattern, index) => {
+              const row = document.createElement('tr');
+              row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600', 'cursor-pointer');
+              row.dataset.index = index; // Store the index for easy access
+
+              // Determine the 'Length' display based on limitType
+              let lengthDisplay = '';
+              if (pattern.limitType === 'none') {
+                  const shotCount = pattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+                  lengthDisplay = `${shotCount} shots`;
+              } else if (pattern.limitType === 'shot') {
+                  lengthDisplay = `${pattern.patternLimit} shots`;
+              } else if (pattern.limitType === 'time') {
+                  lengthDisplay = formatTime(pattern.patternLimit);
+              }
+
+              row.innerHTML = `
+                  <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${pattern.patternName}</th>
+                  <td class="px-6 py-4">${pattern.seriesOrder === 'in-order' ? 'In Order' : 'Randomized'}</td>
+                  <td class="px-6 py-4">${lengthDisplay}</td>
+                  <td class="px-6 py-4">${formatTime(pattern.postSequenceRest)}</td>
+              `;
+              patternsTableBody.appendChild(row);
+          });
+      };
+
+      // --- PATTERN EDITOR RENDERING & DATA SYNC ---
+      const renderPatternEditor = () => {
+        sequencesContainer.innerHTML = ''; // Clear previous editor content
+        if (activeSequenceIndex === -1 || sequences.length === 0) {
+            // This state should ideally not be reached if logic correctly hides editor when no pattern is active
+            showView('table');
+            return;
+        }
 
         const currentData = sequences[activeSequenceIndex];
         const newSequenceEl = sequenceTemplate.cloneNode(true);
@@ -409,17 +511,13 @@
         const seriesOrderRadios = newSequenceEl.querySelectorAll('input[name="seriesOrder"]');
         const shotInterval = newSequenceEl.querySelector('#shotInterval');
         const randomOffset = newSequenceEl.querySelector('#randomOffset');
-        const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement'); // Get the new slider
+        const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement');
         const limitTypeSelect = newSequenceEl.querySelector('#limitTypeSelect');
         const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
         const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
-        // Update pattern index label to be just "N / M" and centered
         patternIndexLabel.textContent = `${activeSequenceIndex + 1} / ${sequences.length}`;
-
-        // Update pattern name display
         patternNameDisplay.textContent = currentData.patternName;
-
         shotOptions.value = currentData.shotOptions;
         announceShots.checked = currentData.announceShots;
         introMessage.value = currentData.introMessage;
@@ -427,17 +525,15 @@
         seriesOrderRadios.forEach(radio => radio.checked = radio.value === currentData.seriesOrder);
         shotInterval.value = currentData.shotInterval;
         randomOffset.value = currentData.randomOffset;
-        nextShotAnnouncement.value = currentData.nextShotAnnouncement; // Set value for new slider
+        nextShotAnnouncement.value = currentData.nextShotAnnouncement;
         limitTypeSelect.value = currentData.limitType;
         patternLimitSlider.value = currentData.patternLimit;
         postSequenceRest.value = currentData.postSequenceRest;
 
         updateAllDisplays(newSequenceEl);
         handleLimitTypeChange(newSequenceEl);
-        handleAnnounceShotsChange(newSequenceEl); // Call this to set initial state of new slider
-        // Flowbite initialization needs to happen after the elements are in the DOM
-        // and the hidden classes are correctly applied/removed.
-        initFlowbite();
+        handleAnnounceShotsChange(newSequenceEl);
+        initFlowbite(); // Re-initialize Flowbite for new accordion elements
         updateNavButtons();
 
         // Add event listener for pattern name editing
@@ -445,10 +541,10 @@
       };
 
       const saveCurrentSequenceState = () => {
-        if (sequences.length === 0) return;
+        if (activeSequenceIndex === -1 || sequences.length === 0) return;
 
         const currentData = sequences[activeSequenceIndex];
-        const currentEl = document.getElementById(`sequence-${currentData.id}`);
+        const currentEl = sequencesContainer.firstChild; // The cloned template is always the first child
         if (!currentEl) return;
 
         currentData.shotOptions = currentEl.querySelector('#shotOptions').value;
@@ -458,13 +554,13 @@
         currentData.seriesOrder = currentEl.querySelector('input[name="seriesOrder"]:checked').value;
         currentData.shotInterval = parseFloat(currentEl.querySelector('#shotInterval').value);
         currentData.randomOffset = parseFloat(currentEl.querySelector('#randomOffset').value);
-        currentData.nextShotAnnouncement = parseFloat(currentEl.querySelector('#nextShotAnnouncement').value); // Save new slider value
+        currentData.nextShotAnnouncement = parseFloat(currentEl.querySelector('#nextShotAnnouncement').value);
         currentData.limitType = currentEl.querySelector('#limitTypeSelect').value;
         currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
       };
 
-      // --- UI UPDATE FUNCTIONS ---
+      // --- UI UPDATE FUNCTIONS (These largely remain the same, but now act on the current editor's elements) ---
       const updateAllDisplays = (context) => {
           updateShotOptionsDisplay(context);
           updateNarrationDisplay(context);
@@ -500,10 +596,10 @@
         const display = context.querySelector('#intervalCombinedDisplay');
         const interval = parseFloat(context.querySelector('#shotInterval').value).toFixed(1);
         const offset = parseFloat(context.querySelector('#randomOffset').value).toFixed(1);
-        const nextShotAnnounce = parseFloat(context.querySelector('#nextShotAnnouncement').value).toFixed(1); // Get new slider value
+        const nextShotAnnounce = parseFloat(context.querySelector('#nextShotAnnouncement').value).toFixed(1);
 
         let text = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
-        if (context.querySelector('#announceShots').checked) { // Only show if announceShots is checked
+        if (context.querySelector('#announceShots').checked) {
             text += ` (${nextShotAnnounce}s)`;
         }
         display.textContent = text;
@@ -540,19 +636,18 @@
 
           if (announceShotsCheckbox.checked) {
               const currentShotInterval = parseFloat(shotIntervalSlider.value);
-              nextShotAnnouncementSlider.max = Math.max(0.0, currentShotInterval - 0.1); // Max is shotInterval - 0.1
+              nextShotAnnouncementSlider.max = Math.max(0.0, currentShotInterval - 0.1);
               if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
                   nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
               }
               if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
-                nextShotAnnouncementSlider.value = 1.25; // Default to 1.25 if enabled and within range
+                nextShotAnnouncementSlider.value = 1.25;
               }
           } else {
-              nextShotAnnouncementSlider.value = 0; // Reset value when disabled
+              nextShotAnnouncementSlider.value = 0;
           }
-          updateIntervalDisplay(context); // Update display to reflect changes
+          updateIntervalDisplay(context);
       };
-
 
       const updateLimitsDisplay = (context) => {
         const display = context.querySelector('#limitsDisplay');
@@ -595,53 +690,57 @@
       };
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
-      const addSequence = (e) => {
-        saveCurrentSequenceState();
+      const addSequence = () => {
+        saveCurrentSequenceState(); // Save changes to the current pattern before adding a new one
         const newSequence = getNewSequenceData();
-        // Set a default pattern name including the new index
         newSequence.patternName = `Pattern ${sequences.length + 1}`;
         sequences.push(newSequence);
         activeSequenceIndex = sequences.length - 1;
-        renderCurrentSequence();
-        focusOnTop();
-        e.currentTarget.blur(); // Remove focus after click
+        showView('editor');
       };
 
-      const cloneSequence = (e) => {
+      const cloneSequence = () => {
+        if (activeSequenceIndex === -1) {
+            showAlert('Clone Error', 'No pattern selected to clone.');
+            return;
+        }
         saveCurrentSequenceState();
         const currentData = sequences[activeSequenceIndex];
         const clonedData = JSON.parse(JSON.stringify(currentData));
         clonedData.id = Date.now() + Math.random();
-        clonedData.patternName = `${clonedData.patternName} (Clone)`; // Append clone suffix
+        clonedData.patternName = `${clonedData.patternName} (Clone)`;
         sequences.splice(activeSequenceIndex + 1, 0, clonedData);
         activeSequenceIndex++;
-        renderCurrentSequence();
-        focusOnTop();
-        e.currentTarget.blur(); // Remove focus after click
+        showView('editor');
       };
 
       const deleteSequence = () => {
-          if (sequences.length <= 1) return;
+          if (sequences.length <= 1) {
+              // If only one pattern left, reset it instead of deleting
+              resetCurrentSequence();
+              showAlert('Pattern Reset', 'Last pattern reset to default settings.');
+              return;
+          }
           sequences.splice(activeSequenceIndex, 1);
           if (activeSequenceIndex >= sequences.length) {
               activeSequenceIndex = sequences.length - 1;
           }
-          renderCurrentSequence();
+          showView('editor'); // Stay in editor mode for the new active sequence
       };
 
       const resetCurrentSequence = () => {
-          if (sequences.length === 0) return;
+          if (activeSequenceIndex === -1 || sequences.length === 0) return;
           const currentId = sequences[activeSequenceIndex].id;
           sequences[activeSequenceIndex] = { ...getNewSequenceData(), id: currentId };
-          sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`; // Reset pattern name
-          renderCurrentSequence();
+          sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
+          renderPatternEditor();
       };
 
-      const showSequence = (index) => {
+      const showSequenceInEditor = (index) => {
           if (index < 0 || index >= sequences.length) return;
-          saveCurrentSequenceState();
+          saveCurrentSequenceState(); // Save current state before switching
           activeSequenceIndex = index;
-          renderCurrentSequence();
+          showView('editor');
       };
 
       // Function to handle pattern name editing
@@ -649,38 +748,36 @@
           const inputElement = document.createElement('input');
           inputElement.type = 'text';
           inputElement.value = currentData.patternName;
-          // Apply Tailwind classes for left justification and styling
           inputElement.className = 'text-xl font-bold text-indigo-700 dark:text-indigo-300 w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1';
 
-          // Replace display element with input
           displayElement.parentNode.replaceChild(inputElement, displayElement);
           inputElement.focus();
 
           const saveAndRevert = () => {
               let newName = inputElement.value.trim();
               if (newName === '') {
-                  newName = 'Unnamed Pattern'; // Default if empty
+                  newName = 'Unnamed Pattern';
               }
               currentData.patternName = newName;
-              renderCurrentSequence(); // Re-render to show updated label
+              renderPatternEditor(); // Re-render to show updated label
           };
 
           inputElement.addEventListener('blur', saveAndRevert);
           inputElement.addEventListener('keydown', (e) => {
               if (e.key === 'Enter') {
                   saveAndRevert();
-                  inputElement.blur(); // Remove focus after Enter
+                  inputElement.blur();
               }
           });
       };
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS ---
       const savePatternConfig = () => {
-        if (sequences.length === 0) {
-          showAlert('Save Error', 'No pattern to save.');
+        if (activeSequenceIndex === -1 || sequences.length === 0) {
+          showAlert('Save Error', 'No pattern selected to save.');
           return;
         }
-        saveCurrentSequenceState(); // Ensure current state is saved to the object
+        saveCurrentSequenceState();
         const currentPattern = sequences[activeSequenceIndex];
         const dataStr = JSON.stringify(currentPattern, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -689,22 +786,23 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = `${sanitizeFilename(currentPattern.patternName)}.pattern.json`;
-        document.body.appendChild(a); // Append to body to make it clickable in all browsers
+        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a); // Clean up
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showAlert('Pattern Saved', `Pattern "${currentPattern.patternName}" saved successfully.`);
       };
 
       const importPatternConfig = () => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,.pattern.json';
-        fileInput.style.display = 'none'; // Hide the input
+        fileInput.style.display = 'none';
 
         fileInput.addEventListener('change', (event) => {
           const file = event.target.files[0];
           if (!file) {
-              document.body.removeChild(fileInput); // Clean up even if no file is selected
+              document.body.removeChild(fileInput);
               return;
           }
 
@@ -713,31 +811,41 @@
             try {
               const importedData = JSON.parse(e.target.result);
               if (isValidPatternConfig(importedData)) {
-                // Preserve the current sequence's ID, but update other properties
-                const currentPatternId = sequences[activeSequenceIndex].id;
-                sequences[activeSequenceIndex] = {
-                  ...importedData,
-                  id: currentPatternId, // Keep the existing ID
-                };
-                renderCurrentSequence();
+                if (activeSequenceIndex !== -1) {
+                    // Overwrite current active pattern
+                    const currentPatternId = sequences[activeSequenceIndex].id;
+                    sequences[activeSequenceIndex] = {
+                      ...importedData,
+                      id: currentPatternId,
+                    };
+                    renderPatternEditor();
+                    showAlert('Pattern Imported', `Pattern "${importedData.patternName}" imported successfully.`);
+                } else {
+                    // Add as a new pattern if no pattern is active in editor
+                    importedData.id = Date.now() + Math.random();
+                    sequences.push(importedData);
+                    activeSequenceIndex = sequences.length - 1;
+                    showView('editor');
+                    showAlert('Pattern Imported', `Pattern "${importedData.patternName}" added as new pattern.`);
+                }
               } else {
                 showAlert('Import Error', 'Invalid pattern configuration file. Please select a valid .pattern.json file.');
               }
             } catch (error) {
               showAlert('Import Error', 'Failed to parse file. Please ensure it is a valid JSON file.');
             } finally {
-              document.body.removeChild(fileInput); // Clean up
+              document.body.removeChild(fileInput);
             }
           };
           reader.onerror = () => {
             showAlert('Import Error', 'Failed to read file.');
-            document.body.removeChild(fileInput); // Clean up
+            document.body.removeChild(fileInput);
           };
           reader.readAsText(file);
         });
 
         document.body.appendChild(fileInput);
-        fileInput.click(); // Open the file dialog
+        fileInput.click();
       };
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
@@ -745,12 +853,12 @@
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,.workout.json';
-        fileInput.style.display = 'none'; // Hide the input
+        fileInput.style.display = 'none';
 
         fileInput.addEventListener('change', (event) => {
           const file = event.target.files[0];
           if (!file) {
-              document.body.removeChild(fileInput); // Clean up even if no file is selected
+              document.body.removeChild(fileInput);
               return;
           }
 
@@ -759,9 +867,9 @@
             try {
               const importedWorkout = JSON.parse(e.target.result);
               if (isValidWorkoutFile(importedWorkout)) {
-                sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() })); // Assign new IDs
-                activeSequenceIndex = 0;
-                renderCurrentSequence();
+                sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
+                activeSequenceIndex = -1; // Go back to table view
+                showView('table');
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
               } else {
                 showAlert('Load Error', 'Invalid workout file. Please select a valid .workout.json file containing an array of patterns.');
@@ -769,22 +877,26 @@
             } catch (error) {
               showAlert('Load Error', 'Failed to parse workout file. Please ensure it is a valid JSON file.');
             } finally {
-              document.body.removeChild(fileInput); // Clean up
+              document.body.removeChild(fileInput);
             }
           };
           reader.onerror = () => {
             showAlert('Load Error', 'Failed to read workout file.');
-            document.body.removeChild(fileInput); // Clean up
+            document.body.removeChild(fileInput);
           };
           reader.readAsText(file);
         });
 
         document.body.appendChild(fileInput);
-        fileInput.click(); // Open the file dialog
+        fileInput.click();
       };
 
       const saveAllPatterns = () => {
-        saveCurrentSequenceState(); // Ensure all changes are in the sequences array
+        // If in editor view, save current pattern before saving all
+        if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
+          saveCurrentSequenceState();
+        }
+
         if (sequences.length === 0) {
             showAlert('Save Error', 'No patterns to save in the workout file.');
             return;
@@ -795,7 +907,7 @@
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `my-workout-${new Date().toISOString().slice(0,10)}.workout.json`; // Default filename
+        a.download = `my-workout-${new Date().toISOString().slice(0,10)}.workout.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -808,10 +920,11 @@
           const modalTitle = document.getElementById('modal-title');
           const modalText = document.getElementById('modal-text');
           const confirmBtn = document.getElementById('confirm-btn');
+          const cancelBtn = document.getElementById('cancel-btn'); // Ensure cancelBtn is also referenced here
 
           modalTitle.textContent = 'Confirm Reset';
           modalText.textContent = 'Are you sure you want to clear all workout patterns? This action cannot be undone.';
-          confirmBtn.textContent = 'Reset'; // Changed from 'Reset All'
+          confirmBtn.textContent = 'Reset';
           confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
           modal.classList.remove('hidden');
 
@@ -819,19 +932,18 @@
               sequences = [];
               sequences.push(getNewSequenceData());
               sequences[0].patternName = "Pattern 1";
-              activeSequenceIndex = 0;
-              renderCurrentSequence();
+              activeSequenceIndex = -1; // Reset to table view
+              showView('table');
               modal.classList.add('hidden');
-              focusOnTop();
-              confirmBtn.removeEventListener('click', onConfirm); // Clean up listener
-              cancelBtn.removeEventListener('click', onCancel); // Clean up listener
+              confirmBtn.removeEventListener('click', onConfirm);
+              cancelBtn.removeEventListener('click', onCancel);
               showAlert('Patterns Cleared', 'All patterns have been cleared and reset to a single default.');
           };
 
           const onCancel = () => {
               modal.classList.add('hidden');
-              confirmBtn.removeEventListener('click', onConfirm); // Clean up listener
-              cancelBtn.removeEventListener('click', onCancel); // Clean up listener
+              confirmBtn.removeEventListener('click', onConfirm);
+              cancelBtn.removeEventListener('click', onCancel);
           };
 
           confirmBtn.addEventListener('click', onConfirm);
@@ -840,14 +952,23 @@
 
 
       // --- EVENT LISTENERS ---
-      // These event listeners need to be attached to the sequencesContainer
-      // because the buttons are now dynamically rendered as part of each sequence.
+
+      // Table View Buttons
+      document.getElementById('new-pattern-btn').addEventListener('click', addSequence);
+      document.getElementById('patterns-table-body').addEventListener('click', (e) => {
+          const row = e.target.closest('tr');
+          if (row && row.dataset.index !== undefined) {
+              showSequenceInEditor(parseInt(row.dataset.index));
+          }
+      });
+
+      // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
           if (e.target.closest('#add-btn')) {
-              addSequence(e);
+              addSequence(); // Add a new pattern and open its editor
           }
           if (e.target.closest('#clone-btn')) {
-              cloneSequence(e);
+              cloneSequence(); // Clone current pattern and open its editor
           }
           if (e.target.closest('#import-btn')) {
               importPatternConfig();
@@ -858,11 +979,11 @@
               e.target.closest('button')?.blur();
           }
           if (e.target.closest('#delete-btn')) {
-              // delete confirmation modal trigger
               const modal = document.getElementById('confirmation-modal');
               const modalTitle = document.getElementById('modal-title');
               const modalText = document.getElementById('modal-text');
               const confirmBtn = document.getElementById('confirm-btn');
+              const cancelBtn = document.getElementById('cancel-btn');
 
               modalTitle.textContent = 'Confirm Deletion';
               modalText.textContent = 'Are you sure you want to delete this pattern? This action cannot be undone.';
@@ -872,22 +993,35 @@
               e.target.closest('button')?.blur();
 
               // Clear previous listeners and add new ones for the specific action
-              confirmBtn.replaceWith(confirmBtn.cloneNode(true)); // Remove all previous listeners
-              cancelBtn.replaceWith(cancelBtn.cloneNode(true)); // Remove all previous listeners
+              confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+              cancelBtn.replaceWith(cancelBtn.cloneNode(true));
               const newConfirmBtn = document.getElementById('confirm-btn');
               const newCancelBtn = document.getElementById('cancel-btn');
 
               newConfirmBtn.addEventListener('click', () => {
                   deleteSequence();
                   modal.classList.add('hidden');
+                  // After delete, decide whether to go back to table or stay in editor
+                  if (sequences.length === 0 || activeSequenceIndex === -1) { // If no patterns left or delete resulted in no active pattern
+                    showView('table'); // Go back to table view
+                  } else {
+                    renderPatternEditor(); // Re-render the new active sequence in editor
+                  }
                   focusOnTop();
               });
               newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
           }
-          if (e.target.closest('#nav-first')) showSequence(0);
-          if (e.target.closest('#nav-prev')) showSequence(activeSequenceIndex - 1);
-          if (e.target.closest('#nav-next')) showSequence(activeSequenceIndex + 1);
-          e.target.closest('button')?.blur(); // Remove focus from nav buttons after click
+          if (e.target.closest('#nav-first')) showSequenceInEditor(0);
+          if (e.target.closest('#nav-prev')) showSequenceInEditor(activeSequenceIndex - 1);
+          if (e.target.closest('#nav-next')) showSequenceInEditor(activeSequenceIndex + 1);
+          e.target.closest('button')?.blur();
+      });
+
+      // Back to List button in editor
+      document.getElementById('back-to-list-btn').addEventListener('click', () => {
+          saveCurrentSequenceState(); // Save before going back to list
+          activeSequenceIndex = -1; // No active pattern in editor
+          showView('table');
       });
 
       // Global buttons for all patterns
@@ -895,43 +1029,38 @@
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
 
-
-      // The rest of the event listeners were already on sequencesContainer or global, so they remain the same.
+      // Event listeners for inputs/changes within the currently rendered sequence editor
       sequencesContainer.addEventListener('input', (e) => {
-          saveCurrentSequenceState();
-          const currentEl = sequencesContainer.firstChild;
-          if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
-          if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
-          if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) updateIntervalDisplay(currentEl);
-          if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
-          if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
+          // Ensure we only save/update if the editor is visible and an element inside it triggered the event
+          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
+              saveCurrentSequenceState();
+              const currentEl = sequencesContainer.firstChild;
+              if (!currentEl) return;
+              if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
+              if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
+              if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) updateIntervalDisplay(currentEl);
+              if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
+              if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
+          }
       });
       sequencesContainer.addEventListener('change', (e) => {
-          saveCurrentSequenceState();
-          const currentEl = sequencesContainer.firstChild;
-          if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
-          if (e.target.closest('#limitTypeSelect')) handleLimitTypeChange(currentEl);
-          if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl); // Call new handler for announceShots
+          // Ensure we only save/update if the editor is visible and an element inside it triggered the event
+          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
+              saveCurrentSequenceState();
+              const currentEl = sequencesContainer.firstChild;
+              if (!currentEl) return;
+              if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
+              if (e.target.closest('#limitTypeSelect')) handleLimitTypeChange(currentEl);
+              if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
+          }
       });
-
-      // Confirmation Modal Logic (still global, but its buttons are now managed via direct IDs)
-      const modal = document.getElementById('confirmation-modal');
-      const confirmBtn = document.getElementById('confirm-btn');
-      const cancelBtn = document.getElementById('cancel-btn');
-
-      // Initial cleanup of listeners to prevent multiple bindings if code is run multiple times in environment
-      confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-      cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-      // Re-get references after cloning
-      // Note: For global modals, it's safer to manage listeners outside of `renderCurrentSequence`
-      // or ensure they are only added once. The current implementation in event delegation is fine.
 
 
       // --- INITIALIZATION ---
       const initialize = () => {
         sequences.push(getNewSequenceData());
-        sequences[0].patternName = "Pattern 1"; // Initialize the first pattern with a name
-        renderCurrentSequence();
+        sequences[0].patternName = "Pattern 1";
+        showView('table'); // Start with the table view
       };
 
       initialize();
