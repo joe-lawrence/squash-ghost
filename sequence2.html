@@ -540,17 +540,6 @@
           if (activeSequenceIndex >= sequences.length) {
               activeSequenceIndex = sequences.length - 1;
           }
-          // After deletion, re-index pattern names for clarity
-          sequences.forEach((seq, index) => {
-              if (!seq.patternName.startsWith('Pattern ')) { // Only re-index if not custom named
-                  // Try to preserve " (Clone)" if it exists
-                  const cloneSuffix = seq.patternName.includes(' (Clone)') ? ' (Clone)' : '';
-                  seq.patternName = `Pattern ${index + 1}${cloneSuffix}`;
-              } else {
-                  // If it was a default pattern name, update its number
-                  seq.patternName = `Pattern ${index + 1}`;
-              }
-          });
           renderCurrentSequence();
       };
       
