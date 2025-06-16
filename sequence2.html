@@ -104,7 +104,6 @@
 
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <!-- Removed thead as per request -->
                 <tbody id="patterns-table-body">
                     <!-- Pattern rows will be dynamically inserted here -->
                 </tbody>
@@ -112,7 +111,7 @@
         </div>
 
         <div class="flex justify-center space-x-4">
-            <!-- New Delete Pattern Toggle Button -->
+            <!-- Delete Pattern Toggle Button -->
             <button id="delete-pattern-toggle-btn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-state="off">
                 <span class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -245,7 +244,6 @@
                                 <div class="mb-4">
                                     <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
                                     <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                                        <!-- Removed 'None' option -->
                                         <option value="shot">Max Shots</option>
                                         <option value="time">Max Time</option>
                                     </select>
@@ -327,26 +325,26 @@
       let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
       let selectedPatternId = null; // Store the ID of the selected row for focus tracking
       let isMoveModeOn = false; // State for move mode
-      let isDeleteModeOn = false; // New state for delete mode
+      let isDeleteModeOn = false; // State for delete mode
 
       const tableViewContainer = document.getElementById('table-view-container');
       const patternEditorContainer = document.getElementById('pattern-editor-container');
-      const sequencesContainer = document.getElementById('sequences-container'); // This is where the template clone goes
+      const sequencesContainer = document.getElementById('sequences-container');
       const sequenceTemplate = document.getElementById('sequence-template');
       const patternsTableBody = document.getElementById('patterns-table-body');
       const appContainer = document.getElementById('app-container');
-      const globalControls = document.getElementById('global-controls'); // Get the global controls div
+      const globalControls = document.getElementById('global-controls');
       const movePatternToggleButton = document.getElementById('move-pattern-toggle-btn');
-      const deletePatternToggleButton = document.getElementById('delete-pattern-toggle-btn'); // New delete button
-      const startWorkoutButton = document.getElementById('start-workout-btn'); // Start Workout button
-      const startWorkoutContainer = document.getElementById('start-workout-container'); // Start Workout button container
+      const deletePatternToggleButton = document.getElementById('delete-pattern-toggle-btn');
+      const startWorkoutButton = document.getElementById('start-workout-btn');
+      const startWorkoutContainer = document.getElementById('start-workout-container');
 
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
-        const roundedSeconds = Math.round(totalSeconds); // Ensure we're working with whole seconds
+        const roundedSeconds = Math.round(totalSeconds);
 
-        if (roundedSeconds === 0) return 'None'; // Changed to display "None" for 0 seconds
+        if (roundedSeconds === 0) return 'None';
 
         const minutes = Math.floor(roundedSeconds / 60);
         const seconds = roundedSeconds % 60;
@@ -364,7 +362,7 @@
       const getNewSequenceData = () => {
         const defaultShotOptions = 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right';
         const defaultShotOptionsCount = defaultShotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
-        const defaultShotInterval = 4.0; // Keep consistent with existing default
+        const defaultShotInterval = 4.0;
 
         return {
           id: Date.now() + Math.random(),
@@ -415,8 +413,8 @@
             !['in-order', 'randomized'].includes(data.seriesOrder) ||
             typeof data.shotInterval !== 'number' ||
             typeof data.randomOffset !== 'number' ||
-            typeof data.nextShotAnnouncement !== 'number' || // Added type check for new property
-            !['shot', 'time'].includes(data.limitType) || // Updated to not include 'none'
+            typeof data.nextShotAnnouncement !== 'number' ||
+            !['shot', 'time'].includes(data.limitType) ||
             typeof data.patternLimit !== 'number' ||
             typeof data.postSequenceRest !== 'number') {
             return false;
@@ -433,7 +431,7 @@
         return data.every(pattern => isValidPatternConfig(pattern));
       };
 
-      // Custom Alert Modal Function
+      // Custom Alert Modal
       const alertModal = document.getElementById('alert-modal');
       const alertTitle = document.getElementById('alert-title');
       const alertMessage = document.getElementById('alert-message');
@@ -487,10 +485,9 @@
           const newPatternBtn = document.getElementById('new-pattern-btn');
           const loadAllBtn = document.getElementById('load-all-btn');
           const saveAllBtn = document.getElementById('save-all-btn');
-          const resetAllBtn = document.getElementById('reset-all-btn'); // Global reset should always be enabled
-          const startWorkoutBtn = document.getElementById('start-workout-btn'); // Start button
+          const resetAllBtn = document.getElementById('reset-all-btn');
+          const startWorkoutBtn = document.getElementById('start-workout-btn');
 
-          // Editor buttons (Clone, Import, Save) - now correctly referenced by their IDs directly
           const backToListBtn = document.getElementById('back-to-list-btn');
           const cloneBtn = document.getElementById('clone-btn');
           const importBtn = document.getElementById('import-btn');
@@ -498,8 +495,8 @@
 
           // Buttons affected by any active mode (excluding the mode's own toggle and global reset)
           const elementsToToggleDisable = [
-              newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn, // Global buttons
-              backToListBtn, cloneBtn, importBtn, saveBtn // Editor specific buttons
+              newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn,
+              backToListBtn, cloneBtn, importBtn, saveBtn
           ];
 
           elementsToToggleDisable.forEach(element => {
@@ -549,7 +546,8 @@
           });
 
           patternsTableBody.querySelectorAll('.pattern-name-clickable').forEach(span => {
-              if (disableAllMainActions) { // If any mode is on, pattern name should not be clickable to enter editor
+              // If any mode is on, pattern name should not be clickable to enter editor
+              if (disableAllMainActions) {
                   span.classList.remove('cursor-pointer');
                   span.style.pointerEvents = 'none';
               } else {
@@ -595,9 +593,8 @@
       const showView = (view) => {
           if (view === 'table') {
               tableViewContainer.classList.remove('hidden');
-              startWorkoutContainer.classList.remove('hidden'); // Show start button
+              startWorkoutContainer.classList.remove('hidden');
               patternEditorContainer.classList.add('hidden');
-              // Show global buttons when in table view.
               globalControls.classList.remove('hidden');
               renderTableView();
               calculateTotalWorkoutTime(); // Update time when showing table view
@@ -605,9 +602,8 @@
               setInteractionMode(null); // Ensure modes are off when switching to table view
           } else if (view === 'editor') {
               tableViewContainer.classList.add('hidden');
-              startWorkoutContainer.classList.add('hidden'); // Hide start button
+              startWorkoutContainer.classList.add('hidden');
               patternEditorContainer.classList.remove('hidden');
-              // Hide global buttons when in editor.
               globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
@@ -621,14 +617,14 @@
           sequences.forEach(pattern => {
               let patternDuration = 0;
 
-              // Now, limitType will always be 'shot' or 'time'
+              // limitType will always be 'shot' or 'time'
               if (pattern.limitType === 'time') {
                   patternDuration = pattern.patternLimit;
               } else if (pattern.limitType === 'shot') {
                   patternDuration = pattern.patternLimit * pattern.shotInterval;
               }
               totalTime += patternDuration;
-              totalTime += pattern.postSequenceRest; // Add post-sequence rest
+              totalTime += pattern.postSequenceRest;
           });
           startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
       };
@@ -636,11 +632,10 @@
 
       // --- TABLE VIEW RENDERING ---
       const renderTableView = () => {
-          patternsTableBody.innerHTML = ''; // Clear existing rows
+          patternsTableBody.innerHTML = '';
           if (sequences.length === 0) {
               const noPatternsRow = document.createElement('tr');
               noPatternsRow.classList.add('bg-white', 'dark:bg-gray-800');
-              // Adjusted colspan for the "No patterns" message
               noPatternsRow.innerHTML = `<td colspan="2" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No patterns configured. Click "New Pattern" to add one.</td>`;
               patternsTableBody.appendChild(noPatternsRow);
               return;
@@ -648,8 +643,7 @@
 
           sequences.forEach((pattern, index) => {
               const row = document.createElement('tr');
-              // Add pattern ID to the row for easier identification
-              row.dataset.patternId = pattern.id;
+              row.dataset.patternId = pattern.id; // Add pattern ID to the row for easier identification
               row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600');
               row.dataset.index = index; // Store the index for easy access
 
@@ -697,7 +691,7 @@
 
       // --- PATTERN EDITOR RENDERING & DATA SYNC ---
       const renderPatternEditor = () => {
-        sequencesContainer.innerHTML = ''; // Clear previous editor content
+        sequencesContainer.innerHTML = '';
         if (activeSequenceIndex === -1 || sequences.length === 0) {
             // This state should ideally not be reached if logic correctly hides editor when no pattern is active
             showView('table');
@@ -741,7 +735,6 @@
         handleAnnounceShotsChange(newSequenceEl);
         initFlowbite(); // Re-initialize Flowbite for new accordion elements
 
-        // Add event listener for pattern name editing
         patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
         toggleOtherButtons(); // Apply state after view change
       };
@@ -772,11 +765,10 @@
         currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
 
-        // Recalculate total workout time if any pattern data changes
         calculateTotalWorkoutTime();
       };
 
-      // --- UI UPDATE FUNCTIONS (These largely remain the same, but now act on the current editor's elements) ---
+      // --- UI UPDATE FUNCTIONS ---
       const updateAllDisplays = (context) => {
           updateShotOptionsDisplay(context);
           updateNarrationDisplay(context);
@@ -824,9 +816,9 @@
       const handleLimitTypeChange = (context) => {
         const select = context.querySelector('#limitTypeSelect');
         const slider = context.querySelector('#patternLimitSlider');
-        const currentPattern = sequences[activeSequenceIndex]; // Get current pattern data from state
-        const newLimitType = select.value; // The new type selected by the user
-        const oldLimitType = currentPattern.limitType; // The type *before* this change
+        const currentPattern = sequences[activeSequenceIndex];
+        const newLimitType = select.value;
+        const oldLimitType = currentPattern.limitType;
 
         // Save the current patternLimit to the appropriate 'previous' field before updating currentPattern.limitType
         if (oldLimitType === 'shot') {
@@ -835,8 +827,7 @@
             currentPattern.previousTimeLimit = currentPattern.patternLimit;
         }
 
-        // Set slider properties and value based on the newLimitType
-        slider.disabled = false; // Slider is always enabled when a limit type is selected
+        slider.disabled = false;
 
         if (newLimitType === 'shot') {
             slider.min = 0;
@@ -871,7 +862,7 @@
         currentPattern.patternLimit = parseInt(slider.value);
 
         updateLimitsDisplay(context);
-        calculateTotalWorkoutTime(); // Recalculate total time on limit change
+        calculateTotalWorkoutTime();
       };
 
       const handleAnnounceShotsChange = (context) => {
@@ -917,7 +908,7 @@
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
         // Save current pattern state ONLY if in editor view
-        if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
+        if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
         }
 
@@ -925,16 +916,15 @@
         newSequence.patternName = `Pattern ${sequences.length + 1}`;
         sequences.push(newSequence);
 
-        // Do NOT change activeSequenceIndex or force editor view
-        // Instead, re-render the current view to reflect the added pattern
+        // Re-render the current view to reflect the added pattern
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
             renderPatternEditor();
         } else { // If in table view
             selectedPatternId = newSequence.id; // Select the newly added pattern
             renderTableView();
         }
-        calculateTotalWorkoutTime(); // Recalculate total time after adding
-        focusOnTop(); // Keep consistency with previous behavior
+        calculateTotalWorkoutTime();
+        focusOnTop();
       };
 
       const cloneSequence = () => {
@@ -950,20 +940,18 @@
         clonedData.patternName = `${clonedData.patternName} (Clone)`;
         sequences.splice(activeSequenceIndex + 1, 0, clonedData);
 
-        // Do NOT change activeSequenceIndex or force editor view for the cloned pattern
-        // Instead, re-render the current view to reflect the added pattern
+        // Re-render the current view to reflect the added pattern
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
             activeSequenceIndex++; // Increment index so the cloned item appears after the current one
             renderPatternEditor(); // Re-render the new current pattern (which is now the cloned one)
         } else { // If currently in table view
             renderTableView(); // Re-render the table
         }
-        calculateTotalWorkoutTime(); // Recalculate total time after cloning
-        focusOnTop(); // Keep consistency
+        calculateTotalWorkoutTime();
+        focusOnTop();
       };
 
       const movePattern = (index, direction) => {
-          // Store the ID of the pattern being moved to re-select it after re-render
           const patternIdToSelect = sequences[index].id;
 
           if (direction === 'up' && index > 0) {
@@ -978,8 +966,8 @@
               else if (activeSequenceIndex === index + 1) activeSequenceIndex--;
           }
           selectedPatternId = patternIdToSelect; // Set the ID of the pattern to be selected
-          renderTableView(); // Re-render the table after reordering
-          calculateTotalWorkoutTime(); // Recalculate total time after moving
+          renderTableView();
+          calculateTotalWorkoutTime();
       };
 
       const deleteSequence = (indexToDelete) => {
@@ -997,13 +985,13 @@
               } else {
                   renderPatternEditor(); // Re-render editor with reset pattern
               }
-              calculateTotalWorkoutTime(); // Recalculate total time after reset
+              calculateTotalWorkoutTime();
               return;
           }
 
           // Save active pattern's state BEFORE modification if it's the one being deleted
           if (activeSequenceIndex === indexToDelete) {
-              saveCurrentSequenceState(); // Save state of the pattern *about to be deleted* if it was active
+              saveCurrentSequenceState();
           }
 
           sequences.splice(indexToDelete, 1);
@@ -1018,17 +1006,16 @@
               activeSequenceIndex--;
           }
 
-          // Update selectedPatternId based on the new activeSequenceIndex
           selectedPatternId = activeSequenceIndex !== -1 ? sequences[activeSequenceIndex].id : null;
 
-          // Now decide which view to render
+          // Decide which view to render
           if (sequences.length === 0 || activeSequenceIndex === -1) {
               showView('table'); // No patterns or no active pattern, go to table
           } else {
               renderPatternEditor(); // Re-render the new active sequence in editor
           }
-          calculateTotalWorkoutTime(); // Recalculate total time after deleting
-          focusOnTop(); // Keep consistent
+          calculateTotalWorkoutTime();
+          focusOnTop();
       };
 
 
@@ -1039,7 +1026,7 @@
           sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
           selectedPatternId = sequences[activeSequenceIndex].id; // Ensure the reset pattern is selected
           renderPatternEditor();
-          calculateTotalWorkoutTime(); // Recalculate total time after resetting current
+          calculateTotalWorkoutTime();
       };
 
       const showSequenceInEditor = (index) => {
@@ -1054,7 +1041,6 @@
 
       // Function to handle pattern name editing
       const editPatternName = (currentData, displayElement) => {
-          // Turn off interaction modes before editing pattern name
           setInteractionMode(null);
 
           const inputElement = document.createElement('input');
@@ -1072,7 +1058,7 @@
               }
               currentData.patternName = newName;
               renderPatternEditor(); // Re-render to show updated label
-              calculateTotalWorkoutTime(); // Recalculate total time after name change (though it doesn't affect time)
+              calculateTotalWorkoutTime();
           };
 
           inputElement.addEventListener('blur', saveAndRevert);
@@ -1086,7 +1072,6 @@
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS ---
       const savePatternConfig = () => {
-        // Turn off interaction modes
         setInteractionMode(null);
         if (activeSequenceIndex === -1 || sequences.length === 0) {
           showAlert('Save Error', 'No pattern selected to save.');
@@ -1106,11 +1091,10 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showAlert('Pattern Saved', `Pattern "${currentPattern.patternName}" saved successfully.`);
-        calculateTotalWorkoutTime(); // Recalculate total time after saving
+        calculateTotalWorkoutTime();
       };
 
       const importPatternConfig = () => {
-        // Turn off interaction modes
         setInteractionMode(null);
 
         const fileInput = document.createElement('input');
@@ -1137,7 +1121,7 @@
                       ...importedData,
                       id: currentPatternId,
                     };
-                    selectedPatternId = sequences[activeSequenceIndex].id; // Select the imported pattern
+                    selectedPatternId = sequences[activeSequenceIndex].id;
                     renderPatternEditor();
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" imported successfully.`);
                 } else {
@@ -1145,11 +1129,11 @@
                     importedData.id = Date.now() + Math.random();
                     sequences.push(importedData);
                     activeSequenceIndex = sequences.length - 1;
-                    selectedPatternId = importedData.id; // Select the new pattern
+                    selectedPatternId = importedData.id;
                     showView('editor');
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" added as new pattern.`);
                 }
-                calculateTotalWorkoutTime(); // Recalculate total time after import
+                calculateTotalWorkoutTime();
               } else {
                 showAlert('Import Error', 'Invalid pattern configuration file. Please select a valid .pattern.json file.');
               }
@@ -1172,7 +1156,6 @@
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
       const loadAllPatterns = () => {
-        // Turn off interaction modes
         setInteractionMode(null);
 
         const fileInput = document.createElement('input');
@@ -1197,7 +1180,7 @@
                 selectedPatternId = null; // Clear selection when loading all
                 showView('table');
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
-                calculateTotalWorkoutTime(); // Recalculate total time after loading all
+                calculateTotalWorkoutTime();
               } else {
                 showAlert('Load Error', 'Invalid workout file. Please select a valid .workout.json file containing an array of patterns.');
               }
@@ -1219,10 +1202,9 @@
       };
 
       const saveAllPatterns = () => {
-        // Turn off interaction modes
         setInteractionMode(null);
         // If in editor view, save current pattern before saving all
-        if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
+        if (!patternEditorContainer.classList.contains('hidden')) {
           saveCurrentSequenceState();
         }
 
@@ -1242,18 +1224,17 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showAlert('Workout Saved', `Successfully saved ${sequences.length} patterns to a workout file.`);
-        calculateTotalWorkoutTime(); // Recalculate total time after saving all
+        calculateTotalWorkoutTime();
       };
 
       const clearAllPatterns = () => {
-          // Turn off interaction modes first
           setInteractionMode(null);
 
           const modal = document.getElementById('confirmation-modal');
           const modalTitle = document.getElementById('modal-title');
           const modalText = document.getElementById('modal-text');
           const confirmBtn = document.getElementById('confirm-btn');
-          const cancelBtn = document.getElementById('cancel-btn'); // Ensure cancelBtn is also referenced here
+          const cancelBtn = document.getElementById('cancel-btn');
 
           modalTitle.textContent = 'Confirm Reset';
           modalText.textContent = 'Are you sure you want to clear all workout patterns? This action cannot be undone.';
@@ -1271,8 +1252,7 @@
               modal.classList.add('hidden');
               confirmBtn.removeEventListener('click', onConfirm);
               cancelBtn.removeEventListener('click', onCancel);
-              // Removed the showAlert for "Patterns Cleared" here
-              calculateTotalWorkoutTime(); // Recalculate total time after clearing all
+              calculateTotalWorkoutTime();
           };
 
           const onCancel = () => {
@@ -1292,13 +1272,7 @@
       document.addEventListener('click', (e) => {
           // Only turn off modes if a mode is currently ON
           if (isMoveModeOn || isDeleteModeOn) {
-              // Check if the click target is NOT:
-              // 1. The move toggle button itself or its children
-              // 2. The delete toggle button itself or its children
-              // 3. Inside the patterns table body (which contains move/delete chevrons/buttons)
-              // 4. Inside any modal (alert or confirmation)
-              // 5. The start workout button
-              // 6. Inside the pattern editor container itself (which contains clone/import/save buttons, back button, and the sequence content)
+              // Check if the click target is NOT one of the interactive mode-related elements
               if (e.target !== movePatternToggleButton &&
                   !movePatternToggleButton.contains(e.target) &&
                   e.target !== deletePatternToggleButton &&
@@ -1308,7 +1282,7 @@
                   !e.target.closest('#alert-modal') &&
                   e.target !== startWorkoutButton &&
                   !startWorkoutButton.contains(e.target) &&
-                  !patternEditorContainer.contains(e.target) // Changed to patternEditorContainer
+                  !patternEditorContainer.contains(e.target)
               ) {
                   setInteractionMode(null); // Turn off all modes
               }
@@ -1318,22 +1292,20 @@
 
       // Table View Buttons
       document.getElementById('new-pattern-btn').addEventListener('click', () => {
-        setInteractionMode(null); // Turn off any mode before adding new pattern
+        setInteractionMode(null);
         addSequence();
       });
 
-      // Toggle move pattern mode
       movePatternToggleButton.addEventListener('click', () => {
           setInteractionMode(isMoveModeOn ? null : 'move');
       });
 
-      // Toggle delete pattern mode
       deletePatternToggleButton.addEventListener('click', () => {
           setInteractionMode(isDeleteModeOn ? null : 'delete');
       });
 
 
-      // Event delegation for table body clicks (including new buttons)
+      // Event delegation for table body clicks
       patternsTableBody.addEventListener('click', (e) => {
           const row = e.target.closest('tr');
           if (!row) return;
@@ -1341,22 +1313,19 @@
           const index = parseInt(row.dataset.index);
           const patternId = sequences[index].id;
 
-          // Remove selected-row from all rows first
           patternsTableBody.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
-          // Add selected-row to the clicked row
           row.classList.add('selected-row');
           selectedPatternId = patternId; // Update the globally selected pattern ID
 
           if (e.target.closest('.up-arrow-btn')) {
               movePattern(index, 'up');
               e.target.closest('button')?.blur();
-              e.stopPropagation(); // Prevent event from bubbling up to document listener
+              e.stopPropagation();
           } else if (e.target.closest('.down-arrow-btn')) {
               movePattern(index, 'down');
               e.target.closest('button')?.blur();
-              e.stopPropagation(); // Prevent event from bubbling up to document listener
+              e.stopPropagation();
           } else if (e.target.closest('.delete-pattern-btn')) {
-              // If delete mode is on, proceed with delete confirmation
               if (isDeleteModeOn) {
                   const modal = document.getElementById('confirmation-modal');
                   const modalTitle = document.getElementById('modal-title');
@@ -1378,50 +1347,47 @@
                   const newCancelBtn = document.getElementById('cancel-btn');
 
                   newConfirmBtn.addEventListener('click', () => {
-                      deleteSequence(index); // Pass the specific index to delete
+                      deleteSequence(index);
                       modal.classList.add('hidden');
                       focusOnTop();
                   });
                   newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-                  e.stopPropagation(); // Prevent turning off delete mode
+                  e.stopPropagation();
               } else {
-                  // If delete mode is not on, and someone tries to click the hidden delete button
-                  // This case should ideally not happen due to 'hidden' class, but good for robustness
-                  setInteractionMode(null); // Turn off any active mode
+                  setInteractionMode(null);
               }
-          } else if (e.target.closest('.pattern-name-clickable') || e.target.closest('.view-pattern-btn')) { // Added view-pattern-btn here
-              // Turn off any mode before showing editor
+          } else if (e.target.closest('.pattern-name-clickable') || e.target.closest('.view-pattern-btn')) {
               setInteractionMode(null);
               showSequenceInEditor(index);
           }
       });
 
 
-      // Pattern Editor Buttons (direct children of patternEditorContainer)
+      // Pattern Editor Buttons
       document.getElementById('clone-btn').addEventListener('click', () => {
-          setInteractionMode(null); // Turn off any mode before cloning
+          setInteractionMode(null);
           cloneSequence();
-          document.getElementById('clone-btn').blur(); // Blur the button after click
+          document.getElementById('clone-btn').blur();
       });
       document.getElementById('import-btn').addEventListener('click', () => {
-          setInteractionMode(null); // Turn off any mode before importing
+          setInteractionMode(null);
           importPatternConfig();
-          document.getElementById('import-btn').blur(); // Blur the button after click
+          document.getElementById('import-btn').blur();
       });
       document.getElementById('save-btn').addEventListener('click', () => {
-          setInteractionMode(null); // Turn off any mode before saving
+          setInteractionMode(null);
           savePatternConfig();
-          document.getElementById('save-btn').blur(); // Blur the button after click
+          document.getElementById('save-btn').blur();
       });
 
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
-          setInteractionMode(null); // Turn off any mode before going back to list
-          saveCurrentSequenceState(); // Save before going back to list
-          activeSequenceIndex = -1; // No active pattern in editor
+          setInteractionMode(null);
+          saveCurrentSequenceState();
+          activeSequenceIndex = -1;
           showView('table');
-          selectedPatternId = null; // Clear selection when going back to table without an active edit
+          selectedPatternId = null;
       });
 
       // Global buttons for all patterns
@@ -1435,28 +1401,22 @@
 
       // Event listeners for inputs/changes within the currently rendered sequence editor
       sequencesContainer.addEventListener('input', (e) => {
-          // Ensure we only save/update if the editor is visible and an element inside it triggered the event
           if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
               const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return; // Ensure currentEl is valid
+              if (!currentEl) return;
 
-              // Check if the change is a limit type change, if so, saveCurrentSequenceState will be called by handleLimitTypeChange
               if (e.target.closest('#limitTypeSelect')) {
-                  // handleLimitTypeChange will save state and update pattern.limitType and pattern.patternLimit
-                  // No need to call saveCurrentSequenceState here explicitly as handleLimitTypeChange does it
-                  handleLimitTypeChange(currentEl); // Pass currentEl directly
+                  handleLimitTypeChange(currentEl);
               } else {
-                  saveCurrentSequenceState(); // Save for all other inputs
+                  saveCurrentSequenceState();
               }
 
               if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
               if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
               if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
                   updateIntervalDisplay(currentEl);
-                  // If shot interval changes, it might affect the default for Max Time, so re-evaluate limits
-                  // Only re-call handleLimitTypeChange if the current limit type is 'time'
                   if (sequences[activeSequenceIndex].limitType === 'time') {
-                     handleLimitTypeChange(currentEl); // This will update patternLimit if type is 'time'
+                     handleLimitTypeChange(currentEl);
                   }
               }
               if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
@@ -1464,15 +1424,14 @@
           }
       });
       sequencesContainer.addEventListener('change', (e) => {
-          // Ensure we only save/update if the editor is visible and an element inside it triggered the event
           if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
               const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return; // Ensure currentEl is valid
+              if (!currentEl) return;
 
               if (e.target.closest('#limitTypeSelect')) {
-                  handleLimitTypeChange(currentEl); // Pass currentEl directly
+                  handleLimitTypeChange(currentEl);
               } else {
-                  saveCurrentSequenceState(); // Save for other changes
+                  saveCurrentSequenceState();
               }
               
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
