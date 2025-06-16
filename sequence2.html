@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Squash Ghosting Configuration</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Flowbite CDN for accordion functionality -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <style>
     /* Custom font for a clean look */
@@ -87,13 +89,16 @@
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
   <div id="app-container" class="w-full max-w-2xl">
 
+    <!-- Table View Container -->
     <div id="table-view-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Workout Patterns</h2>
 
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <!-- Removed thead as per request -->
                 <tbody id="patterns-table-body">
-                    </tbody>
+                    <!-- Pattern rows will be dynamically inserted here -->
+                </tbody>
             </table>
         </div>
 
@@ -111,7 +116,9 @@
         </div>
     </div>
 
+    <!-- Pattern Editor Container -->
     <div id="pattern-editor-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
+        <!-- Back to List Button -->
         <div class="mb-4">
             <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
@@ -119,12 +126,16 @@
             </button>
         </div>
 
+        <!-- This div will contain the dynamically generated sequences -->
         <div id="sequences-container" class="overflow-hidden">
+            <!-- Sequence Template - Keep it hidden and clone for editing -->
             <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-2 shadow-lg dark:bg-gray-800 hidden">
                 <div class="space-y-4">
+                    <!-- New editable pattern name - Left Justified -->
                     <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
                     <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+                        <!-- Options -->
                         <h2 id="accordion-heading-options">
                             <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
                                 <span class="flex items-center gap-2">
@@ -143,6 +154,7 @@
                             </div>
                         </div>
 
+                        <!-- Narration -->
                         <h2 id="accordion-heading-narration">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
                                 <span class="flex items-center gap-2">
@@ -162,6 +174,7 @@
                             </div>
                         </div>
 
+                        <!-- Sequencing -->
                         <h2 id="accordion-heading-sequencing">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
                                 <span class="flex items-center gap-2">
@@ -181,6 +194,7 @@
                             </div>
                         </div>
 
+                        <!-- Interval -->
                         <h2 id="accordion-heading-interval">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
                                 <span class="flex items-center gap-2">
@@ -201,6 +215,7 @@
                             </div>
                         </div>
 
+                        <!-- Limits -->
                         <h2 id="accordion-heading-limits">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
                                 <span class="flex items-center gap-2">
@@ -224,6 +239,7 @@
                             </div>
                         </div>
 
+                        <!-- Post Pattern Rest -->
                         <h2 id="accordion-heading-post-rest">
                             <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
                                 <span class="flex items-center gap-2">
@@ -232,7 +248,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        </h2>
+                        <h2>
                         <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
                             <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
                             <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
@@ -241,6 +257,7 @@
                 </div>
             </div>
         </div>
+        <!-- Centered row of icon buttons - For current pattern in editor -->
         <div class="flex justify-center space-x-4 mt-8">
             <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -258,12 +275,14 @@
     </div>
 
 
+    <!-- Global Controls for all patterns -->
     <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden">
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
         <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button>
     </div>
 
+    <!-- The Confirmation Modal (for delete/reset) -->
     <div id="confirmation-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h3 id="modal-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Deletion</h3>
@@ -275,6 +294,7 @@
         </div>
     </div>
 
+    <!-- Custom Alert Modal -->
     <div id="alert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h3 id="alert-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alert</h3>
@@ -397,6 +417,118 @@
           };
       };
 
+      // Function to turn off move mode
+      const turnOffMoveMode = () => {
+          if (isMoveModeOn) {
+              isMoveModeOn = false;
+              movePatternToggleButton.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+              movePatternToggleButton.classList.remove('bg-blue-600', 'text-white');
+              movePatternToggleButton.dataset.state = 'off';
+              toggleOtherButtons(false); // Re-enable other buttons
+              renderTableView(); // Re-render table to hide move buttons
+          }
+      };
+
+      // Function to disable/enable other buttons and elements
+      const toggleOtherButtons = (disable) => {
+          const buttonsToToggle = [
+              document.getElementById('new-pattern-btn'),
+              document.getElementById('load-all-btn'),
+              document.getElementById('save-all-btn'),
+              document.getElementById('clone-btn'),
+              document.getElementById('import-btn'),
+              document.getElementById('save-btn'), // Editor save button
+          ];
+
+          buttonsToToggle.forEach(button => {
+              if (button) { // Ensure the button exists before trying to modify
+                  button.disabled = disable;
+                  if (disable) {
+                      button.classList.add('opacity-50', 'cursor-not-allowed');
+                  } else {
+                      button.classList.remove('opacity-50', 'cursor-not-allowed');
+                  }
+              }
+          });
+
+          // Handle delete buttons in table rows
+          patternsTableBody.querySelectorAll('.delete-pattern-btn').forEach(button => {
+              button.disabled = disable;
+              if (disable) {
+                  button.classList.add('opacity-50', 'cursor-not-allowed');
+              } else {
+                  button.classList.remove('opacity-50', 'cursor-not-allowed');
+              }
+          });
+
+          // Handle pattern name clickable
+          patternsTableBody.querySelectorAll('.pattern-name-clickable').forEach(span => {
+              if (disable) {
+                  span.classList.remove('cursor-pointer');
+                  span.style.pointerEvents = 'none'; // Disable click
+              } else {
+                  span.classList.add('cursor-pointer');
+                  span.style.pointerEvents = 'auto'; // Enable click
+              }
+          });
+
+          // Disable/enable accordion buttons in editor view
+          if (!patternEditorContainer.classList.contains('hidden')) {
+              sequencesContainer.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
+                  accordionBtn.disabled = disable;
+                  if (disable) {
+                      accordionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                  } else {
+                      accordionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                  }
+              });
+
+              // Disable/enable inputs and textareas within the active editor
+              sequencesContainer.querySelectorAll('input, textarea, select').forEach(inputField => {
+                  // Keep range inputs for shot/random/nextShotAnnouncement enabled if they're part of options/interval,
+                  // unless they are explicitly disabled by their own logic (e.g., nextShotAnnouncement based on announceShots)
+                  if (!inputField.closest('#shotOptions') &&
+                      !inputField.closest('#introMessage') &&
+                      !inputField.closest('#outroMessage') &&
+                      !inputField.closest('input[name="seriesOrder"]') &&
+                      !inputField.closest('#limitTypeSelect') &&
+                      !inputField.closest('#patternLimitSlider') &&
+                      !inputField.closest('#postSequenceRest') &&
+                      !inputField.closest('#shotInterval') &&
+                      !inputField.closest('#randomOffset') &&
+                      !inputField.closest('#nextShotAnnouncement')
+                      ) {
+                      inputField.disabled = disable;
+                      if (disable) {
+                          inputField.classList.add('opacity-50', 'cursor-not-allowed');
+                      } else {
+                          inputField.classList.remove('opacity-50', 'cursor-not-allowed');
+                      }
+                  } else if (inputField.type !== 'range') { // Explicitly handle non-range inputs inside accordions
+                      inputField.disabled = disable;
+                      if (disable) {
+                          inputField.classList.add('opacity-50', 'cursor-not-allowed');
+                      } else {
+                          inputField.classList.remove('opacity-50', 'cursor-not-allowed');
+                      }
+                  }
+              });
+
+              // Also disable pattern name display for editing
+              const patternNameDisplay = sequencesContainer.querySelector('#pattern-name-display');
+              if (patternNameDisplay) {
+                if (disable) {
+                    patternNameDisplay.classList.remove('cursor-pointer');
+                    patternNameDisplay.style.pointerEvents = 'none';
+                } else {
+                    patternNameDisplay.classList.add('cursor-pointer');
+                    patternNameDisplay.style.pointerEvents = 'auto';
+                }
+              }
+          }
+      };
+
+
       // --- VIEW MANAGEMENT ---
       const showView = (view) => {
           if (view === 'table') {
@@ -406,6 +538,7 @@
               globalControls.classList.remove('hidden');
               renderTableView();
               focusOnTop();
+              toggleOtherButtons(isMoveModeOn); // Apply state after view change
           } else if (view === 'editor') {
               tableViewContainer.classList.add('hidden');
               patternEditorContainer.classList.remove('hidden');
@@ -413,6 +546,7 @@
               globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
+              toggleOtherButtons(isMoveModeOn); // Apply state after view change
           }
       };
 
@@ -443,7 +577,8 @@
               row.innerHTML = `
                   <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center space-x-2">
-                          <div class="flex flex-row items-center space-x-1 ${isMoveModeOn ? '' : 'hidden'}"> <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
+                          <div class="flex flex-row items-center space-x-1 ${isMoveModeOn ? '' : 'hidden'}"> <!-- Conditional visibility for move buttons -->
+                              <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
                               </button>
                               <button class="down-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === sequences.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === sequences.length - 1 ? 'disabled' : ''}>
@@ -469,6 +604,8 @@
                   selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               }
           }
+          // Ensure delete buttons are toggled correctly after rendering
+          toggleOtherButtons(isMoveModeOn);
       };
 
       // --- PATTERN EDITOR RENDERING & DATA SYNC ---
@@ -522,6 +659,7 @@
 
         // Add event listener for pattern name editing
         patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
+        toggleOtherButtons(isMoveModeOn); // Apply state after view change
       };
 
       const saveCurrentSequenceState = () => {
@@ -670,7 +808,8 @@
         // Instead, re-render the current view to reflect the added pattern
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
             renderPatternEditor(); // Re-render the current pattern (updates N/M counter, though removed now)
-        } else { // If currently in table view
+        } else { // If in table view
+            selectedPatternId = newSequence.id; // Select the newly added pattern
             renderTableView(); // Re-render the table
         }
         focusOnTop(); // Keep consistency with previous behavior
@@ -782,6 +921,9 @@
 
       // Function to handle pattern name editing
       const editPatternName = (currentData, displayElement) => {
+          // Turn off move mode if editing pattern name
+          turnOffMoveMode();
+
           const inputElement = document.createElement('input');
           inputElement.type = 'text';
           inputElement.value = currentData.patternName;
@@ -810,6 +952,8 @@
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS ---
       const savePatternConfig = () => {
+        // Turn off move mode
+        turnOffMoveMode();
         if (activeSequenceIndex === -1 || sequences.length === 0) {
           showAlert('Save Error', 'No pattern selected to save.');
           return;
@@ -831,6 +975,9 @@
       };
 
       const importPatternConfig = () => {
+        // Turn off move mode
+        turnOffMoveMode();
+
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,.pattern.json';
@@ -889,6 +1036,9 @@
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
       const loadAllPatterns = () => {
+        // Turn off move mode
+        turnOffMoveMode();
+
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,.workout.json';
@@ -932,6 +1082,8 @@
       };
 
       const saveAllPatterns = () => {
+        // Turn off move mode
+        turnOffMoveMode();
         // If in editor view, save current pattern before saving all
         if (!patternEditorContainer.classList.contains('hidden')) { // Checks if editor is NOT hidden
           saveCurrentSequenceState();
@@ -956,6 +1108,9 @@
       };
 
       const clearAllPatterns = () => {
+          // Turn off move mode first
+          turnOffMoveMode();
+
           const modal = document.getElementById('confirmation-modal');
           const modalTitle = document.getElementById('modal-title');
           const modalText = document.getElementById('modal-text');
@@ -994,8 +1149,25 @@
 
       // --- EVENT LISTENERS ---
 
+      // Global click listener to turn off move mode if an unrelated element is clicked
+      document.addEventListener('click', (e) => {
+          // If move mode is on, and the clicked element is not the toggle button itself,
+          // and not inside the patterns table body, and not inside a modal, then turn off move mode.
+          if (isMoveModeOn &&
+              e.target !== movePatternToggleButton &&
+              !movePatternToggleButton.contains(e.target) &&
+              !patternsTableBody.contains(e.target) &&
+              !e.target.closest('#confirmation-modal') &&
+              !e.target.closest('#alert-modal')
+              ) {
+              turnOffMoveMode();
+          }
+      });
+
+
       // Table View Buttons
       document.getElementById('new-pattern-btn').addEventListener('click', () => {
+        turnOffMoveMode(); // Turn off move mode before adding new pattern
         addSequence();
         // After adding, if in table view, select the newly added row
         if (!patternEditorContainer.classList.contains('hidden')) { // If currently in editor view, don't set focus on table
@@ -1013,10 +1185,12 @@
               movePatternToggleButton.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
               movePatternToggleButton.classList.add('bg-blue-600', 'text-white');
               movePatternToggleButton.dataset.state = 'on';
+              toggleOtherButtons(true); // Disable other buttons when move mode is ON
           } else {
               movePatternToggleButton.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
               movePatternToggleButton.classList.remove('bg-blue-600', 'text-white');
               movePatternToggleButton.dataset.state = 'off';
+              toggleOtherButtons(false); // Enable other buttons when move mode is OFF
           }
           renderTableView(); // Re-render table to show/hide move buttons
       });
@@ -1038,10 +1212,14 @@
           if (e.target.closest('.up-arrow-btn')) {
               movePattern(index, 'up');
               e.target.closest('button')?.blur();
+              e.stopPropagation(); // Prevent event from bubbling up to document listener
           } else if (e.target.closest('.down-arrow-btn')) {
               movePattern(index, 'down');
               e.target.closest('button')?.blur();
+              e.stopPropagation(); // Prevent event from bubbling up to document listener
           } else if (e.target.closest('.delete-pattern-btn')) {
+              // Turn off move mode before showing delete confirmation
+              turnOffMoveMode();
               // Delete confirmation modal trigger
               const modal = document.getElementById('confirmation-modal');
               const modalTitle = document.getElementById('modal-title');
@@ -1071,6 +1249,8 @@
               newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
           } else if (e.target.closest('.pattern-name-clickable')) {
+              // Turn off move mode before showing editor
+              turnOffMoveMode();
               showSequenceInEditor(index);
           }
       });
@@ -1079,13 +1259,16 @@
       // Pattern Editor Buttons (delegated to sequencesContainer, since they are inside the cloned template)
       sequencesContainer.addEventListener('click', (e) => {
           if (e.target.closest('#clone-btn')) {
+              turnOffMoveMode(); // Turn off move mode before cloning
               cloneSequence(); // Clone current pattern and open its editor
           }
           if (e.target.closest('#import-btn')) {
+              turnOffMoveMode(); // Turn off move mode before importing
               importPatternConfig();
               e.target.closest('button')?.blur();
           }
           if (e.target.closest('#save-btn')) {
+              turnOffMoveMode(); // Turn off move mode before saving
               savePatternConfig();
               e.target.closest('button')?.blur();
           }
@@ -1095,6 +1278,7 @@
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
+          turnOffMoveMode(); // Turn off move mode before going back to list
           saveCurrentSequenceState(); // Save before going back to list
           activeSequenceIndex = -1; // No active pattern in editor
           showView('table');
@@ -1140,6 +1324,7 @@
         activeSequenceIndex = -1; // Ensure no pattern is active on initial load
         selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('table'); // Start with the table view
+        toggleOtherButtons(false); // Ensure all other buttons are enabled initially
       };
 
       initialize();
@@ -1147,3 +1332,4 @@
   </script>
 </body>
 </html>
+
