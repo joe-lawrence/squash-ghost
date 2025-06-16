@@ -238,11 +238,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             <span class="text-xs mt-1">Clone</span>
           </button>
-          <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 opacity-50 cursor-not-allowed">
+          <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
             <span class="text-xs mt-1">Import</span>
           </button>
-          <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 opacity-50 cursor-not-allowed">
+          <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
             <span class="text-xs mt-1">Save</span>
           </button>
@@ -303,6 +303,39 @@
         if(appContainer) {
           appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+      };
+
+      // Helper for sanitizing filenames
+      const sanitizeFilename = (name) => {
+        return name.replace(/[^a-z0-9\s-]/gi, '').replace(/\s+/g, '-');
+      };
+
+      // Sanity check for imported pattern configuration
+      const isValidPatternConfig = (data) => {
+        const requiredProps = [
+          'patternName', 'shotOptions', 'announceShots', 'introMessage', 'outroMessage',
+          'seriesOrder', 'shotInterval', 'randomOffset', 'limitType', 'patternLimit', 'postSequenceRest'
+        ];
+        const hasAllProps = requiredProps.every(prop => Object.prototype.hasOwnProperty.call(data, prop));
+
+        if (!hasAllProps) return false;
+
+        // Basic type checking
+        if (typeof data.patternName !== 'string' ||
+            typeof data.shotOptions !== 'string' ||
+            typeof data.announceShots !== 'boolean' ||
+            typeof data.introMessage !== 'string' ||
+            typeof data.outroMessage !== 'string' ||
+            !['in-order', 'randomized'].includes(data.seriesOrder) ||
+            typeof data.shotInterval !== 'number' ||
+            typeof data.randomOffset !== 'number' ||
+            !['none', 'shot', 'time'].includes(data.limitType) ||
+            typeof data.patternLimit !== 'number' ||
+            typeof data.postSequenceRest !== 'number') {
+            return false;
+        }
+
+        return true;
       };
       
       // --- CORE RENDERING & DATA SYNC ---
@@ -565,7 +598,71 @@
               }
           });
       };
-      
+
+      // --- IMPORT / SAVE FUNCTIONS ---
+      const savePatternConfig = () => {
+        if (sequences.length === 0) {
+          alert('No pattern to save.');
+          return;
+        }
+        saveCurrentSequenceState(); // Ensure current state is saved to the object
+        const currentPattern = sequences[activeSequenceIndex];
+        const dataStr = JSON.stringify(currentPattern, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${sanitizeFilename(currentPattern.patternName)}.pattern.json`;
+        document.body.appendChild(a); // Append to body to make it clickable in all browsers
+        a.click();
+        document.body.removeChild(a); // Clean up
+        URL.revokeObjectURL(url);
+      };
+
+      const importPatternConfig = () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json,.pattern.json';
+        fileInput.style.display = 'none'; // Hide the input
+
+        fileInput.addEventListener('change', (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const importedData = JSON.parse(e.target.result);
+              if (isValidPatternConfig(importedData)) {
+                // Preserve the current sequence's ID, but update other properties
+                const currentPatternId = sequences[activeSequenceIndex].id;
+                sequences[activeSequenceIndex] = {
+                  ...importedData,
+                  id: currentPatternId, // Keep the existing ID
+                };
+                renderCurrentSequence();
+              } else {
+                alert('Invalid pattern configuration file. Please select a valid .pattern.json file.');
+              }
+            } catch (error) {
+              alert('Failed to parse file. Please ensure it is a valid JSON file. Error: ' + error.message);
+            } finally {
+              document.body.removeChild(fileInput); // Clean up
+            }
+          };
+          reader.onerror = () => {
+            alert('Failed to read file.');
+            document.body.removeChild(fileInput); // Clean up
+          };
+          reader.readAsText(file);
+        });
+
+        document.body.appendChild(fileInput);
+        fileInput.click(); // Open the file dialog
+      };
+
+
       // --- EVENT LISTENERS ---
       // These event listeners need to be attached to the sequencesContainer
       // because the buttons are now dynamically rendered as part of each sequence.
@@ -577,11 +674,11 @@
               cloneSequence(e);
           }
           if (e.target.closest('#import-btn')) {
-              // import logic here
+              importPatternConfig();
               e.target.closest('button')?.blur();
           }
           if (e.target.closest('#save-btn')) {
-              // save logic here
+              savePatternConfig();
               e.target.closest('button')?.blur();
           }
           if (e.target.closest('#delete-btn')) {
