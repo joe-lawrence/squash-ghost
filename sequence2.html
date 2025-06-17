@@ -86,7 +86,7 @@
     }
   </style>
 </head>
-<body class="flex min-h-screen p-4 transition-colors duration-75">
+<body class="flex min-h-screen items-center justify-center p-4 bg-gray-100 dark:bg-gray-900 transition-colors duration-75">
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
@@ -102,10 +102,14 @@
     <div id="workout-view-container" class="w-full h-full hidden flex flex-col">
         <div class="flex justify-center space-x-4 mb-6">
             <button id="pause-resume-workout-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
-                Pause
+                <span class="flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>
+                </span>
             </button>
             <button id="stop-workout-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg text-lg font-bold hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
-              Stop Workout
+                <span class="flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+                </span>
             </button>
         </div>
         <h2 id="current-pattern-name" class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6 hidden"></h2> <!-- Hidden by default -->
@@ -369,6 +373,12 @@
       const currentPatternNameDisplay = document.getElementById('current-pattern-name'); // New
       const appTitle = document.getElementById('app-title'); // Main app title
 
+      // --- SVG Icons ---
+      const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
+      const PLAY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 3 14 9-14 9z"/></svg>`;
+      const STOP_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>`;
+      const REPLAY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
+
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
@@ -618,6 +628,10 @@
 
       // --- VIEW MANAGEMENT ---
       const showView = (view) => {
+          // Clear dynamic classes from appContainer and body first
+          appContainer.className = 'w-full'; // Reset appContainer to base classes
+          document.body.classList.remove('items-center', 'justify-center'); // Remove body centering
+
           // Hide all view containers initially
           tableViewContainer.classList.add('hidden');
           startWorkoutContainer.classList.add('hidden');
@@ -626,36 +640,25 @@
           workoutViewContainer.classList.add('hidden');
           appTitle.classList.remove('hidden'); // Ensure app title is visible by default
 
-          // Reset appContainer classes to a clean slate before adding new ones
-          appContainer.className = 'w-full';
-
-          // Reset body classes, keeping the fixed ones and removing dynamic ones
-          document.body.classList.remove('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
-
-
-          if (view === 'table') {
+          if (view === 'table' || view === 'editor') {
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
-              document.body.classList.add('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
-
-              tableViewContainer.classList.remove('hidden');
-              startWorkoutContainer.classList.remove('hidden');
-              globalControls.classList.remove('hidden');
-              renderTableView();
-              calculateTotalWorkoutTime();
+              document.body.classList.add('items-center', 'justify-center'); // Center appContainer in body
+              // Show specific containers
+              if (view === 'table') {
+                  tableViewContainer.classList.remove('hidden');
+                  startWorkoutContainer.classList.remove('hidden');
+                  globalControls.classList.remove('hidden');
+                  renderTableView();
+                  calculateTotalWorkoutTime();
+              } else { // editor
+                  patternEditorContainer.classList.remove('hidden');
+                  renderPatternEditor();
+              }
               focusOnTop();
-              setInteractionMode(null);
-          } else if (view === 'editor') {
-              appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
-              document.body.classList.add('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
-
-              patternEditorContainer.classList.remove('hidden');
-              renderPatternEditor();
-              focusOnTop();
-              setInteractionMode(null);
+              setInteractionMode(null); // Ensure modes are off when entering non-workout views
           } else if (view === 'workout') {
-              // For workout, appContainer becomes full screen and centers content
-              appContainer.classList.add('w-full', 'min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center', 'p-4');
-              document.body.classList.add('bg-gray-100', 'dark:bg-gray-900'); // Body maintains background
+              // For workout, appContainer takes full height and manages its own content centering
+              appContainer.classList.add('min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center', 'p-4');
               appTitle.classList.add('hidden'); // Hide main app title during workout
 
               workoutViewContainer.classList.remove('hidden');
@@ -1345,11 +1348,22 @@
             saveCurrentSequenceState();
         }
 
+        // Reset the stop button to its initial state (stop icon)
+        stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
+        stopWorkoutBtn.onclick = stopWorkout; // Re-attach the stopWorkout handler
+        stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        stopWorkoutBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+
+
+        // Ensure pause/resume button is visible and shows pause icon
+        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
+        pauseResumeWorkoutBtn.classList.remove('hidden');
+
+
         showView('workout'); // Switch to workout display
         currentPatternIndex = 0;
         globalWorkoutTimeElapsed = 0;
         isPaused = false; // Ensure not paused when starting
-        pauseResumeWorkoutBtn.textContent = 'Pause'; // Reset button text
         runCurrentPattern(); // Start the first pattern
     }
 
@@ -1377,7 +1391,7 @@
         clearTimeout(flashTimer); // Clear any pending flash
         document.body.classList.remove('bg-red-500'); // Ensure flash is off
 
-        pauseResumeWorkoutBtn.textContent = 'Resume';
+        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`;
         currentShotDisplay.textContent = 'Paused'; // Indicate paused state
         // Update progress bar to show current paused progress
         progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
@@ -1385,7 +1399,7 @@
 
     function resumeWorkout() {
         isPaused = false;
-        pauseResumeWorkoutBtn.textContent = 'Pause';
+        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
 
         if (currentShotDisplay.textContent === 'Rest!') { // If paused during rest
             const currentPattern = sequences[currentPatternIndex];
@@ -1414,9 +1428,8 @@
 
     function runCurrentPattern() {
         if (currentPatternIndex >= sequences.length) {
-            // All patterns completed, return to main menu
-            stopWorkout();
-            showAlert('Workout Complete', 'All patterns completed. Great job!');
+            // All patterns completed
+            handleWorkoutCompletion();
             return;
         }
 
@@ -1615,9 +1628,39 @@
         }
     }
 
+    function handleWorkoutCompletion() {
+        clearInterval(currentPatternTimer);
+        clearInterval(shotIntervalTimer);
+        clearTimeout(flashTimer);
+        document.body.classList.remove('bg-red-500');
+
+        currentShotDisplay.textContent = 'Done';
+        progressBar.style.width = '100%';
+
+        // Hide pause/resume button
+        pauseResumeWorkoutBtn.classList.add('hidden');
+
+        // Change stop button to replay button
+        stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${REPLAY_ICON}</span>`;
+        // Remove existing stopWorkout listener and add startWorkout listener
+        stopWorkoutBtn.onclick = null; // Clear existing click handler
+        // Use a wrapper function for the replay button to ensure a fresh start
+        stopWorkoutBtn.addEventListener('click', () => {
+            currentPatternIndex = 0; // Reset pattern index for full workout replay
+            startWorkout();
+        }, { once: true }); // Add new handler, remove after one use
+        stopWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        stopWorkoutBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
+        // Do not show "Workout Complete" dialog
+    }
+
+
     function flashScreenRed() {
         if (isPaused) return; // Do not flash if paused
         document.body.classList.add('bg-red-500'); // Only add the color class
+        // Force reflow to ensure the class change is rendered before timeout
+        void document.body.offsetWidth; // Accessing offsetWidth triggers reflow
         flashTimer = setTimeout(() => {
             document.body.classList.remove('bg-red-500'); // Only remove the color class
         }, 150); // Flash for 150ms
@@ -1772,8 +1815,8 @@
 
       // --- New Workout Buttons Event Listeners ---
       startWorkoutBtn.addEventListener('click', startWorkout);
-      stopWorkoutBtn.addEventListener('click', stopWorkout);
-      pauseResumeWorkoutBtn.addEventListener('click', togglePauseResume); // NEW event listener
+      // Event listener for stopWorkoutBtn is dynamically added/removed in startWorkout/handleWorkoutCompletion
+      pauseResumeWorkoutBtn.addEventListener('click', togglePauseResume);
 
 
       // Event listeners for inputs/changes within the currently rendered sequence editor
