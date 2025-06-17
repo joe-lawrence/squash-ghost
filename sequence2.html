@@ -182,7 +182,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        <h2>
+                        </h2>
                         <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
@@ -221,7 +221,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        <h2>
+                        </h2>
                         <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
@@ -241,7 +241,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        <h2>
+                        </h2>
                         <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
@@ -372,6 +372,10 @@
       const progressBar = document.getElementById('progress-bar'); // New
       const currentPatternNameDisplay = document.getElementById('current-pattern-name'); // New
       const appTitle = document.getElementById('app-title'); // Main app title
+
+      // --- Web Audio API ---
+      let audioContext = null;
+      let beepDuration = 0.5; // Duration for single beeps
 
       // --- SVG Icons ---
       const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
@@ -1338,6 +1342,81 @@
     let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused
 
 
+    /**
+     * Initializes the Web Audio API context.
+     * Crucially, this function attempts to resume the AudioContext on the first user interaction
+     * to comply with browser autoplay policies, especially on mobile (e.g., iOS Safari).
+     */
+    function initAudioContext() {
+        try {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                // If the audio context is suspended (common on iOS), attempt to resume it
+                // when the user interacts with the document (e.g., clicks the start button).
+                if (audioContext.state === 'suspended') {
+                    const resumeAudio = () => {
+                        audioContext.resume().then(() => {
+                            console.log('AudioContext resumed successfully.');
+                            // Remove listeners once resumed to avoid multiple calls
+                            document.removeEventListener('click', resumeAudio);
+                            document.removeEventListener('touchend', resumeAudio);
+                        }).catch(error => console.error("Error resuming AudioContext:", error));
+                    };
+                    // Add passive listeners for user gestures
+                    document.addEventListener('click', resumeAudio, { once: true, passive: true });
+                    document.addEventListener('touchend', resumeAudio, { once: true, passive: true });
+                }
+            }
+        } catch (error) {
+            console.error("Failed to initialize AudioContext:", error);
+        }
+    }
+
+    /**
+     * Plays a two-tone beep sound for shot announcements.
+     * Consists of a lower tone followed by a higher tone.
+     */
+    function playTwoToneBeep() {
+        try {
+            if (!audioContext || audioContext.state === 'suspended') {
+                console.warn("AudioContext not ready for two-tone beep.");
+                return;
+            }
+
+            const duration = 0.15; // Shorter duration for quick beeps
+            const frequency1 = 800; // First tone (e.g., F5)
+            const frequency2 = 1200; // Second tone (e.g., D6)
+            const volume = 0.8; // Slightly lower volume for the beeps
+
+            // First tone
+            const oscillator1 = audioContext.createOscillator();
+            const gainNode1 = audioContext.createGain();
+            oscillator1.connect(gainNode1);
+            gainNode1.connect(audioContext.destination);
+            oscillator1.type = 'sine';
+            oscillator1.frequency.setValueAtTime(frequency1, audioContext.currentTime);
+            gainNode1.gain.setValueAtTime(volume, audioContext.currentTime);
+            oscillator1.start(audioContext.currentTime);
+            gainNode1.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+            oscillator1.stop(audioContext.currentTime + duration);
+
+            // Second tone, delayed to start after the first one finishes
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode2 = audioContext.createGain();
+            oscillator2.connect(gainNode2);
+            gainNode2.connect(audioContext.destination);
+            oscillator2.type = 'sine';
+            oscillator2.frequency.setValueAtTime(frequency2, audioContext.currentTime + duration); // Start second tone after first
+            gainNode2.gain.setValueAtTime(volume, audioContext.currentTime + duration);
+            oscillator2.start(audioContext.currentTime + duration);
+            gainNode2.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration * 2); // Total duration
+            oscillator2.stop(audioContext.currentTime + duration * 2);
+        } catch (error) {
+            console.error("Error playing two-tone beep:", error);
+        }
+    }
+
+
     function startWorkout() {
         if (sequences.length === 0) {
             showAlert('Workout Error', 'Please create at least one workout pattern first!');
@@ -1347,6 +1426,14 @@
         // Save current editor state before starting workout
         if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
+        }
+
+        // Initialize audio context on user interaction
+        initAudioContext();
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('AudioContext resumed for workout start.');
+            }).catch(error => console.error("Error resuming AudioContext at startWorkout:", error));
         }
 
         // Reset the stop button to its initial state (stop icon)
@@ -1414,7 +1501,8 @@
                 }
                 pausedRestTimeRemaining -= 1; // Decrement from remaining time
                 globalWorkoutTimeElapsed += 1;
-                pausedRestTimeRemaining = postRestTime - restElapsed; // Update remaining for pause
+                // The next line seems to be a copy-paste error; it should likely use pausedRestTimeRemaining directly
+                // pausedRestTimeRemaining = postRestTime - restElapsed; // Update remaining for pause
                 if (pausedRestTimeRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
                     currentPatternIndex++;
@@ -1501,9 +1589,10 @@
                 return;
             }
 
-            // Flash screen red ONLY if not paused
+            // Play two-tone beep and flash screen red ONLY if not paused
             if (!isPaused) {
-                flashScreenRed();
+                playTwoToneBeep(); // Play the two-tone beep
+                flashScreenRed(); // Flash the screen red
             }
 
             currentPatternShotCount++;
@@ -1529,15 +1618,13 @@
                 const progress = (timePassed / effectiveInterval) * 100;
                 progressBar.style.width = `${progress}%`;
 
-                // Announce next shot if applicable
+                // Announce next shot if applicable (speech is handled by separate 'speak' call)
+                // This block is primarily for visual cues if needed, the actual speech is scheduled below
                 if (pattern.announceShots && nextShotAnnouncementTime > 0 &&
                     effectiveInterval - timePassed <= nextShotAnnouncementTime + 0.05 &&
                     effectiveInterval - timePassed > (nextShotAnnouncementTime - 0.1)
                     ) {
-                    const nextShot = currentShotOptions[currentShotIndex];
-                    if (nextShot) {
-                        // speak(`Next: ${nextShot}`);
-                    }
+                    // No action needed here, speech is handled in `executeShot`'s delayed `speak` call.
                 }
 
                 if (timePassed >= effectiveInterval) {
@@ -1567,10 +1654,7 @@
                     effectiveInterval - timePassed <= nextShotAnnouncementTime + 0.05 &&
                     effectiveInterval - timePassed > (nextShotAnnouncementTime - 0.1)
                     ) {
-                    const nextShot = currentShotOptions[currentShotIndex];
-                    if (nextShot) {
-                        // speak(`Next: ${nextShot}`);
-                    }
+                    // No action needed here, speech is handled in `executeShot`'s delayed `speak` call.
                 }
 
                 if (timePassed >= effectiveInterval) {
@@ -1883,6 +1967,9 @@
         showView('table'); // Start with the table view
         toggleOtherButtons(); // Ensure all other buttons are enabled initially
         calculateTotalWorkoutTime(); // Initial calculation of total time
+
+        // Initialize audio context on initial page load or first user interaction
+        initAudioContext();
       };
 
       initialize();
