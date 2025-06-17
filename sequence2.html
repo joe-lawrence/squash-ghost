@@ -87,9 +87,13 @@
   </style>
 </head>
 <body class="flex min-h-screen items-center justify-center p-4 bg-gray-100 dark:bg-gray-900 transition-colors duration-75">
+
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
+    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">
+    beep beep
+    </h1>
 
     <!-- Start Workout Button (visible in table view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -1538,7 +1542,7 @@
             const duration = 0.15; // Shorter duration for quick beeps
             const frequency1 = 800; // First tone (e.g., F5)
             const frequency2 = 1200; // Second tone (e.g., D6)
-            const volume = 0.8; // Volume for the beeps
+            const volume = 4.0; // Volume for the beeps
 
             const now = audioContext.currentTime;
 
