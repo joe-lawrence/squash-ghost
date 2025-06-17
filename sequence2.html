@@ -160,7 +160,7 @@
         <!-- Back to List Button -->
         <div class="mb-4">
             <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 0 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
                 <span class="text-sm">Back to List</span>
             </button>
         </div>
@@ -376,7 +376,17 @@
 
       // --- Web Audio API ---
       let audioContext = null;
-      let beepDuration = 0.5; // Duration for single beeps
+
+      // --- Speech Synthesis API (for audio ducking and announcements) ---
+      let synth = null;
+      let speechKeepAliveTimer = null; // Timer for silent speech utterances (now deprecated for better control)
+      let isRoutineRunning = false; // Flag to indicate if workout routine is active
+
+      // Global variable to hold the reference to the *currently speaking* silent utterance.
+      let currentSilentUtteranceRef = null;
+      // Global variable to hold the timer ID for scheduling the *next* silent utterance.
+      let nextSilentUtteranceTimeout = null;
+
 
       // --- SVG Icons ---
       const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
@@ -905,7 +915,7 @@
             // Restore previous shot limit, or calculate default if not available/valid
             let proposedValue = currentPattern.previousShotLimit;
             // If no stored value, or it's 0 (invalid for default), or if switching from time-based default to shot
-            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'time') {
+            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'shot') {
                 const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
                 proposedValue = shotOptionsCount; // Default to current shot options count
             }
@@ -1351,7 +1361,6 @@
     let pausedEffectiveInterval = 0; // NEW: To store effectiveInterval when paused
     let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused
 
-
     /**
      * Initializes the Web Audio API context.
      * Crucially, this function attempts to resume the AudioContext on the first user interaction
@@ -1383,6 +1392,123 @@
     }
 
     /**
+     * Initializes the Web Speech API's SpeechSynthesis.
+     * Includes a workaround for iOS to enable audio ducking by playing a silent utterance.
+     */
+    function initSpeechSynthesis() {
+        if ('speechSynthesis' in window) {
+            synth = window.speechSynthesis;
+            // iOS wake up workaround: play a silent utterance to enable audio
+            // This is crucial for audio ducking to work reliably on iOS.
+            const silentUtterance = new SpeechSynthesisUtterance('');
+            silentUtterance.volume = 0; // Set volume to 0 to make it silent
+            silentUtterance.onend = null; // Prevent logging/callbacks for silent speech
+            silentUtterance.onerror = null; // Prevent logging/callbacks for silent speech
+            try {
+                synth.speak(silentUtterance);
+                console.log('SpeechSynthesis initialized and wake-up utterance sent.');
+            } catch (e) {
+                console.warn('Initial silent utterance failed (may not be an issue if audio is already active):', e);
+            }
+
+        } else {
+            console.warn('Speech Synthesis API not supported in this browser.');
+        }
+    }
+
+    /**
+     * Schedules and speaks a silent utterance if conditions are met.
+     * This function is designed to be self-perpetuating via its onend callback.
+     */
+    function speakSilent() {
+        if (!synth || !isRoutineRunning || isPaused) {
+            // Do not speak if conditions aren't met
+            return;
+        }
+
+        // Only speak a new silent utterance if nothing is currently speaking or pending
+        if (synth.speaking || synth.pending) {
+            console.log('Synth busy, skipping silent utterance for now.');
+            // If synth is busy, we will try again after a short delay,
+            // but we don't want to cancel ongoing audible speech.
+            nextSilentUtteranceTimeout = setTimeout(() => {
+                speakSilent();
+            }, 100); // Small delay to allow current speech to finish
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance('');
+        utterance.volume = 0;
+        utterance.lang = 'en-US';
+
+        utterance.onend = () => {
+            console.log('Silent utterance ended. Scheduling next...');
+            // Only schedule the next if routine is still running and not paused
+            if (isRoutineRunning && !isPaused) {
+                // Add a small delay before scheduling the next silent utterance
+                // to give the SpeechSynthesis engine time to fully transition its state.
+                nextSilentUtteranceTimeout = setTimeout(() => {
+                    speakSilent();
+                }, 50); // 50ms delay
+            }
+        };
+
+        utterance.onerror = (event) => {
+            console.error(`Silent speech synthesis error: ${event.error}`);
+            // Important: if there's an error, still try to re-initiate the chain
+            if (isRoutineRunning && !isPaused) {
+                nextSilentUtteranceTimeout = setTimeout(() => {
+                    speakSilent();
+                }, 50);
+            }
+        };
+
+        try {
+            synth.speak(utterance);
+            console.log('Silent utterance started.');
+        } catch (e) {
+            console.error("Error speaking silent utterance directly:", e);
+            // If there's an immediate error on speak(), try to recover by scheduling the next
+            if (isRoutineRunning && !isPaused) {
+                nextSilentUtteranceTimeout = setTimeout(() => {
+                    speakSilent();
+                }, 50);
+            }
+        }
+    }
+
+
+    /**
+     * Starts the periodic silent speech utterance to maintain audio ducking.
+     * This now just initiates the first call to speakSilent().
+     */
+    function startSpeechKeepAlive() {
+        if (!synth) {
+            console.warn('SpeechSynthesis not available for keep-alive.');
+            return;
+        }
+        stopSpeechKeepAlive(); // Ensure all previous timers/utterances are cleared
+        console.log('Initiating speech keep-alive chain...');
+        speakSilent(); // Start the first silent utterance, which will then self-perpetuate
+    }
+
+    /**
+     * Stops the periodic silent speech utterance.
+     */
+    function stopSpeechKeepAlive() {
+        // Clear the timeout that schedules the *next* silent utterance
+        if (nextSilentUtteranceTimeout) {
+            clearTimeout(nextSilentUtteranceTimeout);
+            nextSilentUtteranceTimeout = null;
+        }
+        // Cancel any currently speaking utterance (audible or silent)
+        if (synth && (synth.speaking || synth.pending)) {
+            synth.cancel();
+        }
+        console.log('Speech keep-alive stopped and cancelled.');
+    }
+
+    /**
      * Plays a two-tone beep sound for shot announcements.
      * Consists of a lower tone followed by a higher tone.
      */
@@ -1405,8 +1531,6 @@
             gainNode1.connect(audioContext.destination);
             oscillator1.type = 'sine';
             oscillator1.frequency.setValueAtTime(frequency1, audioContext.currentTime);
-            gainNode1.gain.setValueAtTime(volume, audioContext.currentTime);
-            oscillator1.start(audioContext.currentTime);
             gainNode1.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
             oscillator1.stop(audioContext.currentTime + duration);
 
@@ -1426,6 +1550,60 @@
         }
     }
 
+    /**
+     * Speaks the given text using Speech Synthesis API.
+     */
+    function speak(text) {
+        if (!synth) {
+            console.warn('Speech Synthesis API not supported or not initialized.');
+            return;
+        }
+
+        // Always cancel any existing speech (including silent keep-alives) before speaking an audible message.
+        if (synth.speaking || synth.pending) {
+            synth.cancel();
+            // Also ensure any scheduled next silent utterance is cleared
+            if (nextSilentUtteranceTimeout) {
+                clearTimeout(nextSilentUtteranceTimeout);
+                nextSilentUtteranceTimeout = null;
+            }
+            console.log("Cancelled existing speech for new audible message.");
+        }
+
+        // Only speak the utterance if it's an audible message (not empty string)
+        if (text !== '') {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.volume = 1;
+            utterance.onend = () => {
+                console.log(`Finished speaking: "${text}". Re-initiating silent keep-alive.`);
+                // After an audible message, restart the silent keep-alive chain if routine is still running
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            };
+            utterance.onerror = (event) => {
+                console.error(`Audible speech synthesis error: ${event.error}`);
+                // Even on error, attempt to restart keep-alive if routine is active
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            };
+            try {
+                synth.speak(utterance);
+                console.log(`Speaking: "${text}"`);
+            } catch (e) {
+                console.error("Error speaking audible utterance:", e);
+                // If immediate error, try to restart keep-alive
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            }
+        }
+        // If speak('') is called, it's ignored here, as speakSilent() handles keep-alive.
+        // This 'speak' function is primarily for audible output now.
+    }
+
 
     function startWorkout() {
         if (sequences.length === 0) {
@@ -1438,8 +1616,13 @@
             saveCurrentSequenceState();
         }
 
-        // Initialize audio context on user interaction
+        // Initialize audio context and speech synthesis on user interaction
         initAudioContext();
+        initSpeechSynthesis();
+
+        isRoutineRunning = true; // Set routine as running
+        startSpeechKeepAlive(); // Start audio ducking
+
         if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume().then(() => {
                 console.log('AudioContext resumed for workout start.');
@@ -1449,7 +1632,7 @@
         // Reset the stop button to its initial state (stop icon)
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
         stopWorkoutBtn.onclick = stopWorkout; // Re-attach the stopWorkout handler
-        stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700'); // Remove potential old classes
         stopWorkoutBtn.classList.add('bg-red-600', 'hover:bg-red-700');
 
 
@@ -1472,6 +1655,9 @@
         clearInterval(shotIntervalTimer);
         clearTimeout(flashTimer);
         document.body.classList.remove('bg-red-500'); // Only remove the color class
+        isRoutineRunning = false; // Set routine as not running
+        stopSpeechKeepAlive(); // Stop audio ducking
+        synth.cancel(); // Stop any pending speech
         showView('table'); // Return to main menu
         calculateTotalWorkoutTime(); // Recalculate total time (might not change, but good practice)
     }
@@ -1491,6 +1677,9 @@
         clearTimeout(flashTimer); // Clear any pending flash
         document.body.classList.remove('bg-red-500'); // Ensure flash is off
 
+        stopSpeechKeepAlive(); // Stop audio ducking during pause
+        synth.cancel(); // Stop any currently speaking utterance
+
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`;
         currentShotDisplay.textContent = 'Paused'; // Indicate paused state
         // Update progress bar to show current paused progress
@@ -1500,20 +1689,22 @@
     function resumeWorkout() {
         isPaused = false;
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
+        startSpeechKeepAlive(); // Resume audio ducking
 
         if (currentShotDisplay.textContent === 'Rest!') { // If paused during rest
             const currentPattern = sequences[currentPatternIndex];
-            // Restart rest timer from remaining time
+            // Calculate elapsed time for rest based on initial rest time and remaining
+            let restElapsed = currentPattern.postSequenceRest - pausedRestTimeRemaining;
+
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) { // Check for pause again
                     clearInterval(shotIntervalTimer);
                     return;
                 }
-                pausedRestTimeRemaining -= 1; // Decrement from remaining time
+                restElapsed += 1; // Update every second
                 globalWorkoutTimeElapsed += 1;
-                // The next line seems to be a copy-paste error; it should likely use pausedRestTimeRemaining directly
-                // pausedRestTimeRemaining = postRestTime - restElapsed; // Update remaining for pause
-                if (pausedRestTimeRemaining <= 0) {
+                pausedRestTimeRemaining = currentPattern.postSequenceRest - restElapsed; // Update remaining for next pause
+                if (restElapsed >= currentPattern.postSequenceRest) {
                     clearInterval(shotIntervalTimer);
                     currentPatternIndex++;
                     runCurrentPattern();
@@ -1521,9 +1712,8 @@
             }, 1000);
             currentShotDisplay.textContent = 'Rest!'; // Restore rest text
         } else { // If paused during a shot interval
-            const currentPattern = sequences[currentPatternIndex];
-            // Resume the shot countdown from where it left off
-            startShotInterval(currentPattern, pausedTimePassed, pausedEffectiveInterval);
+            // Resume the shot countdown from where it left off, passing the currently displayed shot
+            startShotInterval(sequences[currentPatternIndex], pausedTimePassed, pausedEffectiveInterval, currentShotDisplay.textContent);
         }
     }
 
@@ -1536,14 +1726,19 @@
         }
 
         const currentPattern = sequences[currentPatternIndex];
-        // currentPatternNameDisplay.textContent = currentPattern.patternName; // Pattern name is now hidden
         currentShotOptions = currentPattern.shotOptions.split('\n').filter(option => option.trim() !== '');
+
+        // Handle case where shotOptions might be empty
+        if (currentShotOptions.length === 0) {
+            currentShotDisplay.textContent = 'No shots defined for this pattern';
+            endPattern(currentPattern); // End this pattern if no shots
+            return;
+        }
 
         // Handle randomized order: shuffle options for current pattern
         if (currentPattern.seriesOrder === 'randomized') {
             shuffleArray(currentShotOptions);
         }
-        currentShotIndex = 0; // Reset shot index for new pattern
         currentPatternShotCount = 0; // Reset shot count for new pattern
         currentPatternTimeElapsed = 0; // Reset time elapsed for new pattern
 
@@ -1552,80 +1747,71 @@
             speak(currentPattern.introMessage);
         }
 
-        // Start the interval for shots
-        startShotInterval(currentPattern);
+        // Get the first shot to display and initiate the interval
+        const firstShotToDisplay = currentShotOptions[0];
+        currentShotIndex = 1 % currentShotOptions.length; // Prepare currentShotIndex for the *next* shot after this first one
+        if (currentPattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
+            shuffleArray(currentShotOptions); // Re-shuffle if it wrapped around to 0
+        }
+        startShotInterval(currentPattern, 0, -1, firstShotToDisplay);
     }
 
-    // Modified startShotInterval to accept optional `initialTimePassed` and `totalInterval` for resuming
-    function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1) {
-        if (isPaused) return; // Do not start if paused
+    /**
+     * Starts the countdown for a single shot interval.
+     * @param {object} pattern The current pattern data.
+     * @param {number} initialTimePassed Time already passed in this interval (for resuming).
+     * @param {number} totalInterval The total duration of this interval (for resuming).
+     * @param {string} shotToDisplayAtStart The shot text to display at the beginning of this interval.
+     */
+    function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
+        if (isPaused) return;
 
         clearInterval(currentPatternTimer); // Clear any previous interval for this pattern's shots
         clearInterval(shotIntervalTimer); // Clear any general interval (e.g., from a rest period)
 
-        let baseInterval = parseFloat(pattern.shotInterval);
-        let randomOffset = parseFloat(pattern.randomOffset);
-        let nextShotAnnouncementTime = parseFloat(pattern.nextShotAnnouncement); // This is now 'time into interval' for announcement
+        const baseInterval = parseFloat(pattern.shotInterval);
+        const randomOffset = parseFloat(pattern.randomOffset);
+        const nextShotAnnouncementTime = parseFloat(pattern.nextShotAnnouncement);
 
         let effectiveInterval = (totalInterval > 0) ? totalInterval : (baseInterval + (Math.random() * randomOffset));
-        let timePassed = initialTimePassed; // Use initialTimePassed for resuming
-        let announcementSpokenForThisInterval = false; // Flag to ensure announcement plays only once per shot interval
+        let timePassed = initialTimePassed;
+        let announcementSpokenForThisInterval = false;
 
         pausedEffectiveInterval = effectiveInterval; // Store for pause/resume
 
-        function executeShot() {
-            if (isPaused) return; // Prevent execution if paused
+        // Determine the shot to display. If `shotToDisplayAtStart` is provided (e.g., for a new shot interval), use it.
+        // Otherwise, it's a resume scenario, and currentShotDisplay.textContent holds the correct value.
+        const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : currentShotDisplay.textContent;
+        currentShotDisplay.textContent = currentDisplayedShot; // Ensure display is updated right away
 
-            // Check if pattern limits are met before executing the next shot
-            if (shouldEndPattern(pattern)) {
-                endPattern(pattern);
-                return;
-            }
-
-            // Determine the shot to display for the *current* interval
-            // `currentShotIndex` refers to the shot that will be displayed *next*.
-            // So, for the *current* display, we use the previous index.
-            const shotToDisplayIndex = (currentShotIndex === 0) ? (currentShotOptions.length - 1) : (currentShotIndex - 1);
-            const shotToDisplay = currentShotOptions[shotToDisplayIndex];
-
-            // Display current shot immediately
-            if (currentShotOptions.length > 0) {
-                currentShotDisplay.textContent = shotToDisplay;
-                currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length; // Increment for the *next* shot
-                // If randomized, and we've cycled through all options, reshuffle
-                if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-                    shuffleArray(currentShotOptions);
-                }
-            } else {
-                currentShotDisplay.textContent = 'No shots defined for this pattern';
-                endPattern(pattern); // Consider ending pattern if no shots are defined
-                return;
-            }
-
-            // Play two-tone beep and flash screen red ONLY if not paused
-            if (!isPaused) {
-                playTwoToneBeep(); // Play the two-tone beep
-                flashScreenRed(); // Flash the screen red
-            }
-
-            currentPatternShotCount++;
-
-            // Set up next shot timer with random offset
-            effectiveInterval = baseInterval + (Math.random() * randomOffset); // Recalculate for next shot
-            timePassed = 0; // Reset for new shot
-            announcementSpokenForThisInterval = false; // Reset flag for the new shot
-
-            pausedEffectiveInterval = effectiveInterval; // Update for pause/resume
-
-            clearInterval(currentPatternTimer); // Clear previous timer for this shot
-            currentPatternTimer = setInterval(timerTick, 100); // Use a named function for clarity
+        // Play beep and flash immediately for every new shot interval (if not paused)
+        if (!isPaused) {
+            playTwoToneBeep();
+            flashScreenRed();
         }
 
-        // Common timer logic for both initial start and resume
+        // Logic for the *first* announcement for this shot after the display updates.
+        // This handles both the very first shot of a workout and the subsequent shots.
+        // If initialTimePassed is 0 (new interval), and announcement is enabled and not zero delay:
+        if (pattern.announceShots && nextShotAnnouncementTime > 0 && initialTimePassed === 0) {
+            // Schedule the first announcement for this shot
+            setTimeout(() => {
+                // Only speak if not paused and still displaying the same shot
+                if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
+                    speak(currentDisplayedShot);
+                    announcementSpokenForThisInterval = true;
+                }
+            }, nextShotAnnouncementTime * 1000); // Convert seconds to milliseconds
+        }
+        // If resuming, check if the announcement already happened before pausing
+        if (initialTimePassed >= nextShotAnnouncementTime) {
+            announcementSpokenForThisInterval = true;
+        }
+
         function timerTick() {
             if (isPaused) {
-                clearInterval(currentPatternTimer); // Stop timer if paused
-                pausedTimePassed = timePassed; // Store current timePassed
+                clearInterval(currentPatternTimer);
+                pausedTimePassed = timePassed; // Store current timePassed for resuming
                 return;
             }
             timePassed += 0.1; // Update every 100ms
@@ -1636,39 +1822,42 @@
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
 
-            // NEW LOGIC: Announce the *current* displayed shot when timePassed reaches nextShotAnnouncementTime
-            // Ensure announcement is configured, hasn't been spoken yet for this interval,
-            // and the current timePassed is at or past the announcement threshold, but before the end of the interval.
+            // If announcement configured, and not yet spoken for *this* interval, and time threshold reached
             if (pattern.announceShots && !announcementSpokenForThisInterval &&
                 nextShotAnnouncementTime > 0 && // Only if announcement time is set
                 timePassed >= nextShotAnnouncementTime &&
                 timePassed < effectiveInterval // Ensure we don't speak *after* the shot itself
             ) {
-                // The shot currently displayed is the one that was determined by `executeShot`.
-                // It is directly in `currentShotDisplay.textContent`.
-                const shotToAnnounce = currentShotDisplay.textContent;
-                if (shotToAnnounce && shotToAnnounce !== 'No shots defined for this pattern') { // Ensure there's actually a shot to announce
-                    speak(shotToAnnounce);
+                // Announce the *current* displayed shot
+                if (currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
+                    speak(currentDisplayedShot);
                     announcementSpokenForThisInterval = true; // Set flag to prevent repeat announcements for this interval
                 }
             }
 
-
             if (timePassed >= effectiveInterval) {
                 clearInterval(currentPatternTimer);
-                executeShot(); // Move to the next shot
+                currentPatternShotCount++; // Increment shot count here, as one shot is completed
+
+                // Determine the *next* shot to display
+                const nextShotToDisplay = currentShotOptions[currentShotIndex];
+                currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length; // Advance index for the *next* next shot
+                if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
+                    shuffleArray(currentShotOptions); // Re-shuffle if it wrapped around
+                }
+
+                // Check limits *before* starting the next interval
+                if (shouldEndPattern(pattern)) {
+                    endPattern(pattern);
+                    return;
+                }
+                // Start the new shot interval, passing the next shot to display
+                startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
         }
 
-        // Initial call to executeShot or setup timer if resuming
-        if (initialTimePassed === 0) {
-            executeShot(); // Start the first shot for the current pattern immediately
-        } else {
-            // If resuming from a pause, we need to check if the announcement already happened
-            // for the current interval before pausing.
-            announcementSpokenForThisInterval = initialTimePassed >= nextShotAnnouncementTime;
-            currentPatternTimer = setInterval(timerTick, 100);
-        }
+        // Only start the timer if not paused. For initial start and resume, this kicks it off.
+        currentPatternTimer = setInterval(timerTick, 100);
     }
 
 
@@ -1687,6 +1876,7 @@
         clearInterval(shotIntervalTimer);
         clearTimeout(flashTimer);
         document.body.classList.remove('bg-red-500'); // Ensure flash is off
+        synth.cancel(); // Stop any pending speech
 
         // Announce outro message if available
         if (pattern.announceShots && pattern.outroMessage.trim()) {
@@ -1700,7 +1890,7 @@
             progressBar.style.width = '100%'; // Full progress bar for rest
 
             let restElapsed = 0;
-            pausedRestTimeRemaining = postRestTime; // Store for pause/resume
+            pausedRestTimeRemaining = postRestTime; // Initialize for pause/resume
 
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) { // Check for pause again
@@ -1727,6 +1917,10 @@
         clearInterval(shotIntervalTimer);
         clearTimeout(flashTimer);
         document.body.classList.remove('bg-red-500');
+
+        isRoutineRunning = false; // Routine is no longer running
+        stopSpeechKeepAlive(); // Stop audio ducking
+        synth.cancel(); // Stop any pending speech
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
@@ -1760,16 +1954,6 @@
         flashTimer = setTimeout(() => {
             document.body.classList.remove('bg-red-500'); // Only remove the color class
         }, 150); // Flash for 150ms
-    }
-
-    function speak(text) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // Set desired language
-            window.speechSynthesis.speak(utterance);
-        } else {
-            console.warn('Speech Synthesis API not supported in this browser.');
-        }
     }
 
     function shuffleArray(array) {
@@ -1974,8 +2158,9 @@
         toggleOtherButtons(); // Ensure all other buttons are enabled initially
         calculateTotalWorkoutTime(); // Initial calculation of total time
 
-        // Initialize audio context on initial page load or first user interaction
+        // Initialize audio context and speech synthesis on initial page load or first user interaction
         initAudioContext();
+        initSpeechSynthesis();
       };
 
       initialize();
