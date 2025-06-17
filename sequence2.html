@@ -1024,7 +1024,7 @@
         if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
             activeSequenceIndex++; // Increment index so the cloned item appears after the current one
             renderPatternEditor(); // Re-render the new current pattern (which is now the cloned one)
-        } else { // If currently in table view
+        } else { // If in table view
             renderTableView(); // Re-render the table
         }
         calculateTotalWorkoutTime();
@@ -1350,6 +1350,7 @@
     let currentPatternTimer = null; // Timer for individual shot intervals
     let shotIntervalTimer = null; // General interval timer (used for rest periods)
     let flashTimer = null; // Timer for screen flash
+    let nextAnnouncementTimeout = null; // NEW: Timer for specific shot announcement
     let currentPatternShotCount = 0;
     let currentPatternTimeElapsed = 0;
     let currentShotOptions = [];
@@ -1357,9 +1358,15 @@
     let globalWorkoutTimeElapsed = 0; // Not currently used for display but good for tracking
 
     let isPaused = false; // NEW: State for pause/resume
-    let pausedTimePassed = 0; // NEW: To store timePassed when paused
-    let pausedEffectiveInterval = 0; // NEW: To store effectiveInterval when paused
-    let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused
+    let pausedTimePassed = 0; // NEW: To store timePassed when paused (for shot interval)
+    let pausedEffectiveInterval = 0; // NEW: To store effectiveInterval when paused (for shot interval)
+    let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused (for rest period)
+    let pausedShotDisplayContent = ''; // NEW: To store the content of currentShotDisplay before setting to "Paused"
+
+    // Debounce for pause/resume button to prevent rapid double clicks
+    let isToggleDebouncing = false;
+    const DEBOUNCE_TIME = 300; // milliseconds
+
 
     /**
      * Initializes the Web Audio API context.
@@ -1423,12 +1430,13 @@
     function speakSilent() {
         if (!synth || !isRoutineRunning || isPaused) {
             // Do not speak if conditions aren't met
+            console.log('speakSilent: Conditions not met. isRoutineRunning:', isRoutineRunning, 'isPaused:', isPaused);
             return;
         }
 
         // Only speak a new silent utterance if nothing is currently speaking or pending
         if (synth.speaking || synth.pending) {
-            console.log('Synth busy, skipping silent utterance for now.');
+            console.log('speakSilent: Synth busy, skipping silent utterance for now.');
             // If synth is busy, we will try again after a short delay,
             // but we don't want to cancel ongoing audible speech.
             nextSilentUtteranceTimeout = setTimeout(() => {
@@ -1442,7 +1450,7 @@
         utterance.lang = 'en-US';
 
         utterance.onend = () => {
-            console.log('Silent utterance ended. Scheduling next...');
+            console.log('speakSilent: Silent utterance ended. Scheduling next...');
             // Only schedule the next if routine is still running and not paused
             if (isRoutineRunning && !isPaused) {
                 // Add a small delay before scheduling the next silent utterance
@@ -1454,7 +1462,12 @@
         };
 
         utterance.onerror = (event) => {
-            console.error(`Silent speech synthesis error: ${event.error}`);
+            // Gracefully handle 'interrupted' errors, which are expected when `synth.cancel()` is called
+            if (event.error !== 'interrupted') {
+                console.error(`speakSilent: Silent speech synthesis error: ${event.error}`);
+            } else {
+                console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.');
+            }
             // Important: if there's an error, still try to re-initiate the chain
             if (isRoutineRunning && !isPaused) {
                 nextSilentUtteranceTimeout = setTimeout(() => {
@@ -1465,9 +1478,9 @@
 
         try {
             synth.speak(utterance);
-            console.log('Silent utterance started.');
+            console.log('speakSilent: Silent utterance started.');
         } catch (e) {
-            console.error("Error speaking silent utterance directly:", e);
+            console.error("speakSilent: Error speaking silent utterance directly:", e);
             // If there's an immediate error on speak(), try to recover by scheduling the next
             if (isRoutineRunning && !isPaused) {
                 nextSilentUtteranceTimeout = setTimeout(() => {
@@ -1484,11 +1497,11 @@
      */
     function startSpeechKeepAlive() {
         if (!synth) {
-            console.warn('SpeechSynthesis not available for keep-alive.');
+            console.warn('startSpeechKeepAlive: SpeechSynthesis not available for keep-alive.');
             return;
         }
         stopSpeechKeepAlive(); // Ensure all previous timers/utterances are cleared
-        console.log('Initiating speech keep-alive chain...');
+        console.log('startSpeechKeepAlive: Initiating speech keep-alive chain...');
         speakSilent(); // Start the first silent utterance, which will then self-perpetuate
     }
 
@@ -1500,12 +1513,14 @@
         if (nextSilentUtteranceTimeout) {
             clearTimeout(nextSilentUtteranceTimeout);
             nextSilentUtteranceTimeout = null;
+            console.log('stopSpeechKeepAlive: Cleared nextSilentUtteranceTimeout.');
         }
         // Cancel any currently speaking utterance (audible or silent)
         if (synth && (synth.speaking || synth.pending)) {
             synth.cancel();
+            console.log('stopSpeechKeepAlive: Cancelled existing speech.');
         }
-        console.log('Speech keep-alive stopped and cancelled.');
+        console.log('stopSpeechKeepAlive: Speech keep-alive stopped and cancelled.');
     }
 
     /**
@@ -1514,15 +1529,18 @@
      */
     function playTwoToneBeep() {
         try {
-            if (!audioContext || audioContext.state === 'suspended') {
-                console.warn("AudioContext not ready for two-tone beep.");
+            // Check if audioContext is initialized AND in 'running' state
+            if (!audioContext || audioContext.state !== 'running') {
+                console.warn("playTwoToneBeep: AudioContext not ready for two-tone beep. State:", audioContext ? audioContext.state : 'null');
                 return;
             }
 
             const duration = 0.15; // Shorter duration for quick beeps
             const frequency1 = 800; // First tone (e.g., F5)
             const frequency2 = 1200; // Second tone (e.g., D6)
-            const volume = 0.8; // Slightly lower volume for the beeps
+            const volume = 0.8; // Volume for the beeps
+
+            const now = audioContext.currentTime;
 
             // First tone
             const oscillator1 = audioContext.createOscillator();
@@ -1530,9 +1548,11 @@
             oscillator1.connect(gainNode1);
             gainNode1.connect(audioContext.destination);
             oscillator1.type = 'sine';
-            oscillator1.frequency.setValueAtTime(frequency1, audioContext.currentTime);
-            gainNode1.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-            oscillator1.stop(audioContext.currentTime + duration);
+            oscillator1.frequency.setValueAtTime(frequency1, now);
+            gainNode1.gain.setValueAtTime(volume, now); // Set initial volume
+            oscillator1.start(now); // Start the oscillator
+            gainNode1.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+            oscillator1.stop(now + duration);
 
             // Second tone, delayed to start after the first one finishes
             const oscillator2 = audioContext.createOscillator();
@@ -1540,13 +1560,13 @@
             oscillator2.connect(gainNode2);
             gainNode2.connect(audioContext.destination);
             oscillator2.type = 'sine';
-            oscillator2.frequency.setValueAtTime(frequency2, audioContext.currentTime + duration); // Start second tone after first
-            gainNode2.gain.setValueAtTime(volume, audioContext.currentTime + duration);
-            oscillator2.start(audioContext.currentTime + duration);
-            gainNode2.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration * 2); // Total duration
-            oscillator2.stop(audioContext.currentTime + duration * 2);
+            oscillator2.frequency.setValueAtTime(frequency2, now + duration);
+            gainNode2.gain.setValueAtTime(volume, now + duration); // Set initial volume for second tone
+            oscillator2.start(now + duration); // Start the second oscillator
+            gainNode2.gain.exponentialRampToValueAtTime(0.00001, now + duration * 2);
+            oscillator2.stop(now + duration * 2);
         } catch (error) {
-            console.error("Error playing two-tone beep:", error);
+            console.error("playTwoToneBeep: Error playing two-tone beep:", error);
         }
     }
 
@@ -1555,7 +1575,7 @@
      */
     function speak(text) {
         if (!synth) {
-            console.warn('Speech Synthesis API not supported or not initialized.');
+            console.warn('speak: Speech Synthesis API not supported or not initialized.');
             return;
         }
 
@@ -1567,7 +1587,11 @@
                 clearTimeout(nextSilentUtteranceTimeout);
                 nextSilentUtteranceTimeout = null;
             }
-            console.log("Cancelled existing speech for new audible message.");
+            if (nextAnnouncementTimeout) { // Clear the specific announcement timeout if pending
+                clearTimeout(nextAnnouncementTimeout);
+                nextAnnouncementTimeout = null;
+            }
+            console.log("speak: Cancelled existing speech for new audible message.");
         }
 
         // Only speak the utterance if it's an audible message (not empty string)
@@ -1576,14 +1600,19 @@
             utterance.lang = 'en-US';
             utterance.volume = 1;
             utterance.onend = () => {
-                console.log(`Finished speaking: "${text}". Re-initiating silent keep-alive.`);
+                console.log(`speak: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
                 // After an audible message, restart the silent keep-alive chain if routine is still running
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
             };
             utterance.onerror = (event) => {
-                console.error(`Audible speech synthesis error: ${event.error}`);
+                // Gracefully handle 'interrupted' errors, which are expected when `synth.cancel()` is called
+                if (event.error !== 'interrupted') {
+                    console.error(`speak: Audible speech synthesis error: ${event.error}`);
+                } else {
+                    console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.');
+                }
                 // Even on error, attempt to restart keep-alive if routine is active
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
@@ -1591,9 +1620,9 @@
             };
             try {
                 synth.speak(utterance);
-                console.log(`Speaking: "${text}"`);
+                console.log(`speak: Speaking: "${text}"`);
             } catch (e) {
-                console.error("Error speaking audible utterance:", e);
+                console.error("speak: Error speaking audible utterance:", e);
                 // If immediate error, try to restart keep-alive
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
@@ -1605,7 +1634,8 @@
     }
 
 
-    function startWorkout() {
+    async function startWorkout() { // Made this function async
+        console.log('startWorkout called. isPaused:', isPaused);
         if (sequences.length === 0) {
             showAlert('Workout Error', 'Please create at least one workout pattern first!');
             return;
@@ -1623,11 +1653,31 @@
         isRoutineRunning = true; // Set routine as running
         startSpeechKeepAlive(); // Start audio ducking
 
+        // Await audio context resume if it's suspended
         if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume().then(() => {
-                console.log('AudioContext resumed for workout start.');
-            }).catch(error => console.error("Error resuming AudioContext at startWorkout:", error));
+            try {
+                await audioContext.resume();
+                console.log('startWorkout: AudioContext resumed successfully before workout start.');
+            } catch (error) {
+                console.error("startWorkout: Error resuming AudioContext at startWorkout:", error);
+                showAlert('Audio Error', 'Could not resume audio. Please try again.');
+                stopWorkout(); // Stop workout if audio fails to resume
+                return;
+            }
+        } else if (audioContext && audioContext.state === 'closed') {
+             // If closed, try to re-initialize it
+             initAudioContext();
+             try {
+                await audioContext.resume();
+                console.log('startWorkout: AudioContext re-initialized and resumed successfully before workout start.');
+             } catch (error) {
+                console.error("startWorkout: Error re-initializing and resuming AudioContext at startWorkout:", error);
+                showAlert('Audio Error', 'Could not re-initialize audio. Please try again.');
+                stopWorkout();
+                return;
+             }
         }
+
 
         // Reset the stop button to its initial state (stop icon)
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
@@ -1651,18 +1701,48 @@
     }
 
     function stopWorkout() {
-        clearInterval(currentPatternTimer);
-        clearInterval(shotIntervalTimer);
-        clearTimeout(flashTimer);
+        console.log('stopWorkout: Stopping workout...');
+        if (currentPatternTimer) {
+            clearInterval(currentPatternTimer);
+            currentPatternTimer = null;
+            console.log('stopWorkout: Cleared currentPatternTimer.');
+        }
+        if (shotIntervalTimer) {
+            clearInterval(shotIntervalTimer);
+            shotIntervalTimer = null;
+            console.log('stopWorkout: Cleared shotIntervalTimer.');
+        }
+        if (flashTimer) {
+            clearTimeout(flashTimer);
+            flashTimer = null;
+            console.log('stopWorkout: Cleared flashTimer.');
+        }
+        if (nextAnnouncementTimeout) {
+            clearTimeout(nextAnnouncementTimeout);
+            nextAnnouncementTimeout = null;
+            console.log('stopWorkout: Cleared nextAnnouncementTimeout.');
+        }
+
         document.body.classList.remove('bg-red-500'); // Only remove the color class
         isRoutineRunning = false; // Set routine as not running
-        stopSpeechKeepAlive(); // Stop audio ducking
+        stopSpeechKeepAlive(); // Stop audio ducking (also clears nextSilentUtteranceTimeout)
         synth.cancel(); // Stop any pending speech
         showView('table'); // Return to main menu
         calculateTotalWorkoutTime(); // Recalculate total time (might not change, but good practice)
+        console.log('stopWorkout: Workout stopped.');
     }
 
     function togglePauseResume() {
+        if (isToggleDebouncing) {
+            console.log('togglePauseResume: Debouncing, ignoring click.');
+            return;
+        }
+        isToggleDebouncing = true;
+        setTimeout(() => {
+            isToggleDebouncing = false;
+        }, DEBOUNCE_TIME);
+
+        console.log('togglePauseResume called. isPaused (before toggle):', isPaused);
         if (isPaused) {
             resumeWorkout();
         } else {
@@ -1671,54 +1751,99 @@
     }
 
     function pauseWorkout() {
+        console.log('pauseWorkout: Pausing workout...');
         isPaused = true;
-        clearInterval(currentPatternTimer); // Stop current shot timer
-        clearInterval(shotIntervalTimer); // Stop rest timer if active
-        clearTimeout(flashTimer); // Clear any pending flash
-        document.body.classList.remove('bg-red-500'); // Ensure flash is off
 
-        stopSpeechKeepAlive(); // Stop audio ducking during pause
+        // Store the current content of currentShotDisplay before changing it
+        pausedShotDisplayContent = currentShotDisplay.textContent;
+
+        // Clear all relevant timers
+        if (currentPatternTimer) {
+            console.log('pauseWorkout: Clearing currentPatternTimer:', currentPatternTimer);
+            clearInterval(currentPatternTimer);
+            currentPatternTimer = null;
+        }
+        if (shotIntervalTimer) {
+            console.log('pauseWorkout: Clearing shotIntervalTimer (rest):', shotIntervalTimer);
+            clearInterval(shotIntervalTimer);
+            shotIntervalTimer = null;
+        }
+        if (flashTimer) {
+            console.log('pauseWorkout: Clearing flashTimer:', flashTimer);
+            clearTimeout(flashTimer);
+            flashTimer = null;
+        }
+        if (nextAnnouncementTimeout) {
+            console.log('pauseWorkout: Clearing nextAnnouncementTimeout:', nextAnnouncementTimeout);
+            clearTimeout(nextAnnouncementTimeout);
+            nextAnnouncementTimeout = null;
+        }
+        // Ensure the speech keep-alive is also stopped
+        stopSpeechKeepAlive(); // This will clear nextSilentUtteranceTimeout and cancel speech
+
+        document.body.classList.remove('bg-red-500'); // Ensure flash is off
         synth.cancel(); // Stop any currently speaking utterance
 
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`;
         currentShotDisplay.textContent = 'Paused'; // Indicate paused state
         // Update progress bar to show current paused progress
         progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
+        console.log('pauseWorkout: Workout paused. pausedTimePassed:', pausedTimePassed, 'pausedEffectiveInterval:', pausedEffectiveInterval, 'pausedRestTimeRemaining:', pausedRestTimeRemaining);
     }
 
     function resumeWorkout() {
+        console.log('resumeWorkout: Resuming workout...');
         isPaused = false;
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
         startSpeechKeepAlive(); // Resume audio ducking
 
-        if (currentShotDisplay.textContent === 'Rest!') { // If paused during rest
-            const currentPattern = sequences[currentPatternIndex];
-            // Calculate elapsed time for rest based on initial rest time and remaining
-            let restElapsed = currentPattern.postSequenceRest - pausedRestTimeRemaining;
+        const currentPattern = sequences[currentPatternIndex];
+
+        // Check if currently in a "Rest!" phase
+        if (pausedShotDisplayContent === 'Rest!') { // Use pausedShotDisplayContent to determine if it was rest
+            console.log('resumeWorkout: Resuming Rest! period.');
+            // Re-start the rest interval from where it was paused
+            let restRemaining = pausedRestTimeRemaining; // Use the stored remaining time
+            currentShotDisplay.textContent = 'Rest!'; // Restore rest text
 
             shotIntervalTimer = setInterval(() => {
-                if (isPaused) { // Check for pause again
+                console.log('Rest interval tick. isPaused:', isPaused, 'shotIntervalTimer ID:', shotIntervalTimer);
+                if (isPaused) { // Check for pause again within the interval
+                    console.log('Rest interval tick: Paused, clearing shotIntervalTimer and returning.');
                     clearInterval(shotIntervalTimer);
+                    shotIntervalTimer = null; // Ensure it's nulled
                     return;
                 }
-                restElapsed += 1; // Update every second
-                globalWorkoutTimeElapsed += 1;
-                pausedRestTimeRemaining = currentPattern.postSequenceRest - restElapsed; // Update remaining for next pause
-                if (restElapsed >= currentPattern.postSequenceRest) {
+                restRemaining--; // Count down the remaining seconds
+                globalWorkoutTimeElapsed++; // Continue incrementing total workout time
+                pausedRestTimeRemaining = restRemaining; // Update for potential future pauses
+                console.log('Rest remaining:', restRemaining); // Debug rest countdown
+
+                if (restRemaining <= 0) {
+                    console.log('Rest period ended. Moving to next pattern.');
                     clearInterval(shotIntervalTimer);
+                    shotIntervalTimer = null; // Ensure it's nulled
                     currentPatternIndex++;
-                    runCurrentPattern();
+                    runCurrentPattern(); // Move to the next pattern
                 }
-            }, 1000);
-            currentShotDisplay.textContent = 'Rest!'; // Restore rest text
-        } else { // If paused during a shot interval
-            // Resume the shot countdown from where it left off, passing the currently displayed shot
-            startShotInterval(sequences[currentPatternIndex], pausedTimePassed, pausedEffectiveInterval, currentShotDisplay.textContent);
+            }, 1000); // Update every second for rest countdown
+            console.log('resumeWorkout: New shotIntervalTimer set for rest:', shotIntervalTimer);
+        } else {
+            console.log('resumeWorkout: Resuming Shot Interval.');
+            // If paused during a shot interval, resume it
+            // Pass the stored `pausedShotDisplayContent` to restore the correct shot
+            startShotInterval(currentPattern, pausedTimePassed, pausedEffectiveInterval, pausedShotDisplayContent);
         }
     }
 
 
     function runCurrentPattern() {
+        console.log('runCurrentPattern called. isPaused:', isPaused);
+        if (isPaused) {
+            console.log('runCurrentPattern: PAUSED, returning immediately.');
+            return;
+        }
+
         if (currentPatternIndex >= sequences.length) {
             // All patterns completed
             handleWorkoutCompletion();
@@ -1764,10 +1889,40 @@
      * @param {string} shotToDisplayAtStart The shot text to display at the beginning of this interval.
      */
     function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
-        if (isPaused) return;
+        console.log('startShotInterval called. isPaused:', isPaused);
+        if (isPaused) {
+            console.log('startShotInterval: PAUSED, returning immediately.');
+            return; // Crucial check: if paused, just return and let pauseWorkout handle
+        }
 
-        clearInterval(currentPatternTimer); // Clear any previous interval for this pattern's shots
-        clearInterval(shotIntervalTimer); // Clear any general interval (e.g., from a rest period)
+        // Clear existing timers before creating new ones
+        if (currentPatternTimer) {
+            clearInterval(currentPatternTimer);
+            currentPatternTimer = null;
+            console.log('startShotInterval: Cleared existing currentPatternTimer.');
+        }
+        if (shotIntervalTimer) {
+            clearInterval(shotIntervalTimer);
+            shotIntervalTimer = null;
+            console.log('startShotInterval: Cleared existing shotIntervalTimer.');
+        }
+        if (flashTimer) {
+            clearTimeout(flashTimer);
+            flashTimer = null;
+            console.log('startShotInterval: Cleared existing flashTimer.');
+        }
+        if (nextAnnouncementTimeout) {
+            clearTimeout(nextAnnouncementTimeout);
+            nextAnnouncementTimeout = null;
+            console.log('startShotInterval: Cleared existing nextAnnouncementTimeout.');
+        }
+        // Also clear speech keep-alive timeout if present, as a new audible speech or silent loop will follow
+        if (nextSilentUtteranceTimeout) {
+            clearTimeout(nextSilentUtteranceTimeout);
+            nextSilentUtteranceTimeout = null;
+            console.log('startShotInterval: Cleared existing nextSilentUtteranceTimeout.');
+        }
+
 
         const baseInterval = parseFloat(pattern.shotInterval);
         const randomOffset = parseFloat(pattern.randomOffset);
@@ -1778,24 +1933,23 @@
         let announcementSpokenForThisInterval = false;
 
         pausedEffectiveInterval = effectiveInterval; // Store for pause/resume
+        pausedTimePassed = initialTimePassed; // Ensure this is also stored here for the current interval
 
         // Determine the shot to display. If `shotToDisplayAtStart` is provided (e.g., for a new shot interval), use it.
-        // Otherwise, it's a resume scenario, and currentShotDisplay.textContent holds the correct value.
-        const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : currentShotDisplay.textContent;
+        // Otherwise, it's a resume scenario, and pausedShotDisplayContent holds the correct value.
+        const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : pausedShotDisplayContent;
         currentShotDisplay.textContent = currentDisplayedShot; // Ensure display is updated right away
 
-        // Play beep and flash immediately for every new shot interval (if not paused)
-        if (!isPaused) {
+        // Play beep and flash immediately for every new shot interval (only if not resuming)
+        if (initialTimePassed === 0) { // Only play beep/flash if actually starting a brand new segment
             playTwoToneBeep();
             flashScreenRed();
         }
 
         // Logic for the *first* announcement for this shot after the display updates.
-        // This handles both the very first shot of a workout and the subsequent shots.
-        // If initialTimePassed is 0 (new interval), and announcement is enabled and not zero delay:
         if (pattern.announceShots && nextShotAnnouncementTime > 0 && initialTimePassed === 0) {
             // Schedule the first announcement for this shot
-            setTimeout(() => {
+            nextAnnouncementTimeout = setTimeout(() => { // Store timeout ID
                 // Only speak if not paused and still displaying the same shot
                 if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
                     speak(currentDisplayedShot);
@@ -1809,18 +1963,25 @@
         }
 
         function timerTick() {
-            if (isPaused) {
+            console.log('timerTick invoked. isPaused:', isPaused, 'currentPatternTimer ID:', currentPatternTimer, 'timePassed:', timePassed.toFixed(1));
+            if (isPaused) { // <-- This check needs to be at the very top of the tick function
+                console.log('timerTick: Paused, clearing currentPatternTimer and returning.');
                 clearInterval(currentPatternTimer);
-                pausedTimePassed = timePassed; // Store current timePassed for resuming
-                return;
+                currentPatternTimer = null; // Ensure it's nulled
+                // pausedTimePassed is already updated by the pauseWorkout function when it was called
+                return; // Immediately exit the tick function if paused
             }
             timePassed += 0.1; // Update every 100ms
             currentPatternTimeElapsed += 0.1;
             globalWorkoutTimeElapsed += 0.1;
 
+            // Store current timePassed for precise resume
+            pausedTimePassed = timePassed;
+
             // Update progress bar
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
+            console.log('Workout view updated, progress bar width:', progressBar.style.width); // Debug visual update
 
             // If announcement configured, and not yet spoken for *this* interval, and time threshold reached
             if (pattern.announceShots && !announcementSpokenForThisInterval &&
@@ -1836,7 +1997,9 @@
             }
 
             if (timePassed >= effectiveInterval) {
+                console.log('timerTick: Interval ended, clearing currentPatternTimer.');
                 clearInterval(currentPatternTimer);
+                currentPatternTimer = null; // Ensure it's nulled
                 currentPatternShotCount++; // Increment shot count here, as one shot is completed
 
                 // Determine the *next* shot to display
@@ -1856,8 +2019,8 @@
             }
         }
 
-        // Only start the timer if not paused. For initial start and resume, this kicks it off.
         currentPatternTimer = setInterval(timerTick, 100);
+        console.log('startShotInterval: New currentPatternTimer set:', currentPatternTimer);
     }
 
 
@@ -1872,9 +2035,24 @@
     }
 
     function endPattern(pattern) {
-        clearInterval(currentPatternTimer);
-        clearInterval(shotIntervalTimer);
-        clearTimeout(flashTimer);
+        // Clear all timers when ending a pattern
+        console.log('endPattern: Ending pattern. Clearing all timers.');
+        if (currentPatternTimer) {
+            clearInterval(currentPatternTimer);
+            currentPatternTimer = null;
+        }
+        if (shotIntervalTimer) {
+            clearInterval(shotIntervalTimer);
+            shotIntervalTimer = null;
+        }
+        if (flashTimer) {
+            clearTimeout(flashTimer);
+            flashTimer = null;
+        }
+        if (nextAnnouncementTimeout) {
+            clearTimeout(nextAnnouncementTimeout);
+            nextAnnouncementTimeout = null;
+        }
         document.body.classList.remove('bg-red-500'); // Ensure flash is off
         synth.cancel(); // Stop any pending speech
 
@@ -1889,23 +2067,30 @@
             currentShotDisplay.textContent = "Rest!";
             progressBar.style.width = '100%'; // Full progress bar for rest
 
-            let restElapsed = 0;
+            let restRemaining = postRestTime; // Use total rest time for initial display
             pausedRestTimeRemaining = postRestTime; // Initialize for pause/resume
 
             shotIntervalTimer = setInterval(() => {
+                console.log('Rest interval tick. isPaused:', isPaused, 'shotIntervalTimer ID:', shotIntervalTimer, 'restRemaining:', restRemaining);
                 if (isPaused) { // Check for pause again
+                    console.log('Rest interval tick: Paused, clearing shotIntervalTimer and returning.');
                     clearInterval(shotIntervalTimer);
+                    shotIntervalTimer = null; // Ensure it's nulled
                     return;
                 }
-                restElapsed += 1; // Update every second
-                globalWorkoutTimeElapsed += 1;
-                pausedRestTimeRemaining = postRestTime - restElapsed; // Update remaining for pause
-                if (restElapsed >= postRestTime) {
+                restRemaining--; // Count down the remaining seconds
+                globalWorkoutTimeElapsed++; // Continue incrementing total workout time
+                pausedRestTimeRemaining = restRemaining; // Update remaining for pause
+
+                if (restRemaining <= 0) {
+                    console.log('Rest period ended. Moving to next pattern.');
                     clearInterval(shotIntervalTimer);
+                    shotIntervalTimer = null; // Ensure it's nulled
                     currentPatternIndex++;
                     runCurrentPattern(); // Move to the next pattern
                 }
             }, 1000); // Update every second for rest countdown
+            console.log('endPattern: New shotIntervalTimer set for rest:', shotIntervalTimer);
         } else {
             currentPatternIndex++;
             runCurrentPattern(); // Move to the next pattern immediately if no rest
@@ -1913,13 +2098,28 @@
     }
 
     function handleWorkoutCompletion() {
-        clearInterval(currentPatternTimer);
-        clearInterval(shotIntervalTimer);
-        clearTimeout(flashTimer);
+        // Clear all timers on workout completion
+        console.log('handleWorkoutCompletion: Workout completed. Clearing all timers.');
+        if (currentPatternTimer) {
+            clearInterval(currentPatternTimer);
+            currentPatternTimer = null;
+        }
+        if (shotIntervalTimer) {
+            clearInterval(shotIntervalTimer);
+            shotIntervalTimer = null;
+        }
+        if (flashTimer) {
+            clearTimeout(flashTimer);
+            flashTimer = null;
+        }
+        if (nextAnnouncementTimeout) {
+            clearTimeout(nextAnnouncementTimeout);
+            nextAnnouncementTimeout = null;
+        }
         document.body.classList.remove('bg-red-500');
 
         isRoutineRunning = false; // Routine is no longer running
-        stopSpeechKeepAlive(); // Stop audio ducking
+        stopSpeechKeepAlive(); // Stop audio ducking (also clears nextSilentUtteranceTimeout)
         synth.cancel(); // Stop any pending speech
 
         currentShotDisplay.textContent = 'Done';
@@ -1947,13 +2147,19 @@
 
 
     function flashScreenRed() {
-        if (isPaused) return; // Do not flash if paused
+        if (isPaused) {
+            console.log('flashScreenRed: Not flashing because paused.');
+            return; // Do not flash if paused
+        }
         document.body.classList.add('bg-red-500'); // Only add the color class
         // Force reflow to ensure the class change is rendered before timeout
         void document.body.offsetWidth; // Accessing offsetWidth triggers reflow
         flashTimer = setTimeout(() => {
             document.body.classList.remove('bg-red-500'); // Only remove the color class
+            flashTimer = null; // Clear and nullify the flash timer after it completes
+            console.log('flashScreenRed: Flash removed, flashTimer nulled.');
         }, 150); // Flash for 150ms
+        console.log('flashScreenRed: Flash initiated, flashTimer set:', flashTimer);
     }
 
     function shuffleArray(array) {
