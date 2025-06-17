@@ -90,9 +90,9 @@
 
   <div id="app-container" class="w-full">
     <!-- App Title -->
-    <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
+    <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
     <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">
-    wider2
+    fix limits
     </h1>
 
     <!-- Start Workout Button (visible in table view) -->
@@ -418,8 +418,9 @@
 
       const getNewSequenceData = () => {
         const defaultShotOptions = 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right';
-        const defaultShotOptionsCount = defaultShotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
-        const defaultShotInterval = 4.0;
+        // Set fixed default shots and time matching user's expectation, not calculated from default options
+        const defaultMaxShots = 20;
+        const defaultMaxTimeSeconds = 120; // 2 minutes
 
         return {
           id: Date.now() + Math.random(),
@@ -429,14 +430,14 @@
           introMessage: '',
           outroMessage: '',
           seriesOrder: 'in-order',
-          shotInterval: defaultShotInterval,
+          shotInterval: 6.0,
           randomOffset: 0.0,
-          nextShotAnnouncement: 1.25,
+          nextShotAnnouncement: 3.0,
           limitType: 'shot', // Default to 'shot'
-          patternLimit: defaultShotOptionsCount, // Default to shotOptions count for Max Shots
+          patternLimit: defaultMaxShots, // Default to 20 shots
           postSequenceRest: 0,
-          previousShotLimit: defaultShotOptionsCount, // Initialize with default shots
-          previousTimeLimit: defaultShotOptionsCount * defaultShotInterval // Initialize with default time
+          previousShotLimit: defaultMaxShots, // Initialize with 20 shots
+          previousTimeLimit: defaultMaxTimeSeconds // Initialize with 120 seconds (2:00)
         };
       };
 
@@ -810,13 +811,23 @@
         shotInterval.value = currentData.shotInterval;
         randomOffset.value = currentData.randomOffset;
         nextShotAnnouncement.value = currentData.nextShotAnnouncement;
-        limitTypeSelect.value = currentData.limitType;
-        patternLimitSlider.value = currentData.patternLimit;
         postSequenceRest.value = currentData.postSequenceRest;
 
+        // Set up limits display explicitly on load, without relying on `handleLimitTypeChange`
+        // which might reset values due to programmatic 'change' event firing.
+        limitTypeSelect.value = currentData.limitType; // Set the select value first
+        if (currentData.limitType === 'shot') {
+            patternLimitSlider.min = 0;
+            patternLimitSlider.max = 100;
+        } else if (currentData.limitType === 'time') {
+            const currentShotInterval = parseFloat(currentData.shotInterval);
+            patternLimitSlider.min = Math.max(1, Math.round(currentShotInterval));
+            patternLimitSlider.max = 1800; // 30 minutes
+        }
+        patternLimitSlider.value = currentData.patternLimit; // Directly set slider to the loaded value
+
         updateAllDisplays(newSequenceEl);
-        handleLimitTypeChange(newSequenceEl); // Re-run to ensure slider values/min/max are correct
-        handleAnnounceShotsChange(newSequenceEl);
+        handleAnnounceShotsChange(newSequenceEl); // Keep this to ensure proper state of nextShotAnnouncement slider
         initFlowbite(); // Re-initialize Flowbite for new accordion elements
 
         patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
@@ -831,6 +842,7 @@
         if (!currentEl) return;
 
         // Save the current patternLimit to the appropriate 'previous' field before updating currentData
+        // This ensures that when we come back, we have the last set value for that limit type.
         if (currentData.limitType === 'shot') {
             currentData.previousShotLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         } else if (currentData.limitType === 'time') {
@@ -897,78 +909,91 @@
         display.textContent = text;
       };
 
-      const handleLimitTypeChange = (context) => {
-        const select = context.querySelector('#limitTypeSelect');
-        const slider = context.querySelector('#patternLimitSlider');
-        const currentPattern = sequences[activeSequenceIndex];
-        const newLimitType = select.value;
-        const oldLimitType = currentPattern.limitType;
-
-        // Save the current patternLimit to the appropriate 'previous' field before updating currentPattern.limitType
-        if (oldLimitType === 'shot') {
-            currentPattern.previousShotLimit = parseInt(context.querySelector('#patternLimitSlider').value);
-        } else if (oldLimitType === 'time') {
-            currentPattern.previousTimeLimit = parseInt(context.querySelector('#patternLimitSlider').value);
-        }
-
-        slider.disabled = false;
-
-        if (newLimitType === 'shot') {
-            slider.min = 0;
-            slider.max = 100;
-            // Restore previous shot limit, or calculate default if not available/valid
-            let proposedValue = currentPattern.previousShotLimit;
-            // If no stored value, or it's 0 (invalid for default), or if switching from time-based default to shot
-            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'shot') {
-                const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
-                proposedValue = shotOptionsCount; // Default to current shot options count
-            }
-            slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
-
-        } else if (newLimitType === 'time') {
-            const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
-            const estimatedTimeForOptions = shotOptionsCount * currentPattern.shotInterval;
-
-            slider.min = Math.max(1, Math.round(currentPattern.shotInterval)); // Minimum of 1s or rounded interval
-            slider.max = 1800; // 30 minutes in seconds
-
-            // Restore previous time limit, or calculate default if not available/valid
-            let proposedValue = currentPattern.previousTimeLimit;
-            // If no stored value, or it's 0 (invalid for default), or if switching from shot-based default to time
-            if (typeof proposedValue !== 'number' || proposedValue <= 0 || oldLimitType === 'shot') {
-                 proposedValue = Math.round(estimatedTimeForOptions); // Default to calculated time
-            }
-            slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
-        }
-
-        // Update the current pattern's limitType and patternLimit in the state
-        currentPattern.limitType = newLimitType;
-        currentPattern.patternLimit = parseInt(slider.value);
-
-        updateLimitsDisplay(context);
-        calculateTotalWorkoutTime();
-      };
-
       const handleAnnounceShotsChange = (context) => {
           const announceShotsCheckbox = context.querySelector('#announceShots');
           const nextShotAnnouncementSlider = context.querySelector('#nextShotAnnouncement');
           const shotIntervalSlider = context.querySelector('#shotInterval');
 
-          nextShotAnnouncementSlider.disabled = !announceShotsCheckbox.checked;
+          const isChecked = announceShotsCheckbox.checked;
+          const currentShotInterval = parseFloat(shotIntervalSlider.value);
 
-          if (announceShotsCheckbox.checked) {
-              const currentShotInterval = parseFloat(shotIntervalSlider.value);
-              nextShotAnnouncementSlider.max = Math.max(0.0, currentShotInterval - 0.1);
-              if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
-                  nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
-              }
-              if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
-                nextShotAnnouncementSlider.value = 1.25;
-              }
-          } else {
-              nextShotAnnouncementSlider.value = 0;
+          nextShotAnnouncementSlider.disabled = !isChecked;
+          // Set max to currentShotInterval - 0.1 to ensure announcement happens BEFORE the next shot
+          nextShotAnnouncementSlider.max = Math.max(0, currentShotInterval - 0.1);
+
+          // If the current value exceeds the new max, clamp it
+          if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
+              nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
           }
+          // If disabled, ensure it appears disabled visually (handled by CSS, but set opacity here)
+          if (!isChecked) {
+              nextShotAnnouncementSlider.classList.add('opacity-50', 'cursor-not-allowed');
+          } else {
+              nextShotAnnouncementSlider.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+
+          // Update narration and interval display based on the new state
+          updateNarrationDisplay(context);
           updateIntervalDisplay(context);
+          saveCurrentSequenceState(); // Save the state after this change
+      };
+
+
+      const handleLimitTypeChange = (context) => {
+        const select = context.querySelector('#limitTypeSelect');
+        const slider = context.querySelector('#patternLimitSlider');
+        const currentPattern = sequences[activeSequenceIndex];
+
+        const newLimitType = select.value; // The value the user just selected
+
+        // IMPORTANT: When this function is called by the 'change' event listener,
+        // `currentPattern.limitType` still holds the *old* limit type from before the user's interaction.
+        const prevLimitTypeInState = currentPattern.limitType;
+        const currentSliderValue = parseInt(slider.value); // The value currently displayed on the slider
+
+        // 1. Save the current value of the *previously active* limit type into its corresponding 'previous' field.
+        // This ensures the value being switched *away from* is preserved.
+        if (prevLimitTypeInState === 'shot') {
+            currentPattern.previousShotLimit = currentSliderValue;
+        } else if (prevLimitTypeInState === 'time') {
+            currentPattern.previousTimeLimit = currentSliderValue;
+        }
+
+        // 2. Now update the pattern's limitType in the state to the new selection.
+        currentPattern.limitType = newLimitType;
+
+        // 3. Set the slider's min/max and value based on the NEW limitType.
+        let proposedValue;
+        if (newLimitType === 'shot') {
+            slider.min = 0;
+            slider.max = 100;
+            // Prefer previousShotLimit, otherwise fallback to default based on current shot options count
+            proposedValue = (typeof currentPattern.previousShotLimit === 'number' && currentPattern.previousShotLimit > 0)
+                                ? currentPattern.previousShotLimit
+                                : currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+        } else if (newLimitType === 'time') {
+            const shotOptionsCount = currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
+            const estimatedTimeForOptions = shotOptionsCount * currentPattern.shotInterval;
+
+            slider.min = Math.max(1, Math.round(currentPattern.shotInterval));
+            slider.max = 1800; // 30 minutes in seconds
+
+            // Prefer previousTimeLimit, otherwise fallback to estimated time
+            proposedValue = (typeof currentPattern.previousTimeLimit === 'number' && currentPattern.previousTimeLimit > 0)
+                                ? currentPattern.previousTimeLimit
+                                : Math.round(estimatedTimeForOptions);
+        }
+
+        // Apply proposed value, clamped by the new min/max
+        slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
+
+        // Update the patternLimit in the state to reflect the slider's new value.
+        currentPattern.patternLimit = parseInt(slider.value);
+
+        updateLimitsDisplay(context);
+        calculateTotalWorkoutTime();
+        // Do NOT call saveCurrentSequenceState() here, as the change event listener
+        // will handle it for the entire sequence after this function returns.
       };
 
       const updateLimitsDisplay = (context) => {
@@ -1788,7 +1813,6 @@
         document.body.classList.remove('bg-red-500'); // Ensure flash is off
         synth.cancel(); // Stop any currently speaking utterance
 
-        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`;
         currentShotDisplay.textContent = 'Paused'; // Indicate paused state
         // Update progress bar to show current paused progress
         progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
@@ -2084,7 +2108,7 @@
                 }
                 restRemaining--; // Count down the remaining seconds
                 globalWorkoutTimeElapsed++; // Continue incrementing total workout time
-                pausedRestTimeRemaining = restRemaining; // Update remaining for pause
+                pausedRestTimeRemaining = restRemaining; // Update for pause
 
                 if (restRemaining <= 0) {
                     console.log('Rest period ended. Moving to next pattern.');
@@ -2316,7 +2340,8 @@
               if (!currentEl) return;
 
               if (e.target.closest('#limitTypeSelect')) {
-                  handleLimitTypeChange(currentEl);
+                  // The 'input' event on a select is generally not useful, 'change' is used.
+                  // Do nothing here to avoid double-handling.
               } else {
                   saveCurrentSequenceState();
               }
@@ -2327,7 +2352,13 @@
                   updateIntervalDisplay(currentEl);
                   // Recalculate limit if type is time and interval changed
                   if (sequences[activeSequenceIndex].limitType === 'time') {
-                     handleLimitTypeChange(currentEl); // This will re-evaluate patternLimit based on new interval
+                     // This call ensures the limit is updated if interval changes while 'time' limit is active.
+                     // The handleLimitTypeChange will now use the correct `previousTimeLimit` if available.
+                     // Temporarily store original limitTypeSelect value to prevent accidental reset by `handleLimitTypeChange`
+                     // when it's called due to shotInterval changing.
+                     const originalLimitType = sequences[activeSequenceIndex].limitType;
+                     handleLimitTypeChange(currentEl); // This will re-evaluate slider value based on new interval
+                     sequences[activeSequenceIndex].limitType = originalLimitType; // Restore original to prevent unintended type switch
                   }
                   // Also re-evaluate nextShotAnnouncement max if shotInterval changes
                   if (e.target.closest('#shotInterval')) {
@@ -2344,9 +2375,9 @@
               if (!currentEl) return;
 
               if (e.target.closest('#limitTypeSelect')) {
-                  handleLimitTypeChange(currentEl);
+                  handleLimitTypeChange(currentEl); // This is the user-initiated change
               } else {
-                  saveCurrentSequenceState();
+                  saveCurrentSequenceState(); // For other 'change' events (like radio buttons)
               }
               
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
