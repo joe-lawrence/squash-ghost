@@ -89,13 +89,33 @@
 <body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
   <div id="app-container" class="w-full max-w-2xl">
     <!-- App Title -->
-    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
+    <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
 
     <!-- Start Workout Button (visible in table view) -->
     <div id="start-workout-container" class="mb-6 hidden">
       <button id="start-workout-btn" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
         Start (00:00)
       </button>
+    </div>
+
+    <!-- Workout View Container (New) -->
+    <div id="workout-view-container" class="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 hidden">
+        <div class="flex justify-between mb-6">
+            <button id="pause-resume-workout-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
+                Pause
+            </button>
+            <button id="stop-workout-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg text-lg font-bold hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
+              Stop Workout
+            </button>
+        </div>
+        <h2 id="current-pattern-name" class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6 hidden"></h2> <!-- Hidden by default -->
+        <div class="text-center mb-8">
+            <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2"></p>
+            <!-- Removed <p id="time-remaining-display" class="text-2xl font-bold text-gray-700 dark:text-gray-300 mt-4"></p> -->
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 mb-6">
+            <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-100 ease-linear" style="width: 0%"></div>
+        </div>
     </div>
 
     <!-- Table View Container -->
@@ -197,7 +217,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        </h2>
+                        <h2>
                         <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
@@ -217,7 +237,7 @@
                                 </span>
                                 <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                             </button>
-                        </h2>
+                        <h2>
                         <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
                             <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
@@ -339,6 +359,16 @@
       const startWorkoutButton = document.getElementById('start-workout-btn');
       const startWorkoutContainer = document.getElementById('start-workout-container');
 
+      // --- New Workout View Elements ---
+      const workoutViewContainer = document.getElementById('workout-view-container');
+      const startWorkoutBtn = document.getElementById('start-workout-btn'); // Already exists
+      const stopWorkoutBtn = document.getElementById('stop-workout-btn'); // New
+      const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn'); // NEW
+      const currentShotDisplay = document.getElementById('current-shot-display'); // New
+      const progressBar = document.getElementById('progress-bar'); // New
+      const currentPatternNameDisplay = document.getElementById('current-pattern-name'); // New
+      const appTitle = document.getElementById('app-title'); // Main app title
+
 
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
@@ -352,11 +382,8 @@
         const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
         const formattedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
 
-        if (minutes === 0) {
-            return `${formattedMinutes}:${formattedSeconds} sec`;
-        } else {
-            return `${formattedMinutes}:${formattedSeconds} min`;
-        }
+        // Removed the "Time:" and "min/sec" suffix for a cleaner display as per request
+        return `${formattedMinutes}:${formattedSeconds}`;
       };
 
       const getNewSequenceData = () => {
@@ -591,23 +618,31 @@
 
       // --- VIEW MANAGEMENT ---
       const showView = (view) => {
+          tableViewContainer.classList.add('hidden');
+          startWorkoutContainer.classList.add('hidden');
+          patternEditorContainer.classList.add('hidden');
+          globalControls.classList.add('hidden');
+          workoutViewContainer.classList.add('hidden'); // Hide the new workout container by default
+          appTitle.classList.remove('hidden'); // Show app title by default
+
           if (view === 'table') {
               tableViewContainer.classList.remove('hidden');
               startWorkoutContainer.classList.remove('hidden');
-              patternEditorContainer.classList.add('hidden');
               globalControls.classList.remove('hidden');
               renderTableView();
               calculateTotalWorkoutTime(); // Update time when showing table view
               focusOnTop();
               setInteractionMode(null); // Ensure modes are off when switching to table view
           } else if (view === 'editor') {
-              tableViewContainer.classList.add('hidden');
-              startWorkoutContainer.classList.add('hidden');
               patternEditorContainer.classList.remove('hidden');
-              globalControls.classList.add('hidden');
               renderPatternEditor();
               focusOnTop();
               setInteractionMode(null); // Ensure modes are off when switching to editor view
+          } else if (view === 'workout') { // New workout view
+              workoutViewContainer.classList.remove('hidden');
+              appTitle.classList.add('hidden'); // Hide app title during workout
+              currentPatternNameDisplay.classList.add('hidden'); // Hide current pattern name during workout
+              focusOnTop();
           }
       };
 
@@ -822,9 +857,9 @@
 
         // Save the current patternLimit to the appropriate 'previous' field before updating currentPattern.limitType
         if (oldLimitType === 'shot') {
-            currentPattern.previousShotLimit = currentPattern.patternLimit;
+            currentPattern.previousShotLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         } else if (oldLimitType === 'time') {
-            currentPattern.previousTimeLimit = currentPattern.patternLimit;
+            currentPattern.previousTimeLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
         }
 
         slider.disabled = false;
@@ -1265,6 +1300,327 @@
           cancelBtn.addEventListener('click', onCancel);
       };
 
+    // --- Workout Logic (NEW) ---
+    let currentPatternIndex = 0;
+    let currentPatternTimer = null; // Timer for individual shot intervals
+    let shotIntervalTimer = null; // General interval timer (used for rest periods)
+    let flashTimer = null; // Timer for screen flash
+    let currentPatternShotCount = 0;
+    let currentPatternTimeElapsed = 0;
+    let currentShotOptions = [];
+    let currentShotIndex = 0;
+    let globalWorkoutTimeElapsed = 0; // Not currently used for display but good for tracking
+
+    let isPaused = false; // NEW: State for pause/resume
+    let pausedTimePassed = 0; // NEW: To store timePassed when paused
+    let pausedEffectiveInterval = 0; // NEW: To store effectiveInterval when paused
+    let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused
+
+
+    function startWorkout() {
+        if (sequences.length === 0) {
+            showAlert('Workout Error', 'Please create at least one workout pattern first!');
+            return;
+        }
+
+        // Save current editor state before starting workout
+        if (!patternEditorContainer.classList.contains('hidden')) {
+            saveCurrentSequenceState();
+        }
+
+        showView('workout'); // Switch to workout display
+        currentPatternIndex = 0;
+        globalWorkoutTimeElapsed = 0;
+        isPaused = false; // Ensure not paused when starting
+        pauseResumeWorkoutBtn.textContent = 'Pause'; // Reset button text
+        runCurrentPattern(); // Start the first pattern
+    }
+
+    function stopWorkout() {
+        clearInterval(currentPatternTimer);
+        clearInterval(shotIntervalTimer);
+        clearTimeout(flashTimer);
+        document.body.classList.remove('bg-red-500', 'transition-colors', 'duration-75'); // Clean up flash class
+        showView('table'); // Return to main menu
+        calculateTotalWorkoutTime(); // Recalculate total time (might not change, but good practice)
+    }
+
+    function togglePauseResume() {
+        if (isPaused) {
+            resumeWorkout();
+        } else {
+            pauseWorkout();
+        }
+    }
+
+    function pauseWorkout() {
+        isPaused = true;
+        clearInterval(currentPatternTimer); // Stop current shot timer
+        clearInterval(shotIntervalTimer); // Stop rest timer if active
+        clearTimeout(flashTimer); // Clear any pending flash
+        document.body.classList.remove('bg-red-500', 'transition-colors', 'duration-75'); // Ensure flash is off
+
+        pauseResumeWorkoutBtn.textContent = 'Resume';
+        currentShotDisplay.textContent = 'Paused'; // Indicate paused state
+        progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`; // Maintain progress bar state
+    }
+
+    function resumeWorkout() {
+        isPaused = false;
+        pauseResumeWorkoutBtn.textContent = 'Pause';
+
+        if (currentShotDisplay.textContent === 'Rest!') { // If paused during rest
+            const currentPattern = sequences[currentPatternIndex];
+            // Restart rest timer from remaining time
+            shotIntervalTimer = setInterval(() => {
+                pausedRestTimeRemaining -= 1; // Decrement from remaining time
+                globalWorkoutTimeElapsed += 1;
+                // timeRemainingDisplay.textContent = `${formatTime(pausedRestTimeRemaining)}`; // Removed prefix
+                if (pausedRestTimeRemaining <= 0) {
+                    clearInterval(shotIntervalTimer);
+                    currentPatternIndex++;
+                    runCurrentPattern();
+                }
+            }, 1000);
+            currentShotDisplay.textContent = 'Rest!'; // Restore rest text
+        } else { // If paused during a shot interval
+            const currentPattern = sequences[currentPatternIndex];
+            // Resume the shot countdown from where it left off
+            startShotInterval(currentPattern, pausedTimePassed, pausedEffectiveInterval);
+        }
+    }
+
+
+    function runCurrentPattern() {
+        if (currentPatternIndex >= sequences.length) {
+            // All patterns completed, return to main menu
+            stopWorkout();
+            showAlert('Workout Complete', 'All patterns completed. Great job!');
+            return;
+        }
+
+        const currentPattern = sequences[currentPatternIndex];
+        // currentPatternNameDisplay.textContent = currentPattern.patternName; // Pattern name is now hidden
+        currentShotOptions = currentPattern.shotOptions.split('\n').filter(option => option.trim() !== '');
+
+        // Handle randomized order: shuffle options for current pattern
+        if (currentPattern.seriesOrder === 'randomized') {
+            shuffleArray(currentShotOptions);
+        }
+        currentShotIndex = 0; // Reset shot index for new pattern
+        currentPatternShotCount = 0; // Reset shot count for new pattern
+        currentPatternTimeElapsed = 0; // Reset time elapsed for new pattern
+
+        // Announce intro message if available
+        if (currentPattern.announceShots && currentPattern.introMessage.trim()) {
+            speak(currentPattern.introMessage);
+        }
+
+        // Start the interval for shots
+        startShotInterval(currentPattern);
+    }
+
+    // Modified startShotInterval to accept optional `initialTimePassed` and `totalInterval` for resuming
+    function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1) {
+        if (isPaused) return; // Do not start if paused
+
+        clearInterval(currentPatternTimer); // Clear any previous interval for this pattern's shots
+        clearInterval(shotIntervalTimer); // Clear any general interval (e.g., from a rest period)
+
+        let baseInterval = parseFloat(pattern.shotInterval);
+        let randomOffset = parseFloat(pattern.randomOffset);
+        let nextShotAnnouncementTime = parseFloat(pattern.nextShotAnnouncement);
+
+        let effectiveInterval = (totalInterval > 0) ? totalInterval : (baseInterval + (Math.random() * randomOffset));
+        let timePassed = initialTimePassed; // Use initialTimePassed for resuming
+
+        pausedEffectiveInterval = effectiveInterval; // Store for pause/resume
+
+        function executeShot() {
+            if (isPaused) return; // Prevent execution if paused
+
+            // Check if pattern limits are met before executing the next shot
+            if (shouldEndPattern(pattern)) {
+                endPattern(pattern);
+                return;
+            }
+
+            // Display current shot
+            if (currentShotOptions.length > 0) {
+                const shotToDisplay = currentShotOptions[currentShotIndex];
+                currentShotDisplay.textContent = shotToDisplay;
+                if (pattern.announceShots) {
+                    speak(shotToDisplay);
+                }
+                currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
+                // If randomized, and we've cycled through all options, reshuffle
+                if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
+                    shuffleArray(currentShotOptions);
+                }
+            } else {
+                currentShotDisplay.textContent = 'No shots defined for this pattern';
+                endPattern(pattern); // Consider ending pattern if no shots are defined
+                return;
+            }
+
+            // Flash screen red ONLY if not paused
+            if (!isPaused) {
+                flashScreenRed();
+            }
+
+            currentPatternShotCount++;
+
+            // Set up next shot timer with random offset
+            effectiveInterval = baseInterval + (Math.random() * randomOffset); // Recalculate for next shot
+            timePassed = 0; // Reset for new shot
+
+            pausedEffectiveInterval = effectiveInterval; // Update for pause/resume
+
+            clearInterval(currentPatternTimer); // Clear previous timer for this shot
+            currentPatternTimer = setInterval(() => {
+                if (isPaused) {
+                    clearInterval(currentPatternTimer); // Stop timer if paused
+                    pausedTimePassed = timePassed; // Store current timePassed
+                    return;
+                }
+                timePassed += 0.1; // Update every 100ms
+                currentPatternTimeElapsed += 0.1;
+                globalWorkoutTimeElapsed += 0.1;
+
+                // Update progress bar
+                const progress = (timePassed / effectiveInterval) * 100;
+                progressBar.style.width = `${progress}%`;
+                // Removed timeRemainingDisplay.textContent update
+
+                // Announce next shot if applicable
+                if (pattern.announceShots && nextShotAnnouncementTime > 0 &&
+                    effectiveInterval - timePassed <= nextShotAnnouncementTime + 0.05 &&
+                    effectiveInterval - timePassed > (nextShotAnnouncementTime - 0.1)
+                    ) {
+                    const nextShot = currentShotOptions[currentShotIndex];
+                    if (nextShot) {
+                        // speak(`Next: ${nextShot}`);
+                    }
+                }
+
+                if (timePassed >= effectiveInterval) {
+                    clearInterval(currentPatternTimer);
+                    executeShot(); // Move to the next shot
+                }
+            }, 100); // Update every 100ms for smoother progress bar
+        }
+
+        if (initialTimePassed === 0) { // Only execute a new shot if not resuming from a specific time
+            executeShot(); // Start the first shot for the current pattern immediately or after a completed pause
+        } else { // If resuming, continue current shot
+            currentPatternTimer = setInterval(() => {
+                if (isPaused) {
+                    clearInterval(currentPatternTimer);
+                    pausedTimePassed = timePassed;
+                    return;
+                }
+                timePassed += 0.1;
+                currentPatternTimeElapsed += 0.1;
+                globalWorkoutTimeElapsed += 0.1;
+
+                const progress = (timePassed / effectiveInterval) * 100;
+                progressBar.style.width = `${progress}%`;
+
+                if (pattern.announceShots && nextShotAnnouncementTime > 0 &&
+                    effectiveInterval - timePassed <= nextShotAnnouncementTime + 0.05 &&
+                    effectiveInterval - timePassed > (nextShotAnnouncementTime - 0.1)
+                    ) {
+                    const nextShot = currentShotOptions[currentShotIndex];
+                    if (nextShot) {
+                        // speak(`Next: ${nextShot}`);
+                    }
+                }
+
+                if (timePassed >= effectiveInterval) {
+                    clearInterval(currentPatternTimer);
+                    executeShot();
+                }
+            }, 100);
+        }
+    }
+
+
+    function shouldEndPattern(pattern) {
+        if (pattern.limitType === 'shot' && currentPatternShotCount >= pattern.patternLimit) {
+            return true;
+        }
+        if (pattern.limitType === 'time' && currentPatternTimeElapsed >= pattern.patternLimit) {
+            return true;
+        }
+        return false;
+    }
+
+    function endPattern(pattern) {
+        clearInterval(currentPatternTimer);
+        clearInterval(shotIntervalTimer);
+        clearTimeout(flashTimer);
+        document.body.classList.remove('bg-red-500', 'transition-colors', 'duration-75'); // Ensure flash is off
+
+        // Announce outro message if available
+        if (pattern.announceShots && pattern.outroMessage.trim()) {
+            speak(pattern.outroMessage);
+        }
+
+        // Handle post-pattern rest
+        const postRestTime = parseInt(pattern.postSequenceRest);
+        if (postRestTime > 0) {
+            currentShotDisplay.textContent = "Rest!";
+            // Removed timeRemainingDisplay.textContent update
+            progressBar.style.width = '100%'; // Full progress bar for rest
+
+            let restElapsed = 0;
+            pausedRestTimeRemaining = postRestTime; // Store for pause/resume
+
+            shotIntervalTimer = setInterval(() => {
+                if (isPaused) {
+                    clearInterval(shotIntervalTimer);
+                    return;
+                }
+                restElapsed += 1; // Update every second
+                globalWorkoutTimeElapsed += 1;
+                pausedRestTimeRemaining = postRestTime - restElapsed; // Update remaining for pause
+                // Removed timeRemainingDisplay.textContent update
+                if (restElapsed >= postRestTime) {
+                    clearInterval(shotIntervalTimer);
+                    currentPatternIndex++;
+                    runCurrentPattern(); // Move to the next pattern
+                }
+            }, 1000); // Update every second for rest countdown
+        } else {
+            currentPatternIndex++;
+            runCurrentPattern(); // Move to the next pattern immediately if no rest
+        }
+    }
+
+    function flashScreenRed() {
+        if (isPaused) return; // Do not flash if paused
+        document.body.classList.add('bg-red-500', 'transition-colors', 'duration-75');
+        flashTimer = setTimeout(() => {
+            document.body.classList.remove('bg-red-500', 'transition-colors', 'duration-75');
+        }, 150); // Flash for 150ms
+    }
+
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // Set desired language
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.warn('Speech Synthesis API not supported in this browser.');
+        }
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
 
       // --- EVENT LISTENERS ---
 
@@ -1282,7 +1638,8 @@
                   !e.target.closest('#alert-modal') &&
                   e.target !== startWorkoutButton &&
                   !startWorkoutButton.contains(e.target) &&
-                  !patternEditorContainer.contains(e.target)
+                  !patternEditorContainer.contains(e.target) &&
+                  !workoutViewContainer.contains(e.target) // Also exclude workout view
               ) {
                   setInteractionMode(null); // Turn off all modes
               }
@@ -1394,9 +1751,11 @@
       document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
-      document.getElementById('start-workout-btn').addEventListener('click', () => {
-        showAlert('Workout Start', 'This feature is not yet implemented.');
-      });
+
+      // --- New Workout Buttons Event Listeners ---
+      startWorkoutBtn.addEventListener('click', startWorkout);
+      stopWorkoutBtn.addEventListener('click', stopWorkout);
+      pauseResumeWorkoutBtn.addEventListener('click', togglePauseResume); // NEW event listener
 
 
       // Event listeners for inputs/changes within the currently rendered sequence editor
@@ -1415,8 +1774,13 @@
               if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
               if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
                   updateIntervalDisplay(currentEl);
+                  // Recalculate limit if type is time and interval changed
                   if (sequences[activeSequenceIndex].limitType === 'time') {
-                     handleLimitTypeChange(currentEl);
+                     handleLimitTypeChange(currentEl); // This will re-evaluate patternLimit based on new interval
+                  }
+                  // Also re-evaluate nextShotAnnouncement max if shotInterval changes
+                  if (e.target.closest('#shotInterval')) {
+                    handleAnnounceShotsChange(currentEl); // Update max for nextShotAnnouncement based on new interval
                   }
               }
               if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
@@ -1442,8 +1806,11 @@
 
       // --- INITIALIZATION ---
       const initialize = () => {
-        sequences.push(getNewSequenceData());
-        sequences[0].patternName = "Pattern 1";
+        // Ensure sequences array is not empty on initial load
+        if (sequences.length === 0) {
+            sequences.push(getNewSequenceData());
+            sequences[0].patternName = "Pattern 1";
+        }
         activeSequenceIndex = -1; // Ensure no pattern is active on initial load
         selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('table'); // Start with the table view
