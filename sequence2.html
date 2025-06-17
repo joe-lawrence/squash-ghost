@@ -86,8 +86,8 @@
     }
   </style>
 </head>
-<body class="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900 transition-colors duration-75">
-  <div id="app-container" class="w-full max-w-2xl">
+<body class="flex min-h-screen p-4 transition-colors duration-75">
+  <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
 
@@ -111,7 +111,7 @@
         <h2 id="current-pattern-name" class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6 hidden"></h2> <!-- Hidden by default -->
         <!-- New wrapper for vertical centering -->
         <div class="flex-grow flex flex-col items-center justify-center">
-            <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2"></p>
+            <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2 mb-10"></p>
             <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 mb-6">
                 <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-100 ease-linear" style="width: 0%"></div>
             </div>
@@ -626,11 +626,17 @@
           workoutViewContainer.classList.add('hidden');
           appTitle.classList.remove('hidden'); // Ensure app title is visible by default
 
-          // Reset appContainer and body styling to default (table/editor view)
-          appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
-          document.body.classList.add('items-center', 'justify-center'); // Center appContainer in body
+          // Reset appContainer classes to a clean slate before adding new ones
+          appContainer.className = 'w-full';
+
+          // Reset body classes, keeping the fixed ones and removing dynamic ones
+          document.body.classList.remove('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
+
 
           if (view === 'table') {
+              appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
+              document.body.classList.add('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
+
               tableViewContainer.classList.remove('hidden');
               startWorkoutContainer.classList.remove('hidden');
               globalControls.classList.remove('hidden');
@@ -639,21 +645,20 @@
               focusOnTop();
               setInteractionMode(null);
           } else if (view === 'editor') {
+              appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
+              document.body.classList.add('items-center', 'justify-center', 'bg-gray-100', 'dark:bg-gray-900');
+
               patternEditorContainer.classList.remove('hidden');
               renderPatternEditor();
               focusOnTop();
               setInteractionMode(null);
           } else if (view === 'workout') {
-              workoutViewContainer.classList.remove('hidden');
+              // For workout, appContainer becomes full screen and centers content
+              appContainer.classList.add('w-full', 'min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center', 'p-4');
+              document.body.classList.add('bg-gray-100', 'dark:bg-gray-900'); // Body maintains background
               appTitle.classList.add('hidden'); // Hide main app title during workout
 
-              // Adjust appContainer for full screen workout view
-              appContainer.classList.remove('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
-              appContainer.classList.add('w-full', 'min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center', 'p-4'); // Make it fill screen and center content within it
-
-              // Remove body centering as appContainer itself takes over full screen
-              document.body.classList.remove('items-center', 'justify-center');
-              
+              workoutViewContainer.classList.remove('hidden');
               focusOnTop();
           }
       };
