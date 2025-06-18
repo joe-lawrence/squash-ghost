@@ -6,8 +6,6 @@
   <title>Squash Ghosting Configuration</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Flowbite CDN for accordion functionality -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <style>
     /* Custom font for a clean look */
     body {
@@ -50,8 +48,8 @@
       cursor: pointer;
     }
     input[type="range"]:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+        /* No opacity or cursor not-allowed here, as per user request */
+        /* But visually, it might still look disabled due to underlying browser styles */
     }
     input[type="range"]:disabled::-webkit-slider-thumb {
         background: #9ca3af; /* Gray-400 */
@@ -61,21 +59,24 @@
         background: #9ca3af; /* Gray-400 */
         box-shadow: none;
     }
-    /* Hide scrollbars for the main container but allow scrolling */
-    #sequences-container::-webkit-scrollbar {
-        display: none;
+    /* Custom styles for accordion items */
+    .accordion-item {
+        transition: all 0.3s ease-in-out;
+        border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
     }
-    #sequences-container {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+    .accordion-item:last-child {
+        border-bottom: none; /* No border for the last item */
+        border-bottom-left-radius: 0.5rem; /* rounded-lg */
+        border-bottom-right-radius: 0.5rem; /* rounded-lg */
     }
-
-    /* Fix for "sticky" button effect on iOS Safari */
-    button {
-      -webkit-tap-highlight-color: transparent;
+    .accordion-item:first-child {
+        border-top-left-radius: 0.5rem; /* rounded-lg */
+        border-top-right-radius: 0.5rem; /* rounded-lg */
     }
-
-    /* Custom style for selected row */
+    .accordion-item.expanded .accordion-header .right-chevron {
+        transform: rotate(-90deg); /* Rotate right chevron when expanded */
+    }
+    /* Selected row styling, adapted for accordion item */
     .selected-row {
         background-color: #e0e7ff; /* Light indigo for selection */
         border-left: 4px solid #4f46e5; /* Accent border */
@@ -83,6 +84,19 @@
     .dark .selected-row {
         background-color: #374151; /* Darker gray for dark mode selection */
         border-left-color: #6366f1; /* Dark mode accent */
+    }
+    /* Hide scrollbars for the main container but allow scrolling */
+    #patterns-accordion-container::-webkit-scrollbar {
+        display: none;
+    }
+    #patterns-accordion-container {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Fix for "sticky" button effect on iOS Safari */
+    button {
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
@@ -92,10 +106,10 @@
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
     <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">
-    fix limits
+    main accordion
     </h1>
 
-    <!-- Start Workout Button (visible in table view) -->
+    <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
       <button id="start-workout-btn" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
         Start (00:00)
@@ -127,19 +141,16 @@
         </div>
     </div>
 
-    <!-- Table View Container -->
-    <div id="table-view-container" class="w-full bg-white dark:bg-gray-800">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Workout Patterns</h2>
+    <!-- Main View Container (holds the accordion list of patterns) -->
+    <div id="main-view-container" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
 
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-6">
-            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <tbody id="patterns-table-body">
-                    <!-- Pattern rows will be dynamically inserted here -->
-                </tbody>
-            </table>
+        <!-- Accordion Container - This will be populated dynamically by JavaScript -->
+        <div id="patterns-accordion-container" class="divide-y divide-gray-200 dark:divide-gray-700">
+            <!-- Pattern accordion items will be dynamically inserted here -->
         </div>
 
-        <div class="flex justify-center space-x-4">
+        <div class="flex justify-center space-x-4 p-6 border-t border-gray-200 dark:border-gray-700">
             <!-- Delete Pattern Toggle Button -->
             <button id="delete-pattern-toggle-btn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-state="off">
                 <span class="flex items-center gap-2">
@@ -157,10 +168,44 @@
                 </span>
             </button>
         </div>
+
+        <!-- Hidden template for an accordion item in the main list view -->
+        <template id="pattern-list-item-template">
+            <div class="accordion-item group">
+                <!-- Accordion Header -->
+                <div class="accordion-header flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
+                    <div class="flex items-center space-x-3 flex-grow">
+                        <!-- Left Justified Icons (Move/Delete) -->
+                        <!-- X icon -->
+                        <svg class="h-5 w-5 text-red-500 flex-shrink-0 delete-toggle hidden cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                        <!-- Up Chevron icon -->
+                        <svg class="h-5 w-5 text-gray-500 flex-shrink-0 chevron-up-toggle hidden cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                            <path d="m18 15-6-6-6 6"/>
+                        </svg>
+                        <!-- Down Chevron icon -->
+                        <svg class="h-5 w-5 text-gray-500 flex-shrink-0 chevron-down-toggle hidden cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                            <path d="m6 9 6 6 6-6"/>
+                        </svg>
+                        <span class="pattern-name-display text-lg font-semibold text-gray-800 dark:text-gray-200 flex-grow">Pattern Name</span>
+                    </div>
+                    <!-- Right Justified Icon (Right Chevron - for visual expand effect, clicking header navigates) -->
+                    <svg class="right-chevron h-5 w-5 text-gray-400 flex-shrink-0 transition-transform duration-150 ease-in-out" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                </div>
+                <!-- This body will be minimal/empty as editor is separate -->
+                <div class="accordion-body hidden p-4 text-sm text-gray-600 dark:text-gray-400">
+                    <!-- Summary info can go here if desired, e.g., Shots: 20, Interval: 6s -->
+                    <span class="pattern-summary"></span>
+                </div>
+            </div>
+        </template>
     </div>
 
-    <!-- Pattern Editor Container -->
-    <div id="pattern-editor-container" class="w-full bg-white dark:bg-gray-800 hidden">
+    <!-- Pattern Editor Container (separate screen) -->
+    <div id="pattern-editor-container" class="w-full bg-white dark:bg-gray-800 hidden rounded-lg shadow-xl p-6">
         <!-- Back to List Button -->
         <div class="mb-4">
             <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -169,150 +214,131 @@
             </button>
         </div>
 
-        <!-- This div will contain the dynamically generated sequences -->
-        <div id="sequences-container" class="overflow-hidden">
-            <!-- Sequence Template - Keep it hidden and clone for editing -->
-            <div id="sequence-template" class="w-full max-w-2xl rounded-xl bg-white p-2 shadow-lg dark:bg-gray-800 hidden">
-                <div class="space-y-4">
-                    <!-- New editable pattern name - Left Justified -->
-                    <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
+        <!-- This div will contain the dynamically generated editor for the active pattern -->
+        <div id="active-pattern-editor-content">
+            <!-- New editable pattern name - Left Justified -->
+            <h3 id="editor-pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
+            
+            <div class="space-y-4">
+                <!-- Options -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
+                            Options - <span id="editor-options-count-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
+                        <textarea id="editor-shot-options-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="4"></textarea>
+                    </div>
+                </div>
 
-                    <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
-                        <!-- Options -->
-                        <h2 id="accordion-heading-options">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
-                                    <span class="font-bold">Options - </span><span id="optionsCountDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        <h2>
-                        <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
-                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
-                                <div>
-                                    <textarea id="shotOptions" rows="4" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Narration -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
+                            Narration - <span id="editor-narration-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="editor-announce-shots-checkbox" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
+                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
+                        <textarea id="editor-intro-message-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="2"></textarea>
+                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
+                        <textarea id="editor-outro-message-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="2"></textarea>
+                    </div>
+                </div>
 
-                        <!-- Narration -->
-                        <h2 id="accordion-heading-narration">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
-                                    <span class="font-bold">Narration - </span><span id="narrationDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        </h2>
-                        <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
-                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                                <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="announceShots" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
-                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
-                                <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
-                                <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- Sequencing -->
-                        <h2 id="accordion-heading-sequencing">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" /></svg>
-                                    <span class="font-bold">Sequencing - </span><span id="sequencingOrderDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        <h2>
-                        <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
-                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
-                                <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
-                                    <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="in-order" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
-                                    <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Interval -->
-                        <h2 id="accordion-heading-interval">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
-                                    <span class="font-bold">Interval - </span><span id="intervalCombinedDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        <h2>
-                        <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
-                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
-                                <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" class="w-full accent-blue-600" />
-                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
-                                <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600" />
-                                <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
-                                <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600" />
-                            </div>
-                        </div>
-
-                        <!-- Limits -->
-                        <h2 id="accordion-heading-limits">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
-                                    <span class="font-bold">Limits - </span><span id="limitsDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        </h2>
-                        <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
-                            <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
-                                <div class="mb-4">
-                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
-                                    <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                                        <option value="shot">Max Shots</option>
-                                        <option value="time">Max Time</option>
-                                    </select>
-                                </div>
-                                <input type="range" id="patternLimitSlider" min="0" max="100" class="w-full accent-blue-600 mt-2" />
-                            </div>
-                        </div>
-
-                        <!-- Post Pattern Rest -->
-                        <h2 id="accordion-heading-post-rest">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
-                                    <span class="font-bold">Post Pattern Rest - </span><span id="postSequenceRestDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                                </span>
-                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
-                            </button>
-                        </h2>
-                        <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
-                            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
-                            <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
+                <!-- Sequencing -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z"/></svg>
+                            Sequencing - <span id="editor-sequencing-order-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
+                        <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
+                            <label class="inline-flex items-center"><input type="radio" name="editorSeriesOrder" value="in-order" class="editor-series-order-radio form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
+                            <label class="inline-flex items-center"><input type="radio" name="editorSeriesOrder" value="randomized" class="editor-series-order-radio form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
                         </div>
                     </div>
                 </div>
+
+                <!-- Interval -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
+                            Interval - <span id="editor-interval-combined-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
+                        <input type="range" id="editor-shot-interval-slider" class="w-full accent-blue-600" min="3.0" max="8.0" step="0.1" />
+                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
+                        <input type="range" id="editor-random-offset-slider" class="w-full accent-blue-600" min="0.0" max="1.0" step="0.1" />
+                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
+                        <input type="range" id="editor-next-shot-announcement-slider" class="w-full accent-blue-600" min="0.0" max="7.0" step="0.1" />
+                    </div>
+                </div>
+
+                <!-- Limits -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
+                            Limits - <span id="editor-limits-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <div class="mb-4">
+                            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
+                            <select id="editor-limit-type-select" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
+                                <option value="shot">Max Shots</option>
+                                <option value="time">Max Time</option>
+                            </select>
+                        </div>
+                        <input type="range" id="editor-pattern-limit-slider" class="w-full accent-blue-600 mt-2" min="0" max="100" />
+                    </div>
+                </div>
+
+                <!-- Post Pattern Rest -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
+                            Post Pattern Rest - <span id="editor-post-sequence-rest-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
+                        <input type="range" id="editor-post-sequence-rest-slider" class="w-full accent-blue-600" min="0" max="300" />
+                    </div>
+                </div>
             </div>
-        </div>
-        <!-- Centered row of icon buttons - For current pattern in editor -->
-        <div class="flex justify-center space-x-4 mt-8">
-            <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span class="text-xs mt-1">Clone</span>
-            </button>
-            <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-                <span class="text-xs mt-1">Import</span>
-            </button>
-            <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-                <span class="text-xs mt-1">Save</span>
-            </button>
+            <!-- Centered row of icon buttons - For current pattern in editor -->
+            <div class="flex justify-center space-x-4 mt-8">
+                <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <span class="text-xs mt-1">Clone</span>
+                </button>
+                <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+                    <span class="text-xs mt-1">Import</span>
+                </button>
+                <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+                    <span class="text-xs mt-1">Save</span>
+                </button>
+                <button id="reset-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    <span class="text-xs mt-1">Reset</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -321,7 +347,7 @@
     <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden">
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
-        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button>
+        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset All</button>
     </div>
 
     <!-- The Confirmation Modal (for delete/reset) -->
@@ -351,46 +377,63 @@
     document.addEventListener('DOMContentLoaded', () => {
       // --- STATE MANAGEMENT ---
       let sequences = [];
-      let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
-      let selectedPatternId = null; // Store the ID of the selected row for focus tracking
-      let isMoveModeOn = false; // State for move mode
-      let isDeleteModeOn = false; // State for delete mode
+      let activePatternId = null; // Stores the ID of the pattern being edited in the *separate editor*
+      let isMoveModeOn = false; // State for move mode in the accordion list
+      let isDeleteModeOn = false; // State for delete mode in the accordion list
 
-      const tableViewContainer = document.getElementById('table-view-container');
-      const patternEditorContainer = document.getElementById('pattern-editor-container');
-      const sequencesContainer = document.getElementById('sequences-container');
-      const sequenceTemplate = document.getElementById('sequence-template');
-      const patternsTableBody = document.getElementById('patterns-table-body');
+      const mainViewContainer = document.getElementById('main-view-container');
+      const patternsAccordionContainer = document.getElementById('patterns-accordion-container');
+      const patternListItemTemplate = document.getElementById('pattern-list-item-template'); // Template for list items
+      const patternEditorContainer = document.getElementById('pattern-editor-container'); // The dedicated editor screen
+      const activePatternEditorContent = document.getElementById('active-pattern-editor-content'); // Container for editor inputs
+
       const appContainer = document.getElementById('app-container');
       const globalControls = document.getElementById('global-controls');
       const movePatternToggleButton = document.getElementById('move-pattern-toggle-btn');
       const deletePatternToggleButton = document.getElementById('delete-pattern-toggle-btn');
+      const newPatternBtn = document.getElementById('new-pattern-btn');
+
       const startWorkoutButton = document.getElementById('start-workout-btn');
       const startWorkoutContainer = document.getElementById('start-workout-container');
 
-      // --- New Workout View Elements ---
+      // --- Workout View Elements ---
       const workoutViewContainer = document.getElementById('workout-view-container');
-      const startWorkoutBtn = document.getElementById('start-workout-btn'); // Already exists
-      const stopWorkoutBtn = document.getElementById('stop-workout-btn'); // New
-      const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn'); // NEW
-      const currentShotDisplay = document.getElementById('current-shot-display'); // New
-      const progressBar = document.getElementById('progress-bar'); // New
-      const currentPatternNameDisplay = document.getElementById('current-pattern-name'); // New
-      const appTitle = document.getElementById('app-title'); // Main app title
+      const stopWorkoutBtn = document.getElementById('stop-workout-btn');
+      const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn');
+      const currentShotDisplay = document.getElementById('current-shot-display');
+      const progressBar = document.getElementById('progress-bar');
+      const currentPatternNameDisplay = document.getElementById('current-pattern-name');
+      const appTitle = document.getElementById('app-title');
+
+      // --- Editor Specific Elements (cached for easy access) ---
+      let editorPatternNameDisplay;
+      let editorShotOptionsInput;
+      let editorAnnounceShotsCheckbox;
+      let editorIntroMessageInput;
+      let editorOutroMessageInput;
+      let editorSeriesOrderRadios; // NodeList
+      let editorShotIntervalSlider;
+      let editorRandomOffsetSlider;
+      let editorNextShotAnnouncementSlider;
+      let editorLimitTypeSelect;
+      let editorPatternLimitSlider;
+      let editorPostSequenceRestSlider;
+      let editorOptionsCountDisplay;
+      let editorNarrationDisplay;
+      let editorSequencingOrderDisplay;
+      let editorIntervalCombinedDisplay;
+      let editorLimitsDisplay;
+      let editorPostSequenceRestDisplay;
+      // Removed editorPatternNameEditContainer and editorPatternNameInput
+
 
       // --- Web Audio API ---
       let audioContext = null;
 
-      // --- Speech Synthesis API (for audio ducking and announcements) ---
+      // --- Speech Synthesis API ---
       let synth = null;
-      let speechKeepAliveTimer = null; // Timer for silent speech utterances (now deprecated for better control)
-      let isRoutineRunning = false; // Flag to indicate if workout routine is active
-
-      // Global variable to hold the reference to the *currently speaking* silent utterance.
-      let currentSilentUtteranceRef = null;
-      // Global variable to hold the timer ID for scheduling the *next* silent utterance.
+      let isRoutineRunning = false;
       let nextSilentUtteranceTimeout = null;
-
 
       // --- SVG Icons ---
       const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
@@ -403,25 +446,18 @@
       // --- UTILITY FUNCTIONS ---
       const formatTime = (totalSeconds) => {
         const roundedSeconds = Math.round(totalSeconds);
-
         if (roundedSeconds === 0) return 'None';
-
         const minutes = Math.floor(roundedSeconds / 60);
         const seconds = roundedSeconds % 60;
-
         const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
         const formattedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
-
-        // Removed the "Time:" and "min/sec" suffix for a cleaner display as per request
         return `${formattedMinutes}:${formattedSeconds}`;
       };
 
       const getNewSequenceData = () => {
         const defaultShotOptions = 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right';
-        // Set fixed default shots and time matching user's expectation, not calculated from default options
         const defaultMaxShots = 20;
         const defaultMaxTimeSeconds = 120; // 2 minutes
-
         return {
           id: Date.now() + Math.random(),
           patternName: 'New Pattern',
@@ -433,11 +469,11 @@
           shotInterval: 6.0,
           randomOffset: 0.0,
           nextShotAnnouncement: 3.0,
-          limitType: 'shot', // Default to 'shot'
-          patternLimit: defaultMaxShots, // Default to 20 shots
+          limitType: 'shot',
+          patternLimit: defaultMaxShots,
           postSequenceRest: 0,
-          previousShotLimit: defaultMaxShots, // Initialize with 20 shots
-          previousTimeLimit: defaultMaxTimeSeconds // Initialize with 120 seconds (2:00)
+          previousShotLimit: defaultMaxShots,
+          previousTimeLimit: defaultMaxTimeSeconds
         };
       };
 
@@ -447,22 +483,17 @@
         }
       };
 
-      // Helper for sanitizing filenames
       const sanitizeFilename = (name) => {
         return name.replace(/[^a-z0-9\s-]/gi, '').replace(/\s+/g, '-');
       };
 
-      // Sanity check for a single pattern configuration
       const isValidPatternConfig = (data) => {
         const requiredProps = [
           'patternName', 'shotOptions', 'announceShots', 'introMessage', 'outroMessage',
           'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'limitType', 'patternLimit', 'postSequenceRest'
         ];
         const hasAllProps = requiredProps.every(prop => Object.prototype.hasOwnProperty.call(data, prop));
-
         if (!hasAllProps) return false;
-
-        // Basic type checking
         if (typeof data.patternName !== 'string' ||
             typeof data.shotOptions !== 'string' ||
             typeof data.announceShots !== 'boolean' ||
@@ -477,11 +508,9 @@
             typeof data.postSequenceRest !== 'number') {
             return false;
         }
-
         return true;
       };
 
-      // Sanity check for an entire workout file (array of patterns)
       const isValidWorkoutFile = (data) => {
         if (!Array.isArray(data)) {
             return false;
@@ -529,119 +558,63 @@
           deletePatternToggleButton.classList.toggle('dark:text-gray-300', !isDeleteModeOn);
           deletePatternToggleButton.dataset.state = isDeleteModeOn ? 'on' : 'off';
 
-          // Only re-render table and toggle other buttons if a mode state actually changed
+          // Only re-render accordion if a mode state actually changed
           if (wasMoveModeOn !== isMoveModeOn || wasDeleteModeOn !== isDeleteModeOn) {
-              renderTableView(); // Re-render table to show/hide specific buttons
-              toggleOtherButtons(); // Apply global disabling based on new mode state
+              renderAccordionView(); // Re-render accordion to show/hide specific buttons/icons
           }
+          toggleOtherButtons(); // Apply global disabling (no opacity for list view, only editor/global buttons)
       };
 
       // Function to disable/enable other buttons and elements based on active mode
       const toggleOtherButtons = () => {
-          const disableAllMainActions = isMoveModeOn || isDeleteModeOn;
+          const disableGlobalActions = isMoveModeOn || isDeleteModeOn;
 
-          const newPatternBtn = document.getElementById('new-pattern-btn');
           const loadAllBtn = document.getElementById('load-all-btn');
           const saveAllBtn = document.getElementById('save-all-btn');
           const resetAllBtn = document.getElementById('reset-all-btn');
           const startWorkoutBtn = document.getElementById('start-workout-btn');
 
-          const backToListBtn = document.getElementById('back-to-list-btn');
-          const cloneBtn = document.getElementById('clone-btn');
-          const importBtn = document.getElementById('import-btn');
-          const saveBtn = document.getElementById('save-btn');
-
-          // Buttons affected by any active mode (excluding the mode's own toggle and global reset)
           const elementsToToggleDisable = [
-              newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn,
-              backToListBtn, cloneBtn, importBtn, saveBtn
+              newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn
           ];
 
           elementsToToggleDisable.forEach(element => {
               if (element) {
-                  element.disabled = disableAllMainActions;
-                  if (disableAllMainActions) {
-                      element.classList.add('opacity-50', 'cursor-not-allowed');
-                  } else {
-                      element.classList.remove('opacity-50', 'cursor-not-allowed');
-                  }
+                  element.disabled = disableGlobalActions;
+                  // NO OPACITY OR CURSOR-NOT-ALLOWED FOR GLOBAL BUTTONS AS PER NEW REQUIREMENT
               }
           });
 
           // Specific handling for mode toggle buttons (mutually exclusive)
           if (movePatternToggleButton) {
               movePatternToggleButton.disabled = isDeleteModeOn;
-              if (isDeleteModeOn) {
-                  movePatternToggleButton.classList.add('opacity-50', 'cursor-not-allowed');
-              } else {
-                  movePatternToggleButton.classList.remove('opacity-50', 'cursor-not-allowed');
-              }
           }
           if (deletePatternToggleButton) {
               deletePatternToggleButton.disabled = isMoveModeOn;
-              if (isMoveModeOn) {
-                  deletePatternToggleButton.classList.add('opacity-50', 'cursor-not-allowed');
-              } else {
-                  deletePatternToggleButton.classList.remove('opacity-50', 'cursor-not-allowed');
-              }
           }
 
           // Global Reset button is special, it's never disabled by these modes
           if (resetAllBtn) {
             resetAllBtn.disabled = false;
-            resetAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
           }
 
-          // Handle delete buttons and pattern names in table rows
-          patternsTableBody.querySelectorAll('.delete-pattern-btn').forEach(button => {
-              // Delete button in row should only be enabled when delete mode is ON
-              button.disabled = !isDeleteModeOn;
-              if (!isDeleteModeOn) {
-                  button.classList.add('opacity-50', 'cursor-not-allowed');
-              } else {
-                  button.classList.remove('opacity-50', 'cursor-not-allowed');
-              }
-          });
-
-          patternsTableBody.querySelectorAll('.pattern-name-clickable').forEach(span => {
-              // If any mode is on, pattern name should not be clickable to enter editor
-              if (disableAllMainActions) {
-                  span.classList.remove('cursor-pointer');
-                  span.style.pointerEvents = 'none';
-              } else {
-                  span.classList.add('cursor-pointer');
-                  span.style.pointerEvents = 'auto';
-              }
-          });
-
-          // Disable/enable elements inside the editor if it's visible
+          // Disable/enable elements inside the *editor* view if it's visible
           if (!patternEditorContainer.classList.contains('hidden')) {
-              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element
-              if (currentEl) {
-                  // Accordion buttons and input fields inside the editor
-                  currentEl.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
-                      accordionBtn.disabled = disableAllMainActions;
-                      accordionBtn.classList.toggle('opacity-50', disableAllMainActions);
-                      accordionBtn.classList.toggle('cursor-not-allowed', disableAllMainActions);
-                  });
+              const editorInputs = activePatternEditorContent.querySelectorAll('input:not([type="radio"]), textarea, select');
+              const editorButtons = activePatternEditorContent.querySelectorAll('#clone-btn, #import-btn, #save-btn, #reset-btn');
 
-                  currentEl.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inputField => {
-                      const isInternallyDisabled = (inputField.id === 'nextShotAnnouncement' && !currentEl.querySelector('#announceShots').checked);
-                      inputField.disabled = disableAllMainActions || isInternallyDisabled;
-                      inputField.classList.toggle('opacity-50', disableAllMainActions || isInternallyDisabled);
-                      inputField.classList.toggle('cursor-not-allowed', disableAllMainActions || isInternallyDisabled);
-                  });
+              editorInputs.forEach(inputField => {
+                  const isInternallyDisabled = (inputField.id === 'editor-next-shot-announcement-slider' && !editorAnnounceShotsCheckbox.checked);
+                  inputField.disabled = isInternallyDisabled; // Only internal logic disables
+              });
 
-                  const patternNameDisplay = currentEl.querySelector('#pattern-name-display');
-                  if (patternNameDisplay) {
-                    if (disableAllMainActions) {
-                        patternNameDisplay.classList.remove('cursor-pointer');
-                        patternNameDisplay.style.pointerEvents = 'none';
-                    } else {
-                        patternNameDisplay.classList.add('cursor-pointer');
-                        patternNameDisplay.style.pointerEvents = 'auto';
-                    }
-                  }
+              editorButtons.forEach(btn => {
+                  btn.disabled = false; // Editor buttons are always enabled unless explicitly disabled by another means
+              });
+              
+              // Pattern name display in editor
+              if (editorPatternNameDisplay) {
+                editorPatternNameDisplay.style.pointerEvents = 'auto'; // Always allow editing in editor
               }
           }
       };
@@ -651,47 +624,43 @@
       const showView = (view) => {
           // Reset appContainer styles before applying view-specific ones
           appContainer.classList.remove(
-            'max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800', // For table/editor
-            'absolute', 'inset-0', 'flex', 'flex-col', 'items-center', 'justify-center'    // For workout
+            'max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800',
+            'absolute', 'inset-0', 'flex', 'flex-col', 'items-center', 'justify-center'
           );
-          // Ensure body centering is removed, appContainer will manage its own positioning
-          document.body.classList.remove('items-center', 'justify-center');
+          document.body.classList.remove('items-center', 'justify-center', 'p-0');
 
           // Hide all view containers initially
-          tableViewContainer.classList.add('hidden');
+          mainViewContainer.classList.add('hidden');
           startWorkoutContainer.classList.add('hidden');
-          patternEditorContainer.classList.add('hidden');
           globalControls.classList.add('hidden');
           workoutViewContainer.classList.add('hidden');
-          appTitle.classList.remove('hidden'); // Ensure app title is visible by default
+          patternEditorContainer.classList.add('hidden'); // Ensure editor is hidden
+          appTitle.classList.remove('hidden');
 
-          if (view === 'table' || view === 'editor') {
+          if (view === 'main') {
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
-              document.body.classList.add('items-center', 'justify-center'); // Center appContainer in body
-              // Show specific containers
-              if (view === 'table') {
-                  tableViewContainer.classList.remove('hidden');
-                  startWorkoutContainer.classList.remove('hidden');
-                  globalControls.classList.remove('hidden');
-                  renderTableView();
-                  calculateTotalWorkoutTime();
-              } else { // editor
-                  patternEditorContainer.classList.remove('hidden');
-                  renderPatternEditor();
-              }
+              document.body.classList.add('items-center', 'justify-center');
+              mainViewContainer.classList.remove('hidden');
+              startWorkoutContainer.classList.remove('hidden');
+              globalControls.classList.remove('hidden');
+              renderAccordionView(); // Render the list
+              calculateTotalWorkoutTime();
               focusOnTop();
-              setInteractionMode(null); // Ensure modes are off when entering non-workout views
+              setInteractionMode(null); // Ensure modes are off when entering main view
+          } else if (view === 'editor') {
+              appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
+              document.body.classList.add('items-center', 'justify-center');
+              patternEditorContainer.classList.remove('hidden');
+              populatePatternEditor(); // Populate the editor with activePatternId's data
+              focusOnTop();
+              // No mode selection in editor, so ensure modes are off
+              isMoveModeOn = false;
+              isDeleteModeOn = false;
+              toggleOtherButtons(); // Update button states based on being in editor
           } else if (view === 'workout') {
-              // For workout, appContainer fills the screen and acts as the main flex container
-              appContainer.classList.add('absolute', 'inset-0', 'flex', 'flex-col'); // Fill entire screen, flex column
-              // body should just let appContainer fill it, no need for body-level centering now
-              document.body.classList.add('p-0'); // Remove padding from body during workout view if present
-              document.body.classList.remove('items-center', 'justify-center'); // App container now manages layout
-
-              appTitle.classList.add('hidden'); // Hide main app title during workout
-
-              workoutViewContainer.classList.remove('hidden'); // Show the workout view
-              // workoutViewContainer itself has flex-col and its internal flex-grow div centers content
+              appContainer.classList.add('absolute', 'inset-0', 'flex', 'flex-col');
+              document.body.classList.add('p-0');
+              workoutViewContainer.classList.remove('hidden');
               focusOnTop();
           }
       };
@@ -701,8 +670,6 @@
           let totalTime = 0;
           sequences.forEach(pattern => {
               let patternDuration = 0;
-
-              // limitType will always be 'shot' or 'time'
               if (pattern.limitType === 'time') {
                   patternDuration = pattern.patternLimit;
               } else if (pattern.limitType === 'shot') {
@@ -715,259 +682,270 @@
       };
 
 
-      // --- TABLE VIEW RENDERING ---
-      const renderTableView = () => {
-          patternsTableBody.innerHTML = '';
+      // --- ACCORDION LIST VIEW RENDERING ---
+      const renderAccordionView = () => {
+          patternsAccordionContainer.innerHTML = '';
           if (sequences.length === 0) {
-              const noPatternsRow = document.createElement('tr');
-              noPatternsRow.classList.add('bg-white', 'dark:bg-gray-800');
-              noPatternsRow.innerHTML = `<td colspan="2" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No patterns configured. Click "New Pattern" to add one.</td>`;
-              patternsTableBody.appendChild(noPatternsRow);
+              const noPatternsMessage = document.createElement('div');
+              noPatternsMessage.classList.add('p-6', 'text-center', 'text-gray-500', 'dark:text-gray-400');
+              noPatternsMessage.textContent = 'No patterns configured. Click the "+" button to add one.';
+              patternsAccordionContainer.appendChild(noPatternsMessage);
               return;
           }
 
           sequences.forEach((pattern, index) => {
-              const row = document.createElement('tr');
-              row.dataset.patternId = pattern.id; // Add pattern ID to the row for easier identification
-              row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-600');
-              row.dataset.index = index; // Store the index for easy access
+              const newAccordionItem = patternListItemTemplate.content.cloneNode(true).firstElementChild;
+              newAccordionItem.dataset.patternId = pattern.id;
+              newAccordionItem.dataset.index = index;
 
-              // Apply 'selected-row' class if this pattern is currently selected
-              if (pattern.id === selectedPatternId) {
-                  row.classList.add('selected-row');
+              const patternNameDisplay = newAccordionItem.querySelector('.pattern-name-display');
+              const deleteToggle = newAccordionItem.querySelector('.delete-toggle');
+              const chevronUpToggle = newAccordionItem.querySelector('.chevron-up-toggle');
+              const chevronDownToggle = newAccordionItem.querySelector('.chevron-down-toggle');
+              const accordionHeader = newAccordionItem.querySelector('.accordion-header');
+              const patternSummarySpan = newAccordionItem.querySelector('.pattern-summary');
+
+              patternNameDisplay.textContent = pattern.patternName;
+
+              // Update summary text (example summary, customize as needed)
+              const limitText = pattern.limitType === 'shot' ? `${pattern.patternLimit} shots` : formatTime(pattern.patternLimit);
+              patternSummarySpan.textContent = `Shots: ${pattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length}, Limit: ${limitText}, Interval: ${pattern.shotInterval}s`;
+
+
+              // Set visibility of move/delete icons based on mode
+              if (isDeleteModeOn) {
+                  deleteToggle.classList.remove('hidden');
+              } else {
+                  deleteToggle.classList.add('hidden');
+              }
+              if (isMoveModeOn) {
+                  chevronUpToggle.classList.remove('hidden');
+                  chevronDownToggle.classList.remove('hidden');
+              } else {
+                  chevronUpToggle.classList.add('hidden');
+                  chevronDownToggle.classList.add('hidden');
               }
 
-              row.innerHTML = `
-                  <td class="px-4 py-3 whitespace-nowrap">
-                      <div class="flex items-center space-x-2">
-                          <div class="flex flex-row items-center space-x-1 ${isMoveModeOn ? '' : 'hidden'}"> <!-- Conditional visibility for move buttons -->
-                              <button class="up-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
-                              </button>
-                              <button class="down-arrow-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${index === sequences.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === sequences.length - 1 ? 'disabled' : ''}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-                              </button>
-                          </div>
-                          <span class="pattern-name-clickable flex-grow font-bold text-base text-indigo-700 dark:text-indigo-300 cursor-pointer">${pattern.patternName}</span>
-                      </div>
-                  </td>
-                  <td class="px-4 py-3 text-right">
-                      <button class="delete-pattern-btn p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400 ${isDeleteModeOn ? '' : 'hidden'}"> <!-- Conditional visibility for delete button -->
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                      </button>
-                      <button class="view-pattern-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${!isDeleteModeOn && !isMoveModeOn ? '' : 'hidden'}">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 7h-9m3 10H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
-                      </button>
-                  </td>
-              `;
-              patternsTableBody.appendChild(row);
+              // Disable/enable move arrows based on position
+              if (index === 0) {
+                  chevronUpToggle.classList.add('opacity-30', 'cursor-not-allowed');
+              } else {
+                  chevronUpToggle.classList.remove('opacity-30', 'cursor-not-allowed');
+              }
+              if (index === sequences.length - 1) {
+                  chevronDownToggle.classList.add('opacity-30', 'cursor-not-allowed');
+              } else {
+                  chevronDownToggle.classList.remove('opacity-30', 'cursor-not-allowed');
+              }
+
+              // Apply 'selected-row' class if this pattern is currently selected in the list
+              // Only apply if no mode is active, otherwise selection is implicit by mode.
+              if (activePatternId === pattern.id && !isMoveModeOn && !isDeleteModeOn) {
+                newAccordionItem.classList.add('selected-row');
+              } else {
+                newAccordionItem.classList.remove('selected-row');
+              }
+
+
+              // Add click listener for header to navigate to editor or trigger mode action
+              accordionHeader.addEventListener('click', (e) => {
+                  const clickedElement = e.target;
+                  if (isMoveModeOn) {
+                      if (clickedElement.closest('.chevron-up-toggle')) {
+                          movePattern(index, 'up');
+                      } else if (clickedElement.closest('.chevron-down-toggle')) {
+                          movePattern(index, 'down');
+                      }
+                      e.stopPropagation(); // Prevent navigation/other clicks
+                  } else if (isDeleteModeOn) {
+                      if (clickedElement.closest('.delete-toggle')) {
+                          showConfirmationModalForDelete(index);
+                      }
+                      e.stopPropagation(); // Prevent navigation/other clicks
+                  } else {
+                      // Normal mode: clicking the header (or pattern name) opens the editor
+                      // We can also make the right chevron click expand/collapse a summary (optional)
+                      if (clickedElement.closest('.pattern-name-display') || clickedElement.closest('.right-chevron')) {
+                          activePatternId = pattern.id; // Set the active pattern for the editor
+                          showView('editor'); // Navigate to editor view
+                          e.stopPropagation(); // Prevent any other clicks from propagating
+                      }
+                  }
+              });
+
+              patternsAccordionContainer.appendChild(newAccordionItem);
           });
+          toggleOtherButtons(); // Ensure global buttons react to mode changes
+      };
 
-          // After rendering, if there's a selected pattern, ensure its row is visible
-          if (selectedPatternId) {
-              const selectedRow = patternsTableBody.querySelector(`[data-pattern-id="${selectedPatternId}"]`);
-              if (selectedRow) {
-                  selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
+      /**
+       * Populates the editor view with the data of the currently active pattern.
+       */
+      const populatePatternEditor = () => {
+          const currentPattern = sequences.find(p => p.id === activePatternId);
+          if (!currentPattern) {
+              showView('main'); // Go back if no active pattern found
+              showAlert('Error', 'Could not load pattern editor.');
+              return;
           }
-          // Ensure other buttons are toggled correctly after rendering
-          toggleOtherButtons();
+
+          // Cache editor elements if not already cached
+          if (!editorPatternNameDisplay) {
+            editorPatternNameDisplay = document.getElementById('editor-pattern-name-display');
+            editorShotOptionsInput = document.getElementById('editor-shot-options-input');
+            editorAnnounceShotsCheckbox = document.getElementById('editor-announce-shots-checkbox');
+            editorIntroMessageInput = document.getElementById('editor-intro-message-input');
+            editorOutroMessageInput = document.getElementById('editor-outro-message-input');
+            editorSeriesOrderRadios = document.querySelectorAll('input[name="editorSeriesOrder"]');
+            editorShotIntervalSlider = document.getElementById('editor-shot-interval-slider');
+            editorRandomOffsetSlider = document.getElementById('editor-random-offset-slider');
+            editorNextShotAnnouncementSlider = document.getElementById('editor-next-shot-announcement-slider');
+            editorLimitTypeSelect = document.getElementById('editor-limit-type-select');
+            editorPatternLimitSlider = document.getElementById('editor-pattern-limit-slider');
+            editorPostSequenceRestSlider = document.getElementById('editor-post-sequence-rest-slider');
+
+            editorOptionsCountDisplay = document.getElementById('editor-options-count-display');
+            editorNarrationDisplay = document.getElementById('editor-narration-display');
+            editorSequencingOrderDisplay = document.getElementById('editor-sequencing-order-display');
+            editorIntervalCombinedDisplay = document.getElementById('editor-interval-combined-display');
+            editorLimitsDisplay = document.getElementById('editor-limits-display');
+            editorPostSequenceRestDisplay = document.getElementById('editor-post-sequence-rest-display');
+          }
+
+          // Set values to editor fields
+          editorPatternNameDisplay.textContent = currentPattern.patternName;
+          editorShotOptionsInput.value = currentPattern.shotOptions;
+          editorAnnounceShotsCheckbox.checked = currentPattern.announceShots;
+          editorIntroMessageInput.value = currentPattern.introMessage;
+          editorOutroMessageInput.value = currentPattern.outroMessage;
+          editorSeriesOrderRadios.forEach(radio => radio.checked = (radio.value === currentPattern.seriesOrder));
+          editorShotIntervalSlider.value = currentPattern.shotInterval;
+          editorRandomOffsetSlider.value = currentPattern.randomOffset;
+          editorNextShotAnnouncementSlider.value = currentPattern.nextShotAnnouncement;
+          editorLimitTypeSelect.value = currentPattern.limitType;
+          editorPatternLimitSlider.value = currentPattern.patternLimit;
+          editorPostSequenceRestSlider.value = currentPattern.postSequenceRest;
+
+          // Apply specific logic for sliders/displays
+          handleEditorAnnounceShotsChange(); // Update nextShotAnnouncement max/disabled state
+          handleEditorLimitTypeChange(); // Update patternLimitSlider min/max/value based on type
+          updateAllEditorDisplays(); // Update all summary texts
       };
 
-      // --- PATTERN EDITOR RENDERING & DATA SYNC ---
-      const renderPatternEditor = () => {
-        sequencesContainer.innerHTML = '';
-        if (activeSequenceIndex === -1 || sequences.length === 0) {
-            // This state should ideally not be reached if logic correctly hides editor when no pattern is active
-            showView('table');
-            return;
-        }
 
-        const currentData = sequences[activeSequenceIndex];
-        const newSequenceEl = sequenceTemplate.cloneNode(true);
-        newSequenceEl.id = `sequence-${currentData.id}`;
-        newSequenceEl.classList.remove('hidden');
-        sequencesContainer.appendChild(newSequenceEl);
+      /**
+       * Saves the current state of the editor's input fields back to the `sequences` array.
+       */
+      const saveCurrentPatternState = () => {
+          if (!activePatternId) return;
 
-        const patternNameDisplay = newSequenceEl.querySelector('#pattern-name-display');
-        const shotOptions = newSequenceEl.querySelector('#shotOptions');
-        const announceShots = newSequenceEl.querySelector('#announceShots');
-        const introMessage = newSequenceEl.querySelector('#introMessage');
-        const outroMessage = newSequenceEl.querySelector('#outroMessage');
-        const seriesOrderRadios = newSequenceEl.querySelectorAll('input[name="seriesOrder"]');
-        const shotInterval = newSequenceEl.querySelector('#shotInterval');
-        const randomOffset = newSequenceEl.querySelector('#randomOffset');
-        const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement');
-        const limitTypeSelect = newSequenceEl.querySelector('#limitTypeSelect');
-        const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
-        const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
+          const patternIndex = sequences.findIndex(p => p.id === activePatternId);
+          if (patternIndex === -1) return;
 
-        patternNameDisplay.textContent = currentData.patternName;
-        shotOptions.value = currentData.shotOptions;
-        announceShots.checked = currentData.announceShots;
-        introMessage.value = currentData.introMessage;
-        outroMessage.value = currentData.outroMessage;
-        seriesOrderRadios.forEach(radio => radio.checked = radio.value === currentData.seriesOrder);
-        shotInterval.value = currentData.shotInterval;
-        randomOffset.value = currentData.randomOffset;
-        nextShotAnnouncement.value = currentData.nextShotAnnouncement;
-        postSequenceRest.value = currentData.postSequenceRest;
+          const currentData = sequences[patternIndex];
 
-        // Set up limits display explicitly on load, without relying on `handleLimitTypeChange`
-        // which might reset values due to programmatic 'change' event firing.
-        limitTypeSelect.value = currentData.limitType; // Set the select value first
-        if (currentData.limitType === 'shot') {
-            patternLimitSlider.min = 0;
-            patternLimitSlider.max = 100;
-        } else if (currentData.limitType === 'time') {
-            const currentShotInterval = parseFloat(currentData.shotInterval);
-            patternLimitSlider.min = Math.max(1, Math.round(currentShotInterval));
-            patternLimitSlider.max = 1800; // 30 minutes
-        }
-        patternLimitSlider.value = currentData.patternLimit; // Directly set slider to the loaded value
+          // Save the current patternLimit to the appropriate 'previous' field before updating currentData
+          if (currentData.limitType === 'shot') {
+              currentData.previousShotLimit = parseInt(editorPatternLimitSlider.value);
+          } else if (currentData.limitType === 'time') {
+              currentData.previousTimeLimit = parseInt(editorPatternLimitSlider.value);
+          }
 
-        updateAllDisplays(newSequenceEl);
-        handleAnnounceShotsChange(newSequenceEl); // Keep this to ensure proper state of nextShotAnnouncement slider
-        initFlowbite(); // Re-initialize Flowbite for new accordion elements
+          // Update pattern data from the editor input fields
+          currentData.patternName = editorPatternNameDisplay.textContent; // Get from span, not input during normal operation
+          currentData.shotOptions = editorShotOptionsInput.value;
+          currentData.announceShots = editorAnnounceShotsCheckbox.checked;
+          currentData.introMessage = editorIntroMessageInput.value;
+          currentData.outroMessage = editorOutroMessageInput.value;
+          currentData.seriesOrder = Array.from(editorSeriesOrderRadios).find(radio => radio.checked).value;
+          currentData.shotInterval = parseFloat(editorShotIntervalSlider.value);
+          currentData.randomOffset = parseFloat(editorRandomOffsetSlider.value);
+          currentData.nextShotAnnouncement = parseFloat(editorNextShotAnnouncementSlider.value);
+          currentData.limitType = editorLimitTypeSelect.value;
+          currentData.patternLimit = parseInt(editorPatternLimitSlider.value);
+          currentData.postSequenceRest = parseInt(editorPostSequenceRestSlider.value);
 
-        patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
-        toggleOtherButtons(); // Apply state after view change
+          calculateTotalWorkoutTime();
       };
 
-      const saveCurrentSequenceState = () => {
-        if (activeSequenceIndex === -1 || sequences.length === 0) return;
-
-        const currentData = sequences[activeSequenceIndex];
-        const currentEl = sequencesContainer.firstChild; // The cloned template is always the first child
-        if (!currentEl) return;
-
-        // Save the current patternLimit to the appropriate 'previous' field before updating currentData
-        // This ensures that when we come back, we have the last set value for that limit type.
-        if (currentData.limitType === 'shot') {
-            currentData.previousShotLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
-        } else if (currentData.limitType === 'time') {
-            currentData.previousTimeLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
-        }
-
-        currentData.shotOptions = currentEl.querySelector('#shotOptions').value;
-        currentData.announceShots = currentEl.querySelector('#announceShots').checked;
-        currentData.introMessage = currentEl.querySelector('#introMessage').value;
-        currentData.outroMessage = currentEl.querySelector('#outroMessage').value;
-        currentData.seriesOrder = currentEl.querySelector('input[name="seriesOrder"]:checked').value;
-        currentData.shotInterval = parseFloat(currentEl.querySelector('#shotInterval').value);
-        currentData.randomOffset = parseFloat(currentEl.querySelector('#randomOffset').value);
-        currentData.nextShotAnnouncement = parseFloat(currentEl.querySelector('#nextShotAnnouncement').value);
-        currentData.limitType = currentEl.querySelector('#limitTypeSelect').value;
-        currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
-        currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
-
-        calculateTotalWorkoutTime();
-      };
-
-      // --- UI UPDATE FUNCTIONS ---
-      const updateAllDisplays = (context) => {
-          updateShotOptionsDisplay(context);
-          updateNarrationDisplay(context);
-          updateSequencingDisplay(context);
-          updateIntervalDisplay(context);
-          updateLimitsDisplay(context);
-          updatePostRestDisplay(context);
+      // --- UI UPDATE FUNCTIONS (for the separate editor screen) ---
+      const updateAllEditorDisplays = () => {
+          updateEditorShotOptionsDisplay();
+          updateEditorNarrationDisplay();
+          updateEditorSequencingDisplay();
+          updateEditorIntervalDisplay();
+          updateEditorLimitsDisplay();
+          updateEditorPostRestDisplay();
       }
 
-      const updateShotOptionsDisplay = (context) => {
-        const shotOptions = context.querySelector('#shotOptions');
-        const display = context.querySelector('#optionsCountDisplay');
-        const count = shotOptions.value.trim().split(/[\n,]+/).filter(Boolean).length;
-        display.textContent = `${count} shots`;
+      const updateEditorShotOptionsDisplay = () => {
+        const count = editorShotOptionsInput.value.trim().split(/[\n,]+/).filter(Boolean).length;
+        editorOptionsCountDisplay.textContent = `${count} shots`;
       };
 
-      const updateNarrationDisplay = (context) => {
-        const display = context.querySelector('#narrationDisplay');
+      const updateEditorNarrationDisplay = () => {
         const parts = [];
-        if (context.querySelector('#announceShots').checked) parts.push('Shots');
-        if (context.querySelector('#introMessage').value.trim()) parts.push('Intro');
-        if (context.querySelector('#outroMessage').value.trim()) parts.push('Outro');
-        display.textContent = parts.length ? parts.join(', ') : 'None';
+        if (editorAnnounceShotsCheckbox.checked) parts.push('Shots');
+        if (editorIntroMessageInput.value.trim()) parts.push('Intro');
+        if (editorOutroMessageInput.value.trim()) parts.push('Outro');
+        editorNarrationDisplay.textContent = parts.length ? parts.join(', ') : 'None';
       };
 
-      const updateSequencingDisplay = (context) => {
-          const display = context.querySelector('#sequencingOrderDisplay');
-          const value = context.querySelector('input[name="seriesOrder"]:checked').value;
-          display.textContent = value === 'in-order' ? 'In order' : 'Randomized';
+      const updateEditorSequencingDisplay = () => {
+          const value = Array.from(editorSeriesOrderRadios).find(radio => radio.checked).value;
+          editorSequencingOrderDisplay.textContent = value === 'in-order' ? 'In order' : 'Randomized';
       };
 
-      const updateIntervalDisplay = (context) => {
-        const display = context.querySelector('#intervalCombinedDisplay');
-        const interval = parseFloat(context.querySelector('#shotInterval').value).toFixed(1);
-        const offset = parseFloat(context.querySelector('#randomOffset').value).toFixed(1);
-        const nextShotAnnounce = parseFloat(context.querySelector('#nextShotAnnouncement').value).toFixed(1);
+      const updateEditorIntervalDisplay = () => {
+        const interval = parseFloat(editorShotIntervalSlider.value).toFixed(1);
+        const offset = parseFloat(editorRandomOffsetSlider.value).toFixed(1);
+        const nextShotAnnounce = parseFloat(editorNextShotAnnouncementSlider.value).toFixed(1);
 
         let text = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
-        if (context.querySelector('#announceShots').checked) {
+        if (editorAnnounceShotsCheckbox.checked) {
             text += ` (${nextShotAnnounce}s)`;
         }
-        display.textContent = text;
+        editorIntervalCombinedDisplay.textContent = text;
       };
 
-      const handleAnnounceShotsChange = (context) => {
-          const announceShotsCheckbox = context.querySelector('#announceShots');
-          const nextShotAnnouncementSlider = context.querySelector('#nextShotAnnouncement');
-          const shotIntervalSlider = context.querySelector('#shotInterval');
+      const handleEditorAnnounceShotsChange = () => {
+          const isChecked = editorAnnounceShotsCheckbox.checked;
+          const currentShotInterval = parseFloat(editorShotIntervalSlider.value);
 
-          const isChecked = announceShotsCheckbox.checked;
-          const currentShotInterval = parseFloat(shotIntervalSlider.value);
+          editorNextShotAnnouncementSlider.disabled = !isChecked;
+          editorNextShotAnnouncementSlider.max = Math.max(0, currentShotInterval - 0.1);
 
-          nextShotAnnouncementSlider.disabled = !isChecked;
-          // Set max to currentShotInterval - 0.1 to ensure announcement happens BEFORE the next shot
-          nextShotAnnouncementSlider.max = Math.max(0, currentShotInterval - 0.1);
-
-          // If the current value exceeds the new max, clamp it
-          if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
-              nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
+          if (parseFloat(editorNextShotAnnouncementSlider.value) > editorNextShotAnnouncementSlider.max) {
+              editorNextShotAnnouncementSlider.value = editorNextShotAnnouncementSlider.max;
           }
-          // If disabled, ensure it appears disabled visually (handled by CSS, but set opacity here)
-          if (!isChecked) {
-              nextShotAnnouncementSlider.classList.add('opacity-50', 'cursor-not-allowed');
-          } else {
-              nextShotAnnouncementSlider.classList.remove('opacity-50', 'cursor-not-allowed');
-          }
-
-          // Update narration and interval display based on the new state
-          updateNarrationDisplay(context);
-          updateIntervalDisplay(context);
-          saveCurrentSequenceState(); // Save the state after this change
+          // No opacity/cursor-not-allowed as per user request
+          updateEditorNarrationDisplay();
+          updateEditorIntervalDisplay();
       };
 
 
-      const handleLimitTypeChange = (context) => {
-        const select = context.querySelector('#limitTypeSelect');
-        const slider = context.querySelector('#patternLimitSlider');
-        const currentPattern = sequences[activeSequenceIndex];
+      const handleEditorLimitTypeChange = () => {
+        const select = editorLimitTypeSelect;
+        const slider = editorPatternLimitSlider;
 
-        const newLimitType = select.value; // The value the user just selected
+        const currentPattern = sequences.find(p => p.id === activePatternId);
+        if (!currentPattern) return;
 
-        // IMPORTANT: When this function is called by the 'change' event listener,
-        // `currentPattern.limitType` still holds the *old* limit type from before the user's interaction.
+        const newLimitType = select.value;
         const prevLimitTypeInState = currentPattern.limitType;
-        const currentSliderValue = parseInt(slider.value); // The value currently displayed on the slider
 
-        // 1. Save the current value of the *previously active* limit type into its corresponding 'previous' field.
-        // This ensures the value being switched *away from* is preserved.
         if (prevLimitTypeInState === 'shot') {
-            currentPattern.previousShotLimit = currentSliderValue;
+            currentPattern.previousShotLimit = parseInt(slider.value);
         } else if (prevLimitTypeInState === 'time') {
-            currentPattern.previousTimeLimit = currentSliderValue;
+            currentPattern.previousTimeLimit = parseInt(slider.value);
         }
 
-        // 2. Now update the pattern's limitType in the state to the new selection.
         currentPattern.limitType = newLimitType;
 
-        // 3. Set the slider's min/max and value based on the NEW limitType.
         let proposedValue;
         if (newLimitType === 'shot') {
             slider.min = 0;
             slider.max = 100;
-            // Prefer previousShotLimit, otherwise fallback to default based on current shot options count
             proposedValue = (typeof currentPattern.previousShotLimit === 'number' && currentPattern.previousShotLimit > 0)
                                 ? currentPattern.previousShotLimit
                                 : currentPattern.shotOptions.trim().split(/[\n,]+/).filter(Boolean).length;
@@ -978,104 +956,92 @@
             slider.min = Math.max(1, Math.round(currentPattern.shotInterval));
             slider.max = 1800; // 30 minutes in seconds
 
-            // Prefer previousTimeLimit, otherwise fallback to estimated time
             proposedValue = (typeof currentPattern.previousTimeLimit === 'number' && currentPattern.previousTimeLimit > 0)
                                 ? currentPattern.previousTimeLimit
                                 : Math.round(estimatedTimeForOptions);
         }
 
-        // Apply proposed value, clamped by the new min/max
         slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
-
-        // Update the patternLimit in the state to reflect the slider's new value.
         currentPattern.patternLimit = parseInt(slider.value);
 
-        updateLimitsDisplay(context);
+        updateEditorLimitsDisplay();
         calculateTotalWorkoutTime();
-        // Do NOT call saveCurrentSequenceState() here, as the change event listener
-        // will handle it for the entire sequence after this function returns.
       };
 
-      const updateLimitsDisplay = (context) => {
-        const display = context.querySelector('#limitsDisplay');
-        const type = context.querySelector('#limitTypeSelect').value;
-        const value = parseInt(context.querySelector('#patternLimitSlider').value);
+      const updateEditorLimitsDisplay = () => {
+        const type = editorLimitTypeSelect.value;
+        const value = parseInt(editorPatternLimitSlider.value);
         if (type === 'shot') {
-          display.textContent = `${value} shots`;
+          editorLimitsDisplay.textContent = `${value} shots`;
         } else if (type === 'time') {
-          display.textContent = formatTime(value);
+          editorLimitsDisplay.textContent = formatTime(value);
         }
       };
 
-      const updatePostRestDisplay = (context) => {
-        const display = context.querySelector('#postSequenceRestDisplay');
-        const value = parseInt(context.querySelector('#postSequenceRest').value);
-        display.textContent = formatTime(value);
+      const updateEditorPostRestDisplay = () => {
+        const value = parseInt(editorPostSequenceRestSlider.value);
+        editorPostSequenceRestDisplay.textContent = formatTime(value);
       };
 
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
-        // Save current pattern state ONLY if in editor view
-        if (!patternEditorContainer.classList.contains('hidden')) {
-            saveCurrentSequenceState();
+        if (activePatternId) {
+            // If an editor was active, save its state before adding new pattern
+            // and switch back to main view.
+            saveCurrentPatternState();
+            activePatternId = null; // Clear active pattern
+            showView('main');
         }
 
         const newSequence = getNewSequenceData();
         newSequence.patternName = `Pattern ${sequences.length + 1}`;
         sequences.push(newSequence);
 
-        // Re-render the current view to reflect the added pattern
-        if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
-            renderPatternEditor();
-        } else { // If in table view
-            selectedPatternId = newSequence.id; // Select the newly added pattern
-            renderTableView();
-        }
+        // After adding, immediately switch to editing the new pattern
+        activePatternId = newSequence.id;
+        showView('editor');
         calculateTotalWorkoutTime();
         focusOnTop();
       };
 
       const cloneSequence = () => {
-        if (activeSequenceIndex === -1) {
+        const patternToClone = sequences.find(p => p.id === activePatternId);
+        if (!patternToClone) {
             showAlert('Clone Error', 'No pattern selected to clone.');
             return;
         }
-        saveCurrentSequenceState(); // Always save current state when cloning
+        saveCurrentPatternState();
 
-        const currentData = sequences[activeSequenceIndex];
-        const clonedData = JSON.parse(JSON.stringify(currentData));
+        const clonedData = JSON.parse(JSON.stringify(patternToClone));
         clonedData.id = Date.now() + Math.random();
         clonedData.patternName = `${clonedData.patternName} (Clone)`;
-        sequences.splice(activeSequenceIndex + 1, 0, clonedData);
 
-        // Re-render the current view to reflect the added pattern
-        if (tableViewContainer.classList.contains('hidden')) { // If currently in editor view
-            activeSequenceIndex++; // Increment index so the cloned item appears after the current one
-            renderPatternEditor(); // Re-render the new current pattern (which is now the cloned one)
-        } else { // If in table view
-            renderTableView(); // Re-render the table
+        const originalIndex = sequences.findIndex(p => p.id === patternToClone.id);
+        if (originalIndex !== -1) {
+            sequences.splice(originalIndex + 1, 0, clonedData);
+            activePatternId = clonedData.id; // Make the new clone the active pattern in editor
+        } else {
+            sequences.push(clonedData);
+            activePatternId = clonedData.id;
         }
+
+        populatePatternEditor(); // Re-populate editor with cloned data
         calculateTotalWorkoutTime();
         focusOnTop();
       };
 
       const movePattern = (index, direction) => {
+          // No need to save activePatternState here, as move/delete are for list view
           const patternIdToSelect = sequences[index].id;
 
           if (direction === 'up' && index > 0) {
               [sequences[index], sequences[index - 1]] = [sequences[index - 1], sequences[index]];
-              // activeSequenceIndex also needs to be updated if the moved pattern was the active one
-              if (activeSequenceIndex === index) activeSequenceIndex--;
-              else if (activeSequenceIndex === index - 1) activeSequenceIndex++;
           } else if (direction === 'down' && index < sequences.length - 1) {
               [sequences[index], sequences[index + 1]] = [sequences[index + 1], sequences[index]];
-              // activeSequenceIndex also needs to be updated if the moved pattern was the active one
-              if (activeSequenceIndex === index) activeSequenceIndex++;
-              else if (activeSequenceIndex === index + 1) activeSequenceIndex--;
           }
-          selectedPatternId = patternIdToSelect; // Set the ID of the pattern to be selected
-          renderTableView();
+          // activePatternId remains the same if it was already selected and not directly moved
+          renderAccordionView(); // Re-render the list to show new order
           calculateTotalWorkoutTime();
       };
 
@@ -1083,129 +1049,104 @@
           // If only one pattern, clear and reset instead of deleting entirely
           if (sequences.length <= 1) {
               const currentPatternId = sequences.length > 0 ? sequences[0].id : null;
-              sequences = []; // Clear array
-              sequences.push({ ...getNewSequenceData(), id: currentPatternId }); // Add new default, keeping old ID if exists
-              sequences[0].patternName = "Pattern 1"; // Reset name
-              activeSequenceIndex = 0; // The single pattern becomes active at index 0
-              selectedPatternId = sequences[0].id; // Select the reset pattern
+              sequences = [];
+              sequences.push({ ...getNewSequenceData(), id: currentPatternId });
+              sequences[0].patternName = "Pattern 1";
+              activePatternId = null; // No pattern active after reset
               showAlert('Pattern Reset', 'Last pattern reset to default settings.');
-              if (patternEditorContainer.classList.contains('hidden')) {
-                  showView('table'); // Ensure table view is rendered to show the single pattern
-              } else {
-                  renderPatternEditor(); // Re-render editor with reset pattern
-              }
+              showView('main'); // Go back to main accordion view
               calculateTotalWorkoutTime();
               return;
           }
 
-          // Save active pattern's state BEFORE modification if it's the one being deleted
-          if (activeSequenceIndex === indexToDelete) {
-              saveCurrentSequenceState();
-          }
-
+          // Perform the deletion
           sequences.splice(indexToDelete, 1);
-
-          // Adjust activeSequenceIndex based on the deletion
-          if (activeSequenceIndex === indexToDelete) {
-              // If the deleted item was the active one
-              activeSequenceIndex = Math.max(0, indexToDelete - 1); // Move to previous, or 0 if first was deleted
-              if (sequences.length === 0) activeSequenceIndex = -1; // No patterns left
-          } else if (activeSequenceIndex > indexToDelete) {
-              // If an item *before* the active one was deleted
-              activeSequenceIndex--;
-          }
-
-          selectedPatternId = activeSequenceIndex !== -1 ? sequences[activeSequenceIndex].id : null;
-
-          // Decide which view to render
-          if (sequences.length === 0 || activeSequenceIndex === -1) {
-              showView('table'); // No patterns or no active pattern, go to table
-          } else {
-              renderPatternEditor(); // Re-render the new active sequence in editor
-          }
+          activePatternId = null; // Always clear activePatternId on delete from list
+          showView('main'); // Always go back to main accordion view after deletion
           calculateTotalWorkoutTime();
           focusOnTop();
       };
 
 
       const resetCurrentSequence = () => {
-          if (activeSequenceIndex === -1 || sequences.length === 0) return;
-          const currentId = sequences[activeSequenceIndex].id;
-          sequences[activeSequenceIndex] = { ...getNewSequenceData(), id: currentId };
-          sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
-          selectedPatternId = sequences[activeSequenceIndex].id; // Ensure the reset pattern is selected
-          renderPatternEditor();
+          if (!activePatternId) {
+            showAlert('Reset Error', 'No pattern selected to reset.');
+            return;
+          }
+          const patternIndex = sequences.findIndex(p => p.id === activePatternId);
+          if (patternIndex === -1) return;
+
+          const currentId = sequences[patternIndex].id;
+          sequences[patternIndex] = { ...getNewSequenceData(), id: currentId };
+          sequences[patternIndex].patternName = `Pattern ${patternIndex + 1}`;
+          populatePatternEditor(); // Re-populate editor with reset data
           calculateTotalWorkoutTime();
       };
 
-      const showSequenceInEditor = (index) => {
-          if (index < 0 || index >= sequences.length) return;
-          if (activeSequenceIndex !== -1) { // Only save if there was an active sequence
-             saveCurrentSequenceState(); // Save current state before switching
-          }
-          activeSequenceIndex = index;
-          selectedPatternId = sequences[index].id; // Set the selected pattern ID
-          showView('editor');
-      };
-
-      // Function to handle pattern name editing
-      const editPatternName = (currentData, displayElement) => {
-          setInteractionMode(null);
-
-          const inputElement = document.createElement('input');
-          inputElement.type = 'text';
-          inputElement.value = currentData.patternName;
-          inputElement.className = 'text-xl font-bold text-indigo-700 dark:text-indigo-300 w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1';
-
-          displayElement.parentNode.replaceChild(inputElement, displayElement);
-          inputElement.focus();
+      // Function to handle pattern name editing in the editor screen
+      const editPatternNameInEditor = () => {
+          // Make the display H3 element editable
+          editorPatternNameDisplay.contentEditable = "true";
+          editorPatternNameDisplay.focus(); // Focus on the editable element
+          // Select all text in the editable element (optional, for convenience)
+          const range = document.createRange();
+          range.selectNodeContents(editorPatternNameDisplay);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
 
           const saveAndRevert = () => {
-              let newName = inputElement.value.trim();
+              // Get the new name directly from the content-editable H3
+              let newName = editorPatternNameDisplay.textContent.trim();
               if (newName === '') {
                   newName = 'Unnamed Pattern';
               }
-              currentData.patternName = newName;
-              renderPatternEditor(); // Re-render to show updated label
+              const currentPattern = sequences.find(p => p.id === activePatternId);
+              if (currentPattern) {
+                  currentPattern.patternName = newName;
+              }
+              editorPatternNameDisplay.contentEditable = "false"; // Make it non-editable again
+              saveCurrentPatternState();
               calculateTotalWorkoutTime();
           };
 
-          inputElement.addEventListener('blur', saveAndRevert);
-          inputElement.addEventListener('keydown', (e) => {
+          const handleKeyDown = (e) => {
               if (e.key === 'Enter') {
+                  e.preventDefault(); // Prevent new line from being added
                   saveAndRevert();
-                  inputElement.blur();
+                  editorPatternNameDisplay.blur(); // Trigger blur to ensure save and listener removal
               }
-          });
+          };
+
+          // Add listeners directly to the editorPatternNameDisplay
+          editorPatternNameDisplay.addEventListener('blur', saveAndRevert, { once: true });
+          editorPatternNameDisplay.addEventListener('keydown', handleKeyDown, { once: true });
       };
 
-      // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS ---
+      // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS (for the separate editor) ---
       const savePatternConfig = () => {
-        setInteractionMode(null);
-        if (activeSequenceIndex === -1 || sequences.length === 0) {
+        const patternToSave = sequences.find(p => p.id === activePatternId);
+        if (!patternToSave) {
           showAlert('Save Error', 'No pattern selected to save.');
           return;
         }
-        saveCurrentSequenceState();
-        const currentPattern = sequences[activeSequenceIndex];
-        const dataStr = JSON.stringify(currentPattern, null, 2);
+        saveCurrentPatternState(); // Ensure data is synced from editor fields
+        const dataStr = JSON.stringify(patternToSave, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${sanitizeFilename(currentPattern.patternName)}.pattern.json`;
+        a.download = `${sanitizeFilename(patternToSave.patternName)}.pattern.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showAlert('Pattern Saved', `Pattern "${currentPattern.patternName}" saved successfully.`);
+        showAlert('Pattern Saved', `Pattern "${patternToSave.patternName}" saved successfully.`);
         calculateTotalWorkoutTime();
       };
 
       const importPatternConfig = () => {
-        setInteractionMode(null);
-
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,.pattern.json';
@@ -1223,24 +1164,13 @@
             try {
               const importedData = JSON.parse(e.target.result);
               if (isValidPatternConfig(importedData)) {
-                if (activeSequenceIndex !== -1) {
-                    // Overwrite current active pattern
-                    const currentPatternId = sequences[activeSequenceIndex].id;
-                    sequences[activeSequenceIndex] = {
-                      ...importedData,
-                      id: currentPatternId,
-                    };
-                    selectedPatternId = sequences[activeSequenceIndex].id;
-                    renderPatternEditor();
+                const patternIndex = sequences.findIndex(p => p.id === activePatternId);
+                if (patternIndex !== -1) {
+                    sequences[patternIndex] = { ...importedData, id: activePatternId };
+                    populatePatternEditor(); // Re-populate editor with imported data
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" imported successfully.`);
                 } else {
-                    // Add as a new pattern if no pattern is active in editor
-                    importedData.id = Date.now() + Math.random();
-                    sequences.push(importedData);
-                    activeSequenceIndex = sequences.length - 1;
-                    selectedPatternId = importedData.id;
-                    showView('editor');
-                    showAlert('Pattern Imported', `Pattern "${importedData.patternName}" added as new pattern.`);
+                    showAlert('Import Error', 'No active pattern to import into.');
                 }
                 calculateTotalWorkoutTime();
               } else {
@@ -1263,9 +1193,10 @@
         fileInput.click();
       };
 
+
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
       const loadAllPatterns = () => {
-        setInteractionMode(null);
+        setInteractionMode(null); // Turn off any list modes
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -1285,9 +1216,8 @@
               const importedWorkout = JSON.parse(e.target.result);
               if (isValidWorkoutFile(importedWorkout)) {
                 sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
-                activeSequenceIndex = -1; // Go back to table view
-                selectedPatternId = null; // Clear selection when loading all
-                showView('table');
+                activePatternId = null;
+                showView('main'); // Show the main accordion view
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
                 calculateTotalWorkoutTime();
               } else {
@@ -1311,10 +1241,9 @@
       };
 
       const saveAllPatterns = () => {
-        setInteractionMode(null);
-        // If in editor view, save current pattern before saving all
-        if (!patternEditorContainer.classList.contains('hidden')) {
-          saveCurrentSequenceState();
+        setInteractionMode(null); // Turn off any list modes
+        if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
+          saveCurrentPatternState();
         }
 
         if (sequences.length === 0) {
@@ -1337,7 +1266,7 @@
       };
 
       const clearAllPatterns = () => {
-          setInteractionMode(null);
+          setInteractionMode(null); // Turn off any list modes
 
           const modal = document.getElementById('confirmation-modal');
           const modalTitle = document.getElementById('modal-title');
@@ -1351,73 +1280,89 @@
           confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
           modal.classList.remove('hidden');
 
-          const onConfirm = () => {
+          confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+          cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+          const newConfirmBtn = document.getElementById('confirm-btn');
+          const newCancelBtn = document.getElementById('cancel-btn');
+
+          newConfirmBtn.addEventListener('click', () => {
               sequences = [];
               sequences.push(getNewSequenceData());
               sequences[0].patternName = "Pattern 1";
-              activeSequenceIndex = -1; // Reset to table view
-              selectedPatternId = null; // Clear selection
-              showView('table');
+              activePatternId = null;
+              showView('main');
               modal.classList.add('hidden');
-              confirmBtn.removeEventListener('click', onConfirm);
-              cancelBtn.removeEventListener('click', onCancel);
               calculateTotalWorkoutTime();
-          };
+          }, { once: true });
 
-          const onCancel = () => {
+          newCancelBtn.addEventListener('click', () => {
               modal.classList.add('hidden');
-              confirmBtn.removeEventListener('click', onConfirm);
-              cancelBtn.removeEventListener('click', onCancel);
-          };
-
-          confirmBtn.addEventListener('click', onConfirm);
-          cancelBtn.addEventListener('click', onCancel);
+          }, { once: true });
       };
 
-    // --- Workout Logic (NEW) ---
+      const showConfirmationModalForDelete = (indexToDelete) => {
+          const modal = document.getElementById('confirmation-modal');
+          const modalTitle = document.getElementById('modal-title');
+          const modalText = document.getElementById('modal-text');
+          const confirmBtn = document.getElementById('confirm-btn');
+          const cancelBtn = document.getElementById('cancel-btn');
+
+          modalTitle.textContent = 'Confirm Deletion';
+          modalText.textContent = `Are you sure you want to delete pattern "${sequences[indexToDelete].patternName}"? This action cannot be undone.`;
+          confirmBtn.textContent = 'Delete';
+          confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
+          modal.classList.remove('hidden');
+
+          confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+          cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+          const newConfirmBtn = document.getElementById('confirm-btn');
+          const newCancelBtn = document.getElementById('cancel-btn');
+
+          newConfirmBtn.addEventListener('click', () => {
+              deleteSequence(indexToDelete);
+              modal.classList.add('hidden');
+              focusOnTop();
+          }, { once: true });
+
+          newCancelBtn.addEventListener('click', () => {
+              modal.classList.add('hidden');
+          }, { once: true });
+      };
+
+
+    // --- Workout Logic (unchanged from previous version) ---
     let currentPatternIndex = 0;
-    let currentPatternTimer = null; // Timer for individual shot intervals
-    let shotIntervalTimer = null; // General interval timer (used for rest periods)
-    let flashTimer = null; // Timer for screen flash
-    let nextAnnouncementTimeout = null; // NEW: Timer for specific shot announcement
+    let currentPatternTimer = null;
+    let shotIntervalTimer = null;
+    let flashTimer = null;
+    let nextAnnouncementTimeout = null;
     let currentPatternShotCount = 0;
     let currentPatternTimeElapsed = 0;
     let currentShotOptions = [];
-    let currentShotIndex = 0; // Represents the index of the shot that will be displayed *next*
-    let globalWorkoutTimeElapsed = 0; // Not currently used for display but good for tracking
+    let currentShotIndex = 0;
+    let globalWorkoutTimeElapsed = 0;
 
-    let isPaused = false; // NEW: State for pause/resume
-    let pausedTimePassed = 0; // NEW: To store timePassed when paused (for shot interval)
-    let pausedEffectiveInterval = 0; // NEW: To store effectiveInterval when paused (for shot interval)
-    let pausedRestTimeRemaining = 0; // NEW: To store rest time remaining when paused (for rest period)
-    let pausedShotDisplayContent = ''; // NEW: To store the content of currentShotDisplay before setting to "Paused"
+    let isPaused = false;
+    let pausedTimePassed = 0;
+    let pausedEffectiveInterval = 0;
+    let pausedRestTimeRemaining = 0;
+    let pausedShotDisplayContent = '';
 
-    // Debounce for pause/resume button to prevent rapid double clicks
     let isToggleDebouncing = false;
-    const DEBOUNCE_TIME = 300; // milliseconds
+    const DEBOUNCE_TIME = 300;
 
-
-    /**
-     * Initializes the Web Audio API context.
-     * Crucially, this function attempts to resume the AudioContext on the first user interaction
-     * to comply with browser autoplay policies, especially on mobile (e.g., iOS Safari).
-     */
     function initAudioContext() {
         try {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                // If the audio context is suspended (common on iOS), attempt to resume it
-                // when the user interacts with the document (e.g., clicks the start button).
                 if (audioContext.state === 'suspended') {
                     const resumeAudio = () => {
                         audioContext.resume().then(() => {
                             console.log('AudioContext resumed successfully.');
-                            // Remove listeners once resumed to avoid multiple calls
                             document.removeEventListener('click', resumeAudio);
                             document.removeEventListener('touchend', resumeAudio);
                         }).catch(error => console.error("Error resuming AudioContext:", error));
                     };
-                    // Add passive listeners for user gestures
                     document.addEventListener('click', resumeAudio, { once: true, passive: true });
                     document.addEventListener('touchend', resumeAudio, { once: true, passive: true });
                 }
@@ -1427,50 +1372,35 @@
         }
     }
 
-    /**
-     * Initializes the Web Speech API's SpeechSynthesis.
-     * Includes a workaround for iOS to enable audio ducking by playing a silent utterance.
-     */
     function initSpeechSynthesis() {
         if ('speechSynthesis' in window) {
             synth = window.speechSynthesis;
-            // iOS wake up workaround: play a silent utterance to enable audio
-            // This is crucial for audio ducking to work reliably on iOS.
             const silentUtterance = new SpeechSynthesisUtterance('');
-            silentUtterance.volume = 0; // Set volume to 0 to make it silent
-            silentUtterance.onend = null; // Prevent logging/callbacks for silent speech
-            silentUtterance.onerror = null; // Prevent logging/callbacks for silent speech
+            silentUtterance.volume = 0;
+            silentUtterance.onend = null;
+            silentUtterance.onerror = null;
             try {
                 synth.speak(silentUtterance);
                 console.log('SpeechSynthesis initialized and wake-up utterance sent.');
             } catch (e) {
                 console.warn('Initial silent utterance failed (may not be an issue if audio is already active):', e);
             }
-
         } else {
             console.warn('Speech Synthesis API not supported in this browser.');
         }
     }
 
-    /**
-     * Schedules and speaks a silent utterance if conditions are met.
-     * This function is designed to be self-perpetuating via its onend callback.
-     */
     function speakSilent() {
         if (!synth || !isRoutineRunning || isPaused) {
-            // Do not speak if conditions aren't met
             console.log('speakSilent: Conditions not met. isRoutineRunning:', isRoutineRunning, 'isPaused:', isPaused);
             return;
         }
 
-        // Only speak a new silent utterance if nothing is currently speaking or pending
         if (synth.speaking || synth.pending) {
             console.log('speakSilent: Synth busy, skipping silent utterance for now.');
-            // If synth is busy, we will try again after a short delay,
-            // but we don't want to cancel ongoing audible speech.
             nextSilentUtteranceTimeout = setTimeout(() => {
                 speakSilent();
-            }, 100); // Small delay to allow current speech to finish
+            }, 100);
             return;
         }
 
@@ -1480,24 +1410,19 @@
 
         utterance.onend = () => {
             console.log('speakSilent: Silent utterance ended. Scheduling next...');
-            // Only schedule the next if routine is still running and not paused
             if (isRoutineRunning && !isPaused) {
-                // Add a small delay before scheduling the next silent utterance
-                // to give the SpeechSynthesis engine time to fully transition its state.
                 nextSilentUtteranceTimeout = setTimeout(() => {
                     speakSilent();
-                }, 50); // 50ms delay
+                }, 50);
             }
         };
 
         utterance.onerror = (event) => {
-            // Gracefully handle 'interrupted' errors, which are expected when `synth.cancel()` is called
             if (event.error !== 'interrupted') {
                 console.error(`speakSilent: Silent speech synthesis error: ${event.error}`);
             } else {
                 console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.');
             }
-            // Important: if there's an error, still try to re-initiate the chain
             if (isRoutineRunning && !isPaused) {
                 nextSilentUtteranceTimeout = setTimeout(() => {
                     speakSilent();
@@ -1510,7 +1435,6 @@
             console.log('speakSilent: Silent utterance started.');
         } catch (e) {
             console.error("speakSilent: Error speaking silent utterance directly:", e);
-            // If there's an immediate error on speak(), try to recover by scheduling the next
             if (isRoutineRunning && !isPaused) {
                 nextSilentUtteranceTimeout = setTimeout(() => {
                     speakSilent();
@@ -1519,32 +1443,22 @@
         }
     }
 
-
-    /**
-     * Starts the periodic silent speech utterance to maintain audio ducking.
-     * This now just initiates the first call to speakSilent().
-     */
     function startSpeechKeepAlive() {
         if (!synth) {
             console.warn('startSpeechKeepAlive: SpeechSynthesis not available for keep-alive.');
             return;
         }
-        stopSpeechKeepAlive(); // Ensure all previous timers/utterances are cleared
+        stopSpeechKeepAlive();
         console.log('startSpeechKeepAlive: Initiating speech keep-alive chain...');
-        speakSilent(); // Start the first silent utterance, which will then self-perpetuate
+        speakSilent();
     }
 
-    /**
-     * Stops the periodic silent speech utterance.
-     */
     function stopSpeechKeepAlive() {
-        // Clear the timeout that schedules the *next* silent utterance
         if (nextSilentUtteranceTimeout) {
             clearTimeout(nextSilentUtteranceTimeout);
             nextSilentUtteranceTimeout = null;
             console.log('stopSpeechKeepAlive: Cleared nextSilentUtteranceTimeout.');
         }
-        // Cancel any currently speaking utterance (audible or silent)
         if (synth && (synth.speaking || synth.pending)) {
             synth.cancel();
             console.log('stopSpeechKeepAlive: Cancelled existing speech.');
@@ -1552,46 +1466,39 @@
         console.log('stopSpeechKeepAlive: Speech keep-alive stopped and cancelled.');
     }
 
-    /**
-     * Plays a two-tone beep sound for shot announcements.
-     * Consists of a lower tone followed by a higher tone.
-     */
     function playTwoToneBeep() {
         try {
-            // Check if audioContext is initialized AND in 'running' state
             if (!audioContext || audioContext.state !== 'running') {
                 console.warn("playTwoToneBeep: AudioContext not ready for two-tone beep. State:", audioContext ? audioContext.state : 'null');
                 return;
             }
 
-            const duration = 0.15; // Shorter duration for quick beeps
-            const frequency1 = 800; // First tone (e.g., F5)
-            const frequency2 = 1200; // Second tone (e.g., D6)
-            const volume = 4.0; // Volume for the beeps
+            const duration = 0.15;
+            const frequency1 = 800;
+            const frequency2 = 1200;
+            const volume = 4.0;
 
             const now = audioContext.currentTime;
 
-            // First tone
             const oscillator1 = audioContext.createOscillator();
             const gainNode1 = audioContext.createGain();
             oscillator1.connect(gainNode1);
             gainNode1.connect(audioContext.destination);
             oscillator1.type = 'sine';
             oscillator1.frequency.setValueAtTime(frequency1, now);
-            gainNode1.gain.setValueAtTime(volume, now); // Set initial volume
-            oscillator1.start(now); // Start the oscillator
+            gainNode1.gain.setValueAtTime(volume, now);
+            oscillator1.start(now);
             gainNode1.gain.exponentialRampToValueAtTime(0.00001, now + duration);
             oscillator1.stop(now + duration);
 
-            // Second tone, delayed to start after the first one finishes
             const oscillator2 = audioContext.createOscillator();
             const gainNode2 = audioContext.createGain();
             oscillator2.connect(gainNode2);
             gainNode2.connect(audioContext.destination);
             oscillator2.type = 'sine';
             oscillator2.frequency.setValueAtTime(frequency2, now + duration);
-            gainNode2.gain.setValueAtTime(volume, now + duration); // Set initial volume for second tone
-            oscillator2.start(now + duration); // Start the second oscillator
+            gainNode2.gain.setValueAtTime(volume, now + duration);
+            oscillator2.start(now + duration);
             gainNode2.gain.exponentialRampToValueAtTime(0.00001, now + duration * 2);
             oscillator2.stop(now + duration * 2);
         } catch (error) {
@@ -1599,50 +1506,41 @@
         }
     }
 
-    /**
-     * Speaks the given text using Speech Synthesis API.
-     */
     function speak(text) {
         if (!synth) {
             console.warn('speak: Speech Synthesis API not supported or not initialized.');
             return;
         }
 
-        // Always cancel any existing speech (including silent keep-alives) before speaking an audible message.
         if (synth.speaking || synth.pending) {
             synth.cancel();
-            // Also ensure any scheduled next silent utterance is cleared
             if (nextSilentUtteranceTimeout) {
                 clearTimeout(nextSilentUtteranceTimeout);
                 nextSilentUtteranceTimeout = null;
             }
-            if (nextAnnouncementTimeout) { // Clear the specific announcement timeout if pending
+            if (nextAnnouncementTimeout) {
                 clearTimeout(nextAnnouncementTimeout);
                 nextAnnouncementTimeout = null;
             }
             console.log("speak: Cancelled existing speech for new audible message.");
         }
 
-        // Only speak the utterance if it's an audible message (not empty string)
         if (text !== '') {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
             utterance.volume = 1;
             utterance.onend = () => {
                 console.log(`speak: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
-                // After an audible message, restart the silent keep-alive chain if routine is still running
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
             };
             utterance.onerror = (event) => {
-                // Gracefully handle 'interrupted' errors, which are expected when `synth.cancel()` is called
                 if (event.error !== 'interrupted') {
                     console.error(`speak: Audible speech synthesis error: ${event.error}`);
                 } else {
                     console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.');
                 }
-                // Even on error, attempt to restart keep-alive if routine is active
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
@@ -1652,37 +1550,32 @@
                 console.log(`speak: Speaking: "${text}"`);
             } catch (e) {
                 console.error("speak: Error speaking audible utterance:", e);
-                // If immediate error, try to restart keep-alive
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
             }
         }
-        // If speak('') is called, it's ignored here, as speakSilent() handles keep-alive.
-        // This 'speak' function is primarily for audible output now.
     }
 
 
-    async function startWorkout() { // Made this function async
+    async function startWorkout() {
         console.log('startWorkout called. isPaused:', isPaused);
         if (sequences.length === 0) {
             showAlert('Workout Error', 'Please create at least one workout pattern first!');
             return;
         }
 
-        // Save current editor state before starting workout
+        // Save current active pattern state if in editor view
         if (!patternEditorContainer.classList.contains('hidden')) {
-            saveCurrentSequenceState();
+            saveCurrentPatternState();
         }
 
-        // Initialize audio context and speech synthesis on user interaction
         initAudioContext();
         initSpeechSynthesis();
 
-        isRoutineRunning = true; // Set routine as running
-        startSpeechKeepAlive(); // Start audio ducking
+        isRoutineRunning = true;
+        startSpeechKeepAlive();
 
-        // Await audio context resume if it's suspended
         if (audioContext && audioContext.state === 'suspended') {
             try {
                 await audioContext.resume();
@@ -1690,11 +1583,10 @@
             } catch (error) {
                 console.error("startWorkout: Error resuming AudioContext at startWorkout:", error);
                 showAlert('Audio Error', 'Could not resume audio. Please try again.');
-                stopWorkout(); // Stop workout if audio fails to resume
+                stopWorkout();
                 return;
             }
         } else if (audioContext && audioContext.state === 'closed') {
-             // If closed, try to re-initialize it
              initAudioContext();
              try {
                 await audioContext.resume();
@@ -1707,26 +1599,20 @@
              }
         }
 
-
-        // Reset the stop button to its initial state (stop icon)
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
-        stopWorkoutBtn.onclick = stopWorkout; // Re-attach the stopWorkout handler
-        stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700'); // Remove potential old classes
+        stopWorkoutBtn.onclick = stopWorkout;
+        stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700');
         stopWorkoutBtn.classList.add('bg-red-600', 'hover:bg-red-700');
 
-
-        // Ensure pause/resume button is visible and shows pause icon
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
-        // Ensure its click handler is the togglePauseResume function
         pauseResumeWorkoutBtn.onclick = togglePauseResume;
         pauseResumeWorkoutBtn.classList.remove('hidden');
 
-
-        showView('workout'); // Switch to workout display
+        showView('workout');
         currentPatternIndex = 0;
         globalWorkoutTimeElapsed = 0;
-        isPaused = false; // Ensure not paused when starting
-        runCurrentPattern(); // Start the first pattern
+        isPaused = false;
+        runCurrentPattern();
     }
 
     function stopWorkout() {
@@ -1752,12 +1638,12 @@
             console.log('stopWorkout: Cleared nextAnnouncementTimeout.');
         }
 
-        document.body.classList.remove('bg-red-500'); // Only remove the color class
-        isRoutineRunning = false; // Set routine as not running
-        stopSpeechKeepAlive(); // Stop audio ducking (also clears nextSilentUtteranceTimeout)
-        synth.cancel(); // Stop any pending speech
-        showView('table'); // Return to main menu
-        calculateTotalWorkoutTime(); // Recalculate total time (might not change, but good practice)
+        document.body.classList.remove('bg-red-500');
+        isRoutineRunning = false;
+        stopSpeechKeepAlive();
+        synth.cancel();
+        showView('main'); // Return to main view
+        calculateTotalWorkoutTime();
         console.log('stopWorkout: Workout stopped.');
     }
 
@@ -1783,10 +1669,8 @@
         console.log('pauseWorkout: Pausing workout...');
         isPaused = true;
 
-        // Store the current content of currentShotDisplay before changing it
         pausedShotDisplayContent = currentShotDisplay.textContent;
 
-        // Clear all relevant timers
         if (currentPatternTimer) {
             console.log('pauseWorkout: Clearing currentPatternTimer:', currentPatternTimer);
             clearInterval(currentPatternTimer);
@@ -1807,14 +1691,12 @@
             clearTimeout(nextAnnouncementTimeout);
             nextAnnouncementTimeout = null;
         }
-        // Ensure the speech keep-alive is also stopped
-        stopSpeechKeepAlive(); // This will clear nextSilentUtteranceTimeout and cancel speech
+        stopSpeechKeepAlive();
 
-        document.body.classList.remove('bg-red-500'); // Ensure flash is off
-        synth.cancel(); // Stop any currently speaking utterance
+        document.body.classList.remove('bg-red-500');
+        synth.cancel();
 
-        currentShotDisplay.textContent = 'Paused'; // Indicate paused state
-        // Update progress bar to show current paused progress
+        currentShotDisplay.textContent = 'Paused';
         progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
         console.log('pauseWorkout: Workout paused. pausedTimePassed:', pausedTimePassed, 'pausedEffectiveInterval:', pausedEffectiveInterval, 'pausedRestTimeRemaining:', pausedRestTimeRemaining);
     }
@@ -1823,43 +1705,39 @@
         console.log('resumeWorkout: Resuming workout...');
         isPaused = false;
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
-        startSpeechKeepAlive(); // Resume audio ducking
+        startSpeechKeepAlive();
 
         const currentPattern = sequences[currentPatternIndex];
 
-        // Check if currently in a "Rest!" phase
-        if (pausedShotDisplayContent === 'Rest!') { // Use pausedShotDisplayContent to determine if it was rest
+        if (pausedShotDisplayContent === 'Rest!') {
             console.log('resumeWorkout: Resuming Rest! period.');
-            // Re-start the rest interval from where it was paused
-            let restRemaining = pausedRestTimeRemaining; // Use the stored remaining time
-            currentShotDisplay.textContent = 'Rest!'; // Restore rest text
+            let restRemaining = pausedRestTimeRemaining;
+            currentShotDisplay.textContent = 'Rest!';
 
             shotIntervalTimer = setInterval(() => {
                 console.log('Rest interval tick. isPaused:', isPaused, 'shotIntervalTimer ID:', shotIntervalTimer);
-                if (isPaused) { // Check for pause again within the interval
+                if (isPaused) {
                     console.log('Rest interval tick: Paused, clearing shotIntervalTimer and returning.');
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null; // Ensure it's nulled
+                    shotIntervalTimer = null;
                     return;
                 }
-                restRemaining--; // Count down the remaining seconds
-                globalWorkoutTimeElapsed++; // Continue incrementing total workout time
-                pausedRestTimeRemaining = restRemaining; // Update for potential future pauses
-                console.log('Rest remaining:', restRemaining); // Debug rest countdown
+                restRemaining--;
+                globalWorkoutTimeElapsed++;
+                pausedRestTimeRemaining = restRemaining;
+                console.log('Rest remaining:', restRemaining);
 
                 if (restRemaining <= 0) {
                     console.log('Rest period ended. Moving to next pattern.');
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null; // Ensure it's nulled
+                    shotIntervalTimer = null;
                     currentPatternIndex++;
-                    runCurrentPattern(); // Move to the next pattern
+                    runCurrentPattern();
                 }
-            }, 1000); // Update every second for rest countdown
+            }, 1000);
             console.log('resumeWorkout: New shotIntervalTimer set for rest:', shotIntervalTimer);
         } else {
             console.log('resumeWorkout: Resuming Shot Interval.');
-            // If paused during a shot interval, resume it
-            // Pass the stored `pausedShotDisplayContent` to restore the correct shot
             startShotInterval(currentPattern, pausedTimePassed, pausedEffectiveInterval, pausedShotDisplayContent);
         }
     }
@@ -1873,57 +1751,47 @@
         }
 
         if (currentPatternIndex >= sequences.length) {
-            // All patterns completed
             handleWorkoutCompletion();
             return;
         }
 
         const currentPattern = sequences[currentPatternIndex];
+        currentPatternNameDisplay.textContent = currentPattern.patternName;
+        currentPatternNameDisplay.classList.remove('hidden');
+
         currentShotOptions = currentPattern.shotOptions.split('\n').filter(option => option.trim() !== '');
 
-        // Handle case where shotOptions might be empty
         if (currentShotOptions.length === 0) {
             currentShotDisplay.textContent = 'No shots defined for this pattern';
-            endPattern(currentPattern); // End this pattern if no shots
+            endPattern(currentPattern);
             return;
         }
 
-        // Handle randomized order: shuffle options for current pattern
         if (currentPattern.seriesOrder === 'randomized') {
             shuffleArray(currentShotOptions);
         }
-        currentPatternShotCount = 0; // Reset shot count for new pattern
-        currentPatternTimeElapsed = 0; // Reset time elapsed for new pattern
+        currentPatternShotCount = 0;
+        currentPatternTimeElapsed = 0;
 
-        // Announce intro message if available
         if (currentPattern.announceShots && currentPattern.introMessage.trim()) {
             speak(currentPattern.introMessage);
         }
 
-        // Get the first shot to display and initiate the interval
         const firstShotToDisplay = currentShotOptions[0];
-        currentShotIndex = 1 % currentShotOptions.length; // Prepare currentShotIndex for the *next* shot after this first one
+        currentShotIndex = 1 % currentShotOptions.length;
         if (currentPattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-            shuffleArray(currentShotOptions); // Re-shuffle if it wrapped around to 0
+            shuffleArray(currentShotOptions);
         }
         startShotInterval(currentPattern, 0, -1, firstShotToDisplay);
     }
 
-    /**
-     * Starts the countdown for a single shot interval.
-     * @param {object} pattern The current pattern data.
-     * @param {number} initialTimePassed Time already passed in this interval (for resuming).
-     * @param {number} totalInterval The total duration of this interval (for resuming).
-     * @param {string} shotToDisplayAtStart The shot text to display at the beginning of this interval.
-     */
     function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
         console.log('startShotInterval called. isPaused:', isPaused);
         if (isPaused) {
             console.log('startShotInterval: PAUSED, returning immediately.');
-            return; // Crucial check: if paused, just return and let pauseWorkout handle
+            return;
         }
 
-        // Clear existing timers before creating new ones
         if (currentPatternTimer) {
             clearInterval(currentPatternTimer);
             currentPatternTimer = null;
@@ -1944,7 +1812,6 @@
             nextAnnouncementTimeout = null;
             console.log('startShotInterval: Cleared existing nextAnnouncementTimeout.');
         }
-        // Also clear speech keep-alive timeout if present, as a new audible speech or silent loop will follow
         if (nextSilentUtteranceTimeout) {
             clearTimeout(nextSilentUtteranceTimeout);
             nextSilentUtteranceTimeout = null;
@@ -1958,97 +1825,86 @@
 
         let effectiveInterval = (totalInterval > 0) ? totalInterval : (baseInterval + (Math.random() * randomOffset));
         let timePassed = initialTimePassed;
-        let announcementSpokenForThisInterval = false;
 
-        pausedEffectiveInterval = effectiveInterval; // Store for pause/resume
-        pausedTimePassed = initialTimePassed; // Ensure this is also stored here for the current interval
+        pausedEffectiveInterval = effectiveInterval;
+        pausedTimePassed = initialTimePassed;
 
-        // Determine the shot to display. If `shotToDisplayAtStart` is provided (e.g., for a new shot interval), use it.
-        // Otherwise, it's a resume scenario, and pausedShotDisplayContent holds the correct value.
         const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : pausedShotDisplayContent;
-        currentShotDisplay.textContent = currentDisplayedShot; // Ensure display is updated right away
+        currentShotDisplay.textContent = currentDisplayedShot;
 
-        // Play beep and flash immediately for every new shot interval (only if not resuming)
-        if (initialTimePassed === 0) { // Only play beep/flash if actually starting a brand new segment
+        if (initialTimePassed === 0) {
             playTwoToneBeep();
             flashScreenRed();
         }
 
-        // Logic for the *first* announcement for this shot after the display updates.
-        if (pattern.announceShots && nextShotAnnouncementTime > 0 && initialTimePassed === 0) {
-            // Schedule the first announcement for this shot
-            nextAnnouncementTimeout = setTimeout(() => { // Store timeout ID
-                // Only speak if not paused and still displaying the same shot
-                if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
-                    speak(currentDisplayedShot);
-                    announcementSpokenForThisInterval = true;
-                }
-            }, nextShotAnnouncementTime * 1000); // Convert seconds to milliseconds
-        }
-        // If resuming, check if the announcement already happened before pausing
-        if (initialTimePassed >= nextShotAnnouncementTime) {
-            announcementSpokenForThisInterval = true;
+        let announcementSpokenForThisInterval = false;
+        if (pattern.announceShots && nextShotAnnouncementTime > 0) {
+            if (initialTimePassed === 0) { // Schedule if starting fresh
+                nextAnnouncementTimeout = setTimeout(() => {
+                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
+                        speak(currentDisplayedShot);
+                        announcementSpokenForThisInterval = true;
+                    }
+                }, nextShotAnnouncementTime * 1000);
+            } else if (initialTimePassed < nextShotAnnouncementTime) { // If resuming, reschedule if not already passed
+                 nextAnnouncementTimeout = setTimeout(() => {
+                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
+                        speak(currentDisplayedShot);
+                        announcementSpokenForThisInterval = true;
+                    }
+                }, (nextShotAnnouncementTime - initialTimePassed) * 1000);
+            } else { // If resuming and already passed announcement time
+                announcementSpokenForThisInterval = true;
+            }
         }
 
+
         function timerTick() {
-            console.log('timerTick invoked. isPaused:', isPaused, 'currentPatternTimer ID:', currentPatternTimer, 'timePassed:', timePassed.toFixed(1));
-            if (isPaused) { // <-- This check needs to be at the very top of the tick function
-                console.log('timerTick: Paused, clearing currentPatternTimer and returning.');
+            if (isPaused) {
                 clearInterval(currentPatternTimer);
-                currentPatternTimer = null; // Ensure it's nulled
-                // pausedTimePassed is already updated by the pauseWorkout function when it was called
-                return; // Immediately exit the tick function if paused
+                currentPatternTimer = null;
+                return;
             }
-            timePassed += 0.1; // Update every 100ms
+            timePassed += 0.1;
             currentPatternTimeElapsed += 0.1;
             globalWorkoutTimeElapsed += 0.1;
 
-            // Store current timePassed for precise resume
             pausedTimePassed = timePassed;
 
-            // Update progress bar
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
-            console.log('Workout view updated, progress bar width:', progressBar.style.width); // Debug visual update
 
-            // If announcement configured, and not yet spoken for *this* interval, and time threshold reached
             if (pattern.announceShots && !announcementSpokenForThisInterval &&
-                nextShotAnnouncementTime > 0 && // Only if announcement time is set
+                nextShotAnnouncementTime > 0 &&
                 timePassed >= nextShotAnnouncementTime &&
-                timePassed < effectiveInterval // Ensure we don't speak *after* the shot itself
+                timePassed < effectiveInterval
             ) {
-                // Announce the *current* displayed shot
                 if (currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
                     speak(currentDisplayedShot);
-                    announcementSpokenForThisInterval = true; // Set flag to prevent repeat announcements for this interval
+                    announcementSpokenForThisInterval = true;
                 }
             }
 
             if (timePassed >= effectiveInterval) {
-                console.log('timerTick: Interval ended, clearing currentPatternTimer.');
                 clearInterval(currentPatternTimer);
-                currentPatternTimer = null; // Ensure it's nulled
-                currentPatternShotCount++; // Increment shot count here, as one shot is completed
+                currentPatternTimer = null;
+                currentPatternShotCount++;
 
-                // Determine the *next* shot to display
                 const nextShotToDisplay = currentShotOptions[currentShotIndex];
-                currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length; // Advance index for the *next* next shot
+                currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-                    shuffleArray(currentShotOptions); // Re-shuffle if it wrapped around
+                    shuffleArray(currentShotOptions);
                 }
 
-                // Check limits *before* starting the next interval
                 if (shouldEndPattern(pattern)) {
                     endPattern(pattern);
                     return;
                 }
-                // Start the new shot interval, passing the next shot to display
                 startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
         }
 
         currentPatternTimer = setInterval(timerTick, 100);
-        console.log('startShotInterval: New currentPatternTimer set:', currentPatternTimer);
     }
 
 
@@ -2063,131 +1919,86 @@
     }
 
     function endPattern(pattern) {
-        // Clear all timers when ending a pattern
-        console.log('endPattern: Ending pattern. Clearing all timers.');
-        if (currentPatternTimer) {
-            clearInterval(currentPatternTimer);
-            currentPatternTimer = null;
-        }
-        if (shotIntervalTimer) {
-            clearInterval(shotIntervalTimer);
-            shotIntervalTimer = null;
-        }
-        if (flashTimer) {
-            clearTimeout(flashTimer);
-            flashTimer = null;
-        }
-        if (nextAnnouncementTimeout) {
-            clearTimeout(nextAnnouncementTimeout);
-            nextAnnouncementTimeout = null;
-        }
-        document.body.classList.remove('bg-red-500'); // Ensure flash is off
-        synth.cancel(); // Stop any pending speech
+        if (currentPatternTimer) { clearInterval(currentPatternTimer); currentPatternTimer = null; }
+        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); shotIntervalTimer = null; }
+        if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
+        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
+        document.body.classList.remove('bg-red-500');
+        synth.cancel();
 
-        // Announce outro message if available
         if (pattern.announceShots && pattern.outroMessage.trim()) {
             speak(pattern.outroMessage);
         }
 
-        // Handle post-pattern rest
         const postRestTime = parseInt(pattern.postSequenceRest);
         if (postRestTime > 0) {
             currentShotDisplay.textContent = "Rest!";
-            progressBar.style.width = '100%'; // Full progress bar for rest
+            progressBar.style.width = '100%';
 
-            let restRemaining = postRestTime; // Use total rest time for initial display
-            pausedRestTimeRemaining = postRestTime; // Initialize for pause/resume
+            let restRemaining = postRestTime;
+            pausedRestTimeRemaining = postRestTime;
 
             shotIntervalTimer = setInterval(() => {
-                console.log('Rest interval tick. isPaused:', isPaused, 'shotIntervalTimer ID:', shotIntervalTimer, 'restRemaining:', restRemaining);
-                if (isPaused) { // Check for pause again
-                    console.log('Rest interval tick: Paused, clearing shotIntervalTimer and returning.');
+                if (isPaused) {
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null; // Ensure it's nulled
+                    shotIntervalTimer = null;
                     return;
                 }
-                restRemaining--; // Count down the remaining seconds
-                globalWorkoutTimeElapsed++; // Continue incrementing total workout time
-                pausedRestTimeRemaining = restRemaining; // Update for pause
+                restRemaining--;
+                globalWorkoutTimeElapsed++;
+                pausedRestTimeRemaining = restRemaining;
 
                 if (restRemaining <= 0) {
-                    console.log('Rest period ended. Moving to next pattern.');
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null; // Ensure it's nulled
+                    shotIntervalTimer = null;
                     currentPatternIndex++;
-                    runCurrentPattern(); // Move to the next pattern
+                    runCurrentPattern();
                 }
-            }, 1000); // Update every second for rest countdown
-            console.log('endPattern: New shotIntervalTimer set for rest:', shotIntervalTimer);
+            }, 1000);
         } else {
             currentPatternIndex++;
-            runCurrentPattern(); // Move to the next pattern immediately if no rest
+            runCurrentPattern();
         }
     }
 
     function handleWorkoutCompletion() {
-        // Clear all timers on workout completion
-        console.log('handleWorkoutCompletion: Workout completed. Clearing all timers.');
-        if (currentPatternTimer) {
-            clearInterval(currentPatternTimer);
-            currentPatternTimer = null;
-        }
-        if (shotIntervalTimer) {
-            clearInterval(shotIntervalTimer);
-            shotIntervalTimer = null;
-        }
-        if (flashTimer) {
-            clearTimeout(flashTimer);
-            flashTimer = null;
-        }
-        if (nextAnnouncementTimeout) {
-            clearTimeout(nextAnnouncementTimeout);
-            nextAnnouncementTimeout = null;
-        }
+        if (currentPatternTimer) { clearInterval(currentPatternTimer); currentPatternTimer = null; }
+        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); shotIntervalTimer = null; }
+        if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
+        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
         document.body.classList.remove('bg-red-500');
 
-        isRoutineRunning = false; // Routine is no longer running
-        stopSpeechKeepAlive(); // Stop audio ducking (also clears nextSilentUtteranceTimeout)
-        synth.cancel(); // Stop any pending speech
+        isRoutineRunning = false;
+        stopSpeechKeepAlive();
+        synth.cancel();
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
 
-        // Pause/Resume button becomes Replay
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${REPLAY_ICON}</span>`;
-        pauseResumeWorkoutBtn.onclick = null; // Clear existing click handler
+        pauseResumeWorkoutBtn.onclick = null;
         pauseResumeWorkoutBtn.addEventListener('click', () => {
-            currentPatternIndex = 0; // Reset pattern index for full workout replay
+            currentPatternIndex = 0;
             startWorkout();
-        }, { once: true }); // Add new handler, remove after one use
+        }, { once: true });
         pauseResumeWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
         pauseResumeWorkoutBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
 
-        // Stop button becomes Exit to Main Menu
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${EXIT_ICON}</span>`;
-        stopWorkoutBtn.onclick = null; // Clear existing click handler
-        stopWorkoutBtn.addEventListener('click', stopWorkout, { once: true }); // stopWorkout already shows table view
+        stopWorkoutBtn.onclick = null;
+        stopWorkoutBtn.addEventListener('click', stopWorkout, { once: true });
         stopWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-        stopWorkoutBtn.classList.add('bg-gray-600', 'hover:bg-gray-700'); // Use a neutral color for exit
-
-        // Do not show "Workout Complete" dialog
+        stopWorkoutBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
     }
 
-
     function flashScreenRed() {
-        if (isPaused) {
-            console.log('flashScreenRed: Not flashing because paused.');
-            return; // Do not flash if paused
-        }
-        document.body.classList.add('bg-red-500'); // Only add the color class
-        // Force reflow to ensure the class change is rendered before timeout
-        void document.body.offsetWidth; // Accessing offsetWidth triggers reflow
+        if (isPaused) { return; }
+        document.body.classList.add('bg-red-500');
+        void document.body.offsetWidth;
         flashTimer = setTimeout(() => {
-            document.body.classList.remove('bg-red-500'); // Only remove the color class
-            flashTimer = null; // Clear and nullify the flash timer after it completes
-            console.log('flashScreenRed: Flash removed, flashTimer nulled.');
-        }, 150); // Flash for 150ms
-        console.log('flashScreenRed: Flash initiated, flashTimer set:', flashTimer);
+            document.body.classList.remove('bg-red-500');
+            flashTimer = null;
+        }, 150);
     }
 
     function shuffleArray(array) {
@@ -2201,30 +2012,25 @@
 
       // Global click listener to turn off modes if an unrelated element is clicked
       document.addEventListener('click', (e) => {
-          // Only turn off modes if a mode is currently ON
           if (isMoveModeOn || isDeleteModeOn) {
-              // Check if the click target is NOT one of the interactive mode-related elements
-              if (e.target !== movePatternToggleButton &&
+              if (
                   !movePatternToggleButton.contains(e.target) &&
-                  e.target !== deletePatternToggleButton &&
                   !deletePatternToggleButton.contains(e.target) &&
-                  !patternsTableBody.contains(e.target) &&
+                  !patternsAccordionContainer.contains(e.target) &&
                   !e.target.closest('#confirmation-modal') &&
                   !e.target.closest('#alert-modal') &&
                   e.target !== startWorkoutButton &&
                   !startWorkoutButton.contains(e.target) &&
-                  !patternEditorContainer.contains(e.target) &&
-                  !workoutViewContainer.contains(e.target) // Also exclude workout view
+                  !workoutViewContainer.contains(e.target)
               ) {
-                  setInteractionMode(null); // Turn off all modes
+                  setInteractionMode(null);
               }
           }
       });
 
 
-      // Table View Buttons
-      document.getElementById('new-pattern-btn').addEventListener('click', () => {
-        setInteractionMode(null);
+      // Main Action Buttons (New, Move Toggle, Delete Toggle)
+      newPatternBtn.addEventListener('click', () => {
         addSequence();
       });
 
@@ -2237,169 +2043,103 @@
       });
 
 
-      // Event delegation for table body clicks
-      patternsTableBody.addEventListener('click', (e) => {
-          const row = e.target.closest('tr');
-          if (!row) return;
+      // Event delegation for accordion container clicks (List View)
+      patternsAccordionContainer.addEventListener('click', (e) => {
+          const accordionItem = e.target.closest('.accordion-item');
+          if (!accordionItem) return;
 
-          const index = parseInt(row.dataset.index);
-          const patternId = sequences[index].id;
+          const patternId = parseFloat(accordionItem.dataset.patternId);
+          const patternIndex = sequences.findIndex(p => p.id === patternId);
+          if (patternIndex === -1) return;
 
-          patternsTableBody.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
-          row.classList.add('selected-row');
-          selectedPatternId = patternId; // Update the globally selected pattern ID
-
-          if (e.target.closest('.up-arrow-btn')) {
-              movePattern(index, 'up');
-              e.target.closest('button')?.blur();
-              e.stopPropagation();
-          } else if (e.target.closest('.down-arrow-btn')) {
-              movePattern(index, 'down');
-              e.target.closest('button')?.blur();
-              e.stopPropagation();
-          } else if (e.target.closest('.delete-pattern-btn')) {
-              if (isDeleteModeOn) {
-                  const modal = document.getElementById('confirmation-modal');
-                  const modalTitle = document.getElementById('modal-title');
-                  const modalText = document.getElementById('modal-text');
-                  const confirmBtn = document.getElementById('confirm-btn');
-                  const cancelBtn = document.getElementById('cancel-btn');
-
-                  modalTitle.textContent = 'Confirm Deletion';
-                  modalText.textContent = `Are you sure you want to delete pattern "${sequences[index].patternName}"? This action cannot be undone.`;
-                  confirmBtn.textContent = 'Delete';
-                  confirmBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700';
-                  modal.classList.remove('hidden');
-                  e.target.closest('button')?.blur();
-
-                  // Clear previous listeners and add new ones for the specific action
-                  confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-                  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-                  const newConfirmBtn = document.getElementById('confirm-btn');
-                  const newCancelBtn = document.getElementById('cancel-btn');
-
-                  newConfirmBtn.addEventListener('click', () => {
-                      deleteSequence(index);
-                      modal.classList.add('hidden');
-                      focusOnTop();
-                  });
-                  newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-                  e.stopPropagation();
-              } else {
-                  setInteractionMode(null);
+          if (isMoveModeOn) {
+              if (e.target.closest('.chevron-up-toggle')) {
+                  movePattern(patternIndex, 'up');
+              } else if (e.target.closest('.chevron-down-toggle')) {
+                  movePattern(patternIndex, 'down');
               }
-          } else if (e.target.closest('.pattern-name-clickable') || e.target.closest('.view-pattern-btn')) {
-              setInteractionMode(null);
-              showSequenceInEditor(index);
+              e.stopPropagation();
+          } else if (isDeleteModeOn) {
+              if (e.target.closest('.delete-toggle')) {
+                  showConfirmationModalForDelete(patternIndex);
+              }
+              e.stopPropagation();
           }
-      });
-
-
-      // Pattern Editor Buttons
-      document.getElementById('clone-btn').addEventListener('click', () => {
-          setInteractionMode(null);
-          cloneSequence();
-          document.getElementById('clone-btn').blur();
-      });
-      document.getElementById('import-btn').addEventListener('click', () => {
-          setInteractionMode(null);
-          importPatternConfig();
-          document.getElementById('import-btn').blur();
-      });
-      document.getElementById('save-btn').addEventListener('click', () => {
-          setInteractionMode(null);
-          savePatternConfig();
-          document.getElementById('save-btn').blur();
+          // Normal mode: handled by the specific event listener on accordion header in renderAccordionView
+          // This allows the general accordion header click to navigate to editor
       });
 
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
-          setInteractionMode(null);
-          saveCurrentSequenceState();
-          activeSequenceIndex = -1;
-          showView('table');
-          selectedPatternId = null;
+          saveCurrentPatternState(); // Save changes from editor
+          activePatternId = null; // Clear active pattern
+          showView('main'); // Go back to main accordion view
       });
+
+      // Pattern Name Edit in Editor
+      document.getElementById('editor-pattern-name-display').addEventListener('click', editPatternNameInEditor);
+
+
+      // Event listeners for inputs/changes within the currently rendered editor screen
+      activePatternEditorContent.addEventListener('input', (e) => {
+          // No need to check activePatternId here as this listener is only for the visible editor
+          if (e.target.id === 'editor-shot-options-input') updateEditorShotOptionsDisplay();
+          else if (e.target.id === 'editor-intro-message-input' || e.target.id === 'editor-outro-message-input' || e.target.id === 'editor-announce-shots-checkbox') updateEditorNarrationDisplay();
+          else if (e.target.id === 'editor-shot-interval-slider' || e.target.id === 'editor-random-offset-slider' || e.target.id === 'editor-next-shot-announcement-slider') {
+              updateEditorIntervalDisplay();
+              if (e.target.id === 'editor-shot-interval-slider') {
+                handleEditorAnnounceShotsChange();
+                const currentPattern = sequences.find(p => p.id === activePatternId);
+                if (currentPattern && currentPattern.limitType === 'time') {
+                    handleEditorLimitTypeChange(); // Re-evaluate limits if time-based and interval changes
+                }
+              }
+          }
+          else if (e.target.id === 'editor-pattern-limit-slider') updateEditorLimitsDisplay();
+          else if (e.target.id === 'editor-post-sequence-rest-slider') updateEditorPostRestDisplay();
+          saveCurrentPatternState();
+      });
+
+      activePatternEditorContent.addEventListener('change', (e) => {
+          // No need to check activePatternId here as this listener is only for the visible editor
+          if (e.target.id === 'editor-limit-type-select') {
+              handleEditorLimitTypeChange();
+          } else if (e.target.name === 'editorSeriesOrder') {
+              updateEditorSequencingDisplay();
+          } else if (e.target.id === 'editor-announce-shots-checkbox') {
+              handleEditorAnnounceShotsChange();
+          }
+          saveCurrentPatternState();
+      });
+
+      // Individual pattern action buttons in the editor
+      document.getElementById('clone-btn').addEventListener('click', cloneSequence);
+      document.getElementById('import-btn').addEventListener('click', importPatternConfig);
+      document.getElementById('save-btn').addEventListener('click', savePatternConfig);
+      document.getElementById('reset-btn').addEventListener('click', resetCurrentSequence);
+
 
       // Global buttons for all patterns
       document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
       document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
 
-      // --- New Workout Buttons Event Listeners ---
-      startWorkoutBtn.addEventListener('click', startWorkout);
-      // Event listener for stopWorkoutBtn is dynamically added/removed in startWorkout/handleWorkoutCompletion
+      // --- Workout Buttons Event Listeners ---
+      startWorkoutButton.addEventListener('click', startWorkout);
       pauseResumeWorkoutBtn.addEventListener('click', togglePauseResume);
-
-
-      // Event listeners for inputs/changes within the currently rendered sequence editor
-      sequencesContainer.addEventListener('input', (e) => {
-          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
-              const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return;
-
-              if (e.target.closest('#limitTypeSelect')) {
-                  // The 'input' event on a select is generally not useful, 'change' is used.
-                  // Do nothing here to avoid double-handling.
-              } else {
-                  saveCurrentSequenceState();
-              }
-
-              if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
-              if (e.target.closest('#introMessage') || e.target.closest('#outroMessage')) updateNarrationDisplay(currentEl);
-              if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
-                  updateIntervalDisplay(currentEl);
-                  // Recalculate limit if type is time and interval changed
-                  if (sequences[activeSequenceIndex].limitType === 'time') {
-                     // This call ensures the limit is updated if interval changes while 'time' limit is active.
-                     // The handleLimitTypeChange will now use the correct `previousTimeLimit` if available.
-                     // Temporarily store original limitTypeSelect value to prevent accidental reset by `handleLimitTypeChange`
-                     // when it's called due to shotInterval changing.
-                     const originalLimitType = sequences[activeSequenceIndex].limitType;
-                     handleLimitTypeChange(currentEl); // This will re-evaluate slider value based on new interval
-                     sequences[activeSequenceIndex].limitType = originalLimitType; // Restore original to prevent unintended type switch
-                  }
-                  // Also re-evaluate nextShotAnnouncement max if shotInterval changes
-                  if (e.target.closest('#shotInterval')) {
-                    handleAnnounceShotsChange(currentEl); // Update max for nextShotAnnouncement based on new interval
-                  }
-              }
-              if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
-              if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
-          }
-      });
-      sequencesContainer.addEventListener('change', (e) => {
-          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
-              const currentEl = sequencesContainer.firstChild;
-              if (!currentEl) return;
-
-              if (e.target.closest('#limitTypeSelect')) {
-                  handleLimitTypeChange(currentEl); // This is the user-initiated change
-              } else {
-                  saveCurrentSequenceState(); // For other 'change' events (like radio buttons)
-              }
-              
-              if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
-              if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
-          }
-      });
 
 
       // --- INITIALIZATION ---
       const initialize = () => {
-        // Ensure sequences array is not empty on initial load
         if (sequences.length === 0) {
             sequences.push(getNewSequenceData());
             sequences[0].patternName = "Pattern 1";
         }
-        activeSequenceIndex = -1; // Ensure no pattern is active on initial load
-        selectedPatternId = sequences[0].id; // Select the first pattern by default
-        showView('table'); // Start with the table view
-        toggleOtherButtons(); // Ensure all other buttons are enabled initially
-        calculateTotalWorkoutTime(); // Initial calculation of total time
+        activePatternId = null; // Start with no pattern active in editor
+        showView('main'); // Start with the main accordion list view
+        calculateTotalWorkoutTime();
 
-        // Initialize audio context and speech synthesis on initial page load or first user interaction
         initAudioContext();
         initSpeechSynthesis();
       };
