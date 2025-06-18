@@ -6,6 +6,8 @@
   <title>Squash Ghosting Configuration</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Flowbite CDN for accordion functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <style>
     /* Custom font for a clean look */
     body {
@@ -48,8 +50,8 @@
       cursor: pointer;
     }
     input[type="range"]:disabled {
-        /* No opacity or cursor not-allowed here, as per user request */
-        /* But visually, it might still look disabled due to underlying browser styles */
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     input[type="range"]:disabled::-webkit-slider-thumb {
         background: #9ca3af; /* Gray-400 */
@@ -59,37 +61,11 @@
         background: #9ca3af; /* Gray-400 */
         box-shadow: none;
     }
-    /* Custom styles for accordion items */
-    .accordion-item {
-        transition: all 0.3s ease-in-out;
-        /* Removed border-bottom here, relying on divide-y on parent */
-    }
-    .accordion-item:last-child {
-        border-bottom: none; /* No border for the last item */
-        border-bottom-left-radius: 0.5rem; /* rounded-lg */
-        border-bottom-right-radius: 0.5rem; /* rounded-lg */
-    }
-    .accordion-item:first-child {
-        border-top-left-radius: 0.5rem; /* rounded-lg */
-        border-top-right-radius: 0.5rem; /* rounded-lg */
-    }
-    .accordion-item.expanded .accordion-header .right-chevron {
-        transform: rotate(-90deg); /* Rotate right chevron when expanded */
-    }
-    /* Selected row styling, adapted for accordion item */
-    .selected-row {
-        background-color: #e0e7ff; /* Light indigo for selection */
-        border-left: 4px solid #4f46e5; /* Accent border */
-    }
-    .dark .selected-row {
-        background-color: #374151; /* Darker gray for dark mode selection */
-        border-left-color: #6366f1; /* Dark mode accent */
-    }
     /* Hide scrollbars for the main container but allow scrolling */
-    #patterns-accordion-container::-webkit-scrollbar {
+    #sequences-container::-webkit-scrollbar {
         display: none;
     }
-    #patterns-accordion-container {
+    #sequences-container {
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
     }
@@ -98,6 +74,16 @@
     button {
       -webkit-tap-highlight-color: transparent;
     }
+
+    /* Custom style for selected row */
+    .selected-row {
+        background-color: #e0e7ff; /* Light indigo for selection */
+        border-left: 4px solid #4f46e5; /* Accent border */
+    }
+    .dark .selected-row {
+        background-color: #374151; /* Darker gray for dark mode selection */
+        border-left-color: #6366f1; /* Dark mode accent */
+    }
   </style>
 </head>
 <body class="flex min-h-screen items-center justify-center p-4 bg-gray-100 dark:bg-gray-900 transition-colors duration-75">
@@ -105,7 +91,6 @@
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
-    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">update</h1>
 
     <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -141,7 +126,7 @@
 
     <!-- Main View Container (holds the accordion list of patterns) -->
     <div id="main-view-container" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
 
         <!-- Accordion Container - This will be populated dynamically by JavaScript -->
         <div id="patterns-accordion-container" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -203,7 +188,7 @@
     </div>
 
     <!-- Pattern Editor Container (separate screen) -->
-    <div id="pattern-editor-container" class="w-full bg-white dark:bg-gray-800 hidden rounded-lg shadow-xl p-6">
+    <div id="pattern-editor-container" class="w-full bg-white dark:bg-gray-800 hidden">
         <!-- Back to List Button -->
         <div class="mb-4">
             <button id="back-to-list-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -212,131 +197,156 @@
             </button>
         </div>
 
-        <!-- This div will contain the dynamically generated editor for the active pattern -->
-        <div id="active-pattern-editor-content">
-            <!-- New editable pattern name - Left Justified -->
-            <h3 id="editor-pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
-            
-            <div class="space-y-4">
-                <!-- Options -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
-                            Options - <span id="editor-options-count-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
-                        <textarea id="editor-shot-options-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="4"></textarea>
-                    </div>
-                </div>
+        <!-- This div will contain the dynamically generated sequences -->
+        <div id="sequences-container" class="overflow-hidden">
+            <!-- Sequence Template - Keep it hidden and clone for editing -->
+            <template id="sequence-template">
+                <div class="w-full max-w-2xl rounded-xl bg-white p-2 shadow-lg dark:bg-gray-800">
+                    <div class="space-y-4">
+                        <!-- New editable pattern name - Left Justified -->
+                        <h3 id="pattern-name-display" class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 cursor-pointer"></h3>
 
-                <!-- Narration -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
-                            Narration - <span id="editor-narration-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="editor-announce-shots-checkbox" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
-                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
-                        <textarea id="editor-intro-message-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="2"></textarea>
-                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
-                        <textarea id="editor-outro-message-input" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500" rows="2"></textarea>
-                    </div>
-                </div>
+                        <div id="accordion-color" data-accordion="collapse" data-active-classes="bg-blue-100 dark:bg-gray-800 text-blue-600 dark:text-white">
+                            <!-- Options -->
+                            <h2 id="accordion-heading-options">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 rounded-t-lg border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-body-options" aria-expanded="false" aria-controls="accordion-body-options">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>
+                                        <span class="font-bold">Options - </span><span id="optionsCountDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                    </span>
+                                    <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                                </button>
+                            </h2>
+                            <div id="accordion-body-options" class="hidden" aria-labelledby="accordion-heading-options">
+                                <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Available shot locations or types</p>
+                                    <div>
+                                        <textarea id="shotOptions" rows="4" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
 
-                <!-- Sequencing -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z"/></svg>
-                            Sequencing - <span id="editor-sequencing-order-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
-                        <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
-                            <label class="inline-flex items-center"><input type="radio" name="editorSeriesOrder" value="in-order" class="editor-series-order-radio form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
-                            <label class="inline-flex items-center"><input type="radio" name="editorSeriesOrder" value="randomized" class="editor-series-order-radio form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
+                            <!-- Narration -->
+                            <h2 id="accordion-heading-narration">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-narration-body" aria-expanded="false" aria-controls="accordion-narration-body">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/></svg>
+                                        <span class="font-bold">Narration - </span><span id="narrationDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                    </span>
+                                    <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                                </button>
+                            </h2>
+                            <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
+                                <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                    <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="announceShots" class="form-checkbox rounded text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
+                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
+                                    <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                                    <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
+                                    <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Sequencing -->
+                            <h2 id="accordion-heading-sequencing">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-sequencing-body" aria-expanded="false" aria-controls="accordion-sequencing-body">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16"><path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0M2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" /></svg>
+                                        <span class="font-bold">Sequencing - </span><span id="sequencingOrderDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                    </span>
+                                    <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                                </button>
+                            </h2>
+                            <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
+                                <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
+                                    <div class="mb-4 flex flex-wrap items-center justify-start space-x-4">
+                                        <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="in-order" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">In order</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="seriesOrder" value="randomized" class="form-radio rounded-full text-blue-600 focus:ring-blue-500" /><span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Interval -->
+                            <h2 id="accordion-heading-interval">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-interval-body" aria-expanded="false" aria-controls="accordion-interval-body">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
+                                        <span class="font-bold">Interval - </span><span id="intervalCombinedDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                    </span>
+                                    <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                                </button>
+                            </h2>
+                            <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
+                                <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
+                                    <input type="range" id="shotInterval" min="3.0" max="8.0" step="0.1" class="w-full accent-blue-600" />
+                                    <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
+                                    <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600" />
+                                    <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
+                                    <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600" />
+                                </div>
+                            </div>
+
+                            <!-- Limits -->
+                            <h2 id="accordion-heading-limits">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 border border-b-0 border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-limits-body" aria-expanded="false" aria-controls="accordion-limits-body">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
+                                        <span class="font-bold">Limits - </span><span id="limitsDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                    </span>
+                                    <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                                </button>
+                            </h2>
+                            <div id="accordion-limits-body" class="hidden" aria-labelledby="accordion-heading-limits">
+                                <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
+                                    <div class="mb-4">
+                                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
+                                        <select id="limitTypeSelect" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
+                                            <option value="shot">Max Shots</option>
+                                            <option value="time">Max Time</option>
+                                        </select>
+                                    </div>
+                                    <input type="range" id="patternLimitSlider" min="0" max="100" class="w-full accent-blue-600 mt-2" />
+                                </div>
+                            </div>
+
+                            <!-- Post Pattern Rest -->
+                            <h2 id="accordion-heading-post-rest">
+                                <button type="button" class="flex w-full items-center justify-between gap-3 border border-gray-200 p-3 font-medium text-gray-500 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 rtl:text-right dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-blue-800" data-accordion-target="#accordion-post-rest-body" aria-expanded="false" aria-controls="accordion-post-rest-body">
+                                    <span class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
+                                    <span class="font-bold">Post Pattern Rest - </span><span id="postSequenceRestDisplay" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
+                                </span>
+                                <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
+                            </button>
+                            </h2>
+                            <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
+                                <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
+                                <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Interval -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-right" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8m-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5" /></svg>
-                            Interval - <span id="editor-interval-combined-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
-                        <input type="range" id="editor-shot-interval-slider" class="w-full accent-blue-600" min="3.0" max="8.0" step="0.1" />
-                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Shot interval fuzz</p>
-                        <input type="range" id="editor-random-offset-slider" class="w-full accent-blue-600" min="0.0" max="1.0" step="0.1" />
-                        <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
-                        <input type="range" id="editor-next-shot-announcement-slider" class="w-full accent-blue-600" min="0.0" max="7.0" step="0.1" />
-                    </div>
-                </div>
-
-                <!-- Limits -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-123" viewBox="0 0 16 16"><path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75z"/></svg>
-                            Limits - <span id="editor-limits-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <div class="mb-4">
-                            <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Pattern bounds</p>
-                            <select id="editor-limit-type-select" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                                <option value="shot">Max Shots</option>
-                                <option value="time">Max Time</option>
-                            </select>
-                        </div>
-                        <input type="range" id="editor-pattern-limit-slider" class="w-full accent-blue-600 mt-2" min="0" max="100" />
-                    </div>
-                </div>
-
-                <!-- Post Pattern Rest -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                        <span class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-pulse" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053.918 3.995.78 5.323 1.508 7H.43c-2.128-5.697 4.165-8.83 7.394-5.857q.09.083.176.171a3 3 0 0 1 .176-.17c3.23-2.974 9.522.159 7.394 5.856h-1.078c.728-1.677.59-3.005.108-3.947C13.486.878 10.4.28 8.717 2.01zM2.212 10h1.315C4.593 11.183 6.05 12.458 8 13.795c1.949-1.337 3.407-2.612 4.473-3.795h1.315c-1.265 1.566-3.14 3.25-5.788 5-2.648-1.75-4.523-3.434-5.788-5"/><path d="M10.464 3.314a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8H.5a.5.5 0 0 0 0 1H4a.5.5 0 0 0 .416-.223l1.473-2.209 1.647 4.118a.5.5 0 0 0 .945-.049l1.598-5.593 1.457 3.642A.5.5 0 0 0 12 9h3.5a.5.5 0 0 0 0-1h-3.162z"/></svg>
-                            Post Pattern Rest - <span id="editor-post-sequence-rest-display" class="font-normal text-indigo-600 dark:text-indigo-400"></span>
-                        </span>
-                    </div>
-                    <div class="p-3">
-                        <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
-                        <input type="range" id="editor-post-sequence-rest-slider" class="w-full accent-blue-600" min="0" max="300" />
-                    </div>
-                </div>
-            </div>
-            <!-- Centered row of icon buttons - For current pattern in editor -->
-            <div class="flex justify-center space-x-4 mt-8">
-                <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                    <span class="text-xs mt-1">Clone</span>
-                </button>
-                <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-                    <span class="text-xs mt-1">Import</span>
-                </button>
-                <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-                    <span class="text-xs mt-1">Save</span>
-                </button>
-                <button id="reset-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                    <span class="text-xs mt-1">Reset</span>
-                </button>
-            </div>
+            </template>
+        </div>
+        <!-- Centered row of icon buttons - For current pattern in editor -->
+        <div class="flex justify-center space-x-4 mt-8">
+            <button id="clone-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15 12v6m-3-3h6"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span class="text-xs mt-1">Clone</span>
+            </button>
+            <button id="import-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+                <span class="text-xs mt-1">Import</span>
+            </button>
+            <button id="save-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+                <span class="text-xs mt-1">Save</span>
+            </button>
+            <button id="reset-btn" class="flex flex-col items-center p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span class="text-xs mt-1">Reset</span>
+            </button>
         </div>
     </div>
 
@@ -370,12 +380,16 @@
             </div>
         </div>
     </div>
+  </div>
 
+  <!-- Flowbite CDN for accordion functionality - MOVED HERE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // --- STATE MANAGEMENT ---
       let sequences = [];
-      let activePatternId = null; // Stores the ID of the pattern being edited in the *separate editor*
+      let activeSequenceIndex = -1; // -1 means no sequence is actively being edited
+      let selectedPatternId = null; // Store the ID of the selected row for focus tracking
       let isMoveModeOn = false; // State for move mode in the accordion list
       let isDeleteModeOn = false; // State for delete mode in the accordion list
 
@@ -383,7 +397,8 @@
       const patternsAccordionContainer = document.getElementById('patterns-accordion-container');
       const patternListItemTemplate = document.getElementById('pattern-list-item-template'); // Template for list items
       const patternEditorContainer = document.getElementById('pattern-editor-container'); // The dedicated editor screen
-      const activePatternEditorContent = document.getElementById('active-pattern-editor-content'); // Container for editor inputs
+      const sequencesContainer = document.getElementById('sequences-container'); // Used for the old editor structure
+      const sequenceTemplate = document.getElementById('sequence-template'); // Used for the old editor structure
 
       const appContainer = document.getElementById('app-container');
       const globalControls = document.getElementById('global-controls');
@@ -402,27 +417,6 @@
       const progressBar = document.getElementById('progress-bar');
       const currentPatternNameDisplay = document.getElementById('current-pattern-name');
       const appTitle = document.getElementById('app-title');
-
-      // --- Editor Specific Elements (cached for easy access) ---
-      let editorPatternNameDisplay;
-      let editorShotOptionsInput;
-      let editorAnnounceShotsCheckbox;
-      let editorIntroMessageInput;
-      let editorOutroMessageInput;
-      let editorSeriesOrderRadios; // NodeList
-      let editorShotIntervalSlider;
-      let editorRandomOffsetSlider;
-      let editorNextShotAnnouncementSlider;
-      let editorLimitTypeSelect;
-      let editorPatternLimitSlider;
-      let editorPostSequenceRestSlider;
-      let editorOptionsCountDisplay;
-      let editorNarrationDisplay;
-      let editorSequencingOrderDisplay;
-      let editorIntervalCombinedDisplay;
-      let editorLimitsDisplay;
-      let editorPostSequenceRestDisplay;
-      // Removed editorPatternNameEditContainer and editorPatternNameInput
 
 
       // --- Web Audio API ---
@@ -576,6 +570,14 @@
               newPatternBtn, loadAllBtn, saveAllBtn, startWorkoutBtn
           ];
 
+          // Elements in the editor view
+          const backToListBtn = document.getElementById('back-to-list-btn');
+          const cloneBtn = document.getElementById('clone-btn');
+          const importBtn = document.getElementById('import-btn');
+          const saveBtn = document.getElementById('save-btn');
+          const resetBtn = document.getElementById('reset-btn');
+
+
           elementsToToggleDisable.forEach(element => {
               if (element) {
                   element.disabled = disableGlobalActions;
@@ -598,21 +600,41 @@
 
           // Disable/enable elements inside the *editor* view if it's visible
           if (!patternEditorContainer.classList.contains('hidden')) {
-              const editorInputs = activePatternEditorContent.querySelectorAll('input:not([type="radio"]), textarea, select');
-              const editorButtons = activePatternEditorContent.querySelectorAll('#clone-btn, #import-btn, #save-btn, #reset-btn');
+              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element
+              if (currentEl) {
+                  // Accordion buttons and input fields inside the editor
+                  currentEl.querySelectorAll('#accordion-color button[data-accordion-target]').forEach(accordionBtn => {
+                      accordionBtn.disabled = disableGlobalActions;
+                      accordionBtn.classList.toggle('opacity-50', disableGlobalActions);
+                      accordionBtn.classList.toggle('cursor-not-allowed', disableGlobalActions);
+                  });
 
-              editorInputs.forEach(inputField => {
-                  const isInternallyDisabled = (inputField.id === 'editor-next-shot-announcement-slider' && !editorAnnounceShotsCheckbox.checked);
-                  inputField.disabled = isInternallyDisabled; // Only internal logic disables
-              });
+                  currentEl.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inputField => {
+                      const isInternallyDisabled = (inputField.id === 'nextShotAnnouncement' && !currentEl.querySelector('#announceShots').checked);
+                      inputField.disabled = disableGlobalActions || isInternallyDisabled;
+                      inputField.classList.toggle('opacity-50', disableGlobalActions || isInternallyDisabled);
+                      inputField.classList.toggle('cursor-not-allowed', disableGlobalActions || isInternallyDisabled);
+                  });
 
-              editorButtons.forEach(btn => {
-                  btn.disabled = false; // Editor buttons are always enabled unless explicitly disabled by another means
-              });
-              
-              // Pattern name display in editor
-              if (editorPatternNameDisplay) {
-                editorPatternNameDisplay.style.pointerEvents = 'auto'; // Always allow editing in editor
+                  const editorButtonsToToggle = [backToListBtn, cloneBtn, importBtn, saveBtn, resetBtn];
+                  editorButtonsToToggle.forEach(element => {
+                      if (element) {
+                          element.disabled = disableGlobalActions;
+                          element.classList.toggle('opacity-50', disableGlobalActions);
+                          element.classList.toggle('cursor-not-allowed', disableGlobalActions);
+                      }
+                  });
+
+                  const patternNameDisplay = currentEl.querySelector('#pattern-name-display');
+                  if (patternNameDisplay) {
+                    if (disableGlobalActions) {
+                        patternNameDisplay.classList.remove('cursor-pointer');
+                        patternNameDisplay.style.pointerEvents = 'none';
+                    } else {
+                        patternNameDisplay.classList.add('cursor-pointer');
+                        patternNameDisplay.style.pointerEvents = 'auto';
+                    }
+                  }
               }
           }
       };
@@ -649,7 +671,7 @@
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
               document.body.classList.add('items-center', 'justify-center');
               patternEditorContainer.classList.remove('hidden');
-              populatePatternEditor(); // Populate the editor with activePatternId's data
+              renderPatternEditor(); // Populate the editor with activePatternId's data
               focusOnTop();
               // No mode selection in editor, so ensure modes are off
               isMoveModeOn = false;
@@ -720,8 +742,8 @@
                   chevronUpToggle.classList.remove('hidden');
                   chevronDownToggle.classList.remove('hidden');
               } else {
-                  chevronUpToggle.classList.add('hidden');
                   chevronDownToggle.classList.add('hidden');
+                  chevronUpToggle.classList.add('hidden');
               }
 
               // Disable/enable move arrows based on position
@@ -738,7 +760,7 @@
 
               // Apply 'selected-row' class if this pattern is currently selected in the list
               // Only apply if no mode is active, otherwise selection is implicit by mode.
-              if (activePatternId === pattern.id && !isMoveModeOn && !isDeleteModeOn) {
+              if (selectedPatternId === pattern.id && !isMoveModeOn && !isDeleteModeOn) {
                 newAccordionItem.classList.add('selected-row');
               } else {
                 newAccordionItem.classList.remove('selected-row');
@@ -764,7 +786,7 @@
                       // Normal mode: clicking the header (or pattern name) opens the editor
                       // We can also make the right chevron click expand/collapse a summary (optional)
                       if (clickedElement.closest('.pattern-name-display') || clickedElement.closest('.right-chevron')) {
-                          activePatternId = pattern.id; // Set the active pattern for the editor
+                          activeSequenceIndex = index; // Set the active pattern for the editor
                           showView('editor'); // Navigate to editor view
                           e.stopPropagation(); // Prevent any other clicks from propagating
                       }
@@ -777,161 +799,177 @@
       };
 
       /**
-       * Populates the editor view with the data of the currently active pattern.
+       * Renders the editor view with the data of the currently active pattern.
        */
-      const populatePatternEditor = () => {
-          const currentPattern = sequences.find(p => p.id === activePatternId);
-          if (!currentPattern) {
+      const renderPatternEditor = () => {
+          sequencesContainer.innerHTML = ''; // Clear any previous content in the sequences container
+          if (activeSequenceIndex === -1 || sequences.length === 0) {
               showView('main'); // Go back if no active pattern found
               showAlert('Error', 'Could not load pattern editor.');
               return;
           }
 
-          // Cache editor elements if not already cached
-          if (!editorPatternNameDisplay) {
-            editorPatternNameDisplay = document.getElementById('editor-pattern-name-display');
-            editorShotOptionsInput = document.getElementById('editor-shot-options-input');
-            editorAnnounceShotsCheckbox = document.getElementById('editor-announce-shots-checkbox');
-            editorIntroMessageInput = document.getElementById('editor-intro-message-input');
-            editorOutroMessageInput = document.getElementById('editor-outro-message-input');
-            editorSeriesOrderRadios = document.querySelectorAll('input[name="editorSeriesOrder"]');
-            editorShotIntervalSlider = document.getElementById('editor-shot-interval-slider');
-            editorRandomOffsetSlider = document.getElementById('editor-random-offset-slider');
-            editorNextShotAnnouncementSlider = document.getElementById('editor-next-shot-announcement-slider');
-            editorLimitTypeSelect = document.getElementById('editor-limit-type-select');
-            editorPatternLimitSlider = document.getElementById('editor-pattern-limit-slider');
-            editorPostSequenceRestSlider = document.getElementById('editor-post-sequence-rest-slider');
+          const currentData = sequences[activeSequenceIndex];
+          const newSequenceEl = sequenceTemplate.content.cloneNode(true).firstElementChild; // Clone the template content
+          newSequenceEl.id = `sequence-${currentData.id}`; // Give the cloned element a unique ID
+          // Removed: newSequenceEl.classList.remove('hidden'); // The template itself is hidden, but the cloned element might not be if it was within the hidden template already.
 
-            editorOptionsCountDisplay = document.getElementById('editor-options-count-display');
-            editorNarrationDisplay = document.getElementById('editor-narration-display');
-            editorSequencingOrderDisplay = document.getElementById('editor-sequencing-order-display');
-            editorIntervalCombinedDisplay = document.getElementById('editor-interval-combined-display');
-            editorLimitsDisplay = document.getElementById('editor-limits-display');
-            editorPostSequenceRestDisplay = document.getElementById('editor-post-sequence-rest-display');
-          }
+          sequencesContainer.appendChild(newSequenceEl); // Add the cloned element to the container
 
-          // Set values to editor fields
-          editorPatternNameDisplay.textContent = currentPattern.patternName;
-          editorShotOptionsInput.value = currentPattern.shotOptions;
-          editorAnnounceShotsCheckbox.checked = currentPattern.announceShots;
-          editorIntroMessageInput.value = currentPattern.introMessage;
-          editorOutroMessageInput.value = currentPattern.outroMessage;
-          editorSeriesOrderRadios.forEach(radio => radio.checked = (radio.value === currentPattern.seriesOrder));
-          editorShotIntervalSlider.value = currentPattern.shotInterval;
-          editorRandomOffsetSlider.value = currentPattern.randomOffset;
-          editorNextShotAnnouncementSlider.value = currentPattern.nextShotAnnouncement;
-          editorLimitTypeSelect.value = currentPattern.limitType;
-          editorPatternLimitSlider.value = currentPattern.patternLimit;
-          editorPostSequenceRestSlider.value = currentPattern.postSequenceRest;
+          // Get references to elements *within* the newly cloned sequence element
+          const patternNameDisplay = newSequenceEl.querySelector('#pattern-name-display');
+          const shotOptions = newSequenceEl.querySelector('#shotOptions');
+          const announceShots = newSequenceEl.querySelector('#announceShots');
+          const introMessage = newSequenceEl.querySelector('#introMessage');
+          const outroMessage = newSequenceEl.querySelector('#outroMessage');
+          const seriesOrderRadios = newSequenceEl.querySelectorAll('input[name="seriesOrder"]');
+          const shotInterval = newSequenceEl.querySelector('#shotInterval');
+          const randomOffset = newSequenceEl.querySelector('#randomOffset');
+          const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement');
+          const limitTypeSelect = newSequenceEl.querySelector('#limitTypeSelect');
+          const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
+          const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
+
+
+          // Set values to editor fields from currentData
+          patternNameDisplay.textContent = currentData.patternName;
+          shotOptions.value = currentData.shotOptions;
+          announceShots.checked = currentData.announceShots;
+          introMessage.value = currentData.introMessage;
+          outroMessage.value = currentData.outroMessage;
+          seriesOrderRadios.forEach(radio => radio.checked = (radio.value === currentData.seriesOrder));
+          shotInterval.value = currentData.shotInterval;
+          randomOffset.value = currentData.randomOffset;
+          nextShotAnnouncement.value = currentData.nextShotAnnouncement;
+          limitTypeSelect.value = currentData.limitType;
+          patternLimitSlider.value = currentData.patternLimit;
+          postSequenceRest.value = currentData.postSequenceRest;
 
           // Apply specific logic for sliders/displays
-          handleEditorAnnounceShotsChange(); // Update nextShotAnnouncement max/disabled state
-          handleEditorLimitTypeChange(); // Update patternLimitSlider min/max/value based on type
-          updateAllEditorDisplays(); // Update all summary texts
+          handleAnnounceShotsChange(newSequenceEl); // Update nextShotAnnouncement max/disabled state
+          handleLimitTypeChange(newSequenceEl); // Update patternLimitSlider min/max/value based on type
+          updateAllDisplays(newSequenceEl); // Update all summary texts
+
+          initFlowbite(); // Initialize Flowbite for the new accordion elements
+          patternNameDisplay.addEventListener('click', () => editPatternName(currentData, patternNameDisplay));
+          toggleOtherButtons(); // Update button states based on being in editor
       };
 
 
       /**
        * Saves the current state of the editor's input fields back to the `sequences` array.
        */
-      const saveCurrentPatternState = () => {
-          if (!activePatternId) return;
+      const saveCurrentSequenceState = () => {
+          if (activeSequenceIndex === -1 || sequences.length === 0) return;
 
-          const patternIndex = sequences.findIndex(p => p.id === activePatternId);
-          if (patternIndex === -1) return;
-
-          const currentData = sequences[patternIndex];
+          const currentData = sequences[activeSequenceIndex];
+          const currentEl = sequencesContainer.firstChild; // The cloned template is always the first child
+          if (!currentEl) return;
 
           // Save the current patternLimit to the appropriate 'previous' field before updating currentData
           if (currentData.limitType === 'shot') {
-              currentData.previousShotLimit = parseInt(editorPatternLimitSlider.value);
+              currentData.previousShotLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
           } else if (currentData.limitType === 'time') {
-              currentData.previousTimeLimit = parseInt(editorPatternLimitSlider.value);
+              currentData.previousTimeLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
           }
 
           // Update pattern data from the editor input fields
-          currentData.patternName = editorPatternNameDisplay.textContent; // Get from span, not input during normal operation
-          currentData.shotOptions = editorShotOptionsInput.value;
-          currentData.announceShots = editorAnnounceShotsCheckbox.checked;
-          currentData.introMessage = editorIntroMessageInput.value;
-          currentData.outroMessage = editorOutroMessageInput.value;
-          currentData.seriesOrder = Array.from(editorSeriesOrderRadios).find(radio => radio.checked).value;
-          currentData.shotInterval = parseFloat(editorShotIntervalSlider.value);
-          currentData.randomOffset = parseFloat(editorRandomOffsetSlider.value);
-          currentData.nextShotAnnouncement = parseFloat(editorNextShotAnnouncementSlider.value);
-          currentData.limitType = editorLimitTypeSelect.value;
-          currentData.patternLimit = parseInt(editorPatternLimitSlider.value);
-          currentData.postSequenceRest = parseInt(editorPostSequenceRestSlider.value);
+          currentData.patternName = currentEl.querySelector('#pattern-name-display').textContent; // Get from span, not input during normal operation
+          currentData.shotOptions = currentEl.querySelector('#shotOptions').value;
+          currentData.announceShots = currentEl.querySelector('#announceShots').checked;
+          currentData.introMessage = currentEl.querySelector('#introMessage').value;
+          currentData.outroMessage = currentEl.querySelector('#outroMessage').value;
+          currentData.seriesOrder = currentEl.querySelector('input[name="seriesOrder"]:checked').value;
+          currentData.shotInterval = parseFloat(currentEl.querySelector('#shotInterval').value);
+          currentData.randomOffset = parseFloat(currentEl.querySelector('#randomOffset').value);
+          currentData.nextShotAnnouncement = parseFloat(currentEl.querySelector('#nextShotAnnouncement').value);
+          currentData.limitType = currentEl.querySelector('#limitTypeSelect').value;
+          currentData.patternLimit = parseInt(currentEl.querySelector('#patternLimitSlider').value);
+          currentData.postSequenceRest = parseInt(currentEl.querySelector('#postSequenceRest').value);
 
           calculateTotalWorkoutTime();
       };
 
       // --- UI UPDATE FUNCTIONS (for the separate editor screen) ---
-      const updateAllEditorDisplays = () => {
-          updateEditorShotOptionsDisplay();
-          updateEditorNarrationDisplay();
-          updateEditorSequencingDisplay();
-          updateEditorIntervalDisplay();
-          updateEditorLimitsDisplay();
-          updateEditorPostRestDisplay();
+      const updateAllDisplays = (context) => {
+          updateShotOptionsDisplay(context);
+          updateNarrationDisplay(context);
+          updateSequencingDisplay(context);
+          updateIntervalDisplay(context);
+          updateLimitsDisplay(context);
+          updatePostRestDisplay(context);
       }
 
-      const updateEditorShotOptionsDisplay = () => {
-        const count = editorShotOptionsInput.value.trim().split(/[\n,]+/).filter(Boolean).length;
-        editorOptionsCountDisplay.textContent = `${count} shots`;
+      const updateShotOptionsDisplay = (context) => {
+        const shotOptions = context.querySelector('#shotOptions');
+        const display = context.querySelector('#optionsCountDisplay');
+        const count = shotOptions.value.trim().split(/[\n,]+/).filter(Boolean).length;
+        display.textContent = `${count} shots`;
       };
 
-      const updateEditorNarrationDisplay = () => {
+      const updateNarrationDisplay = (context) => {
+        const display = context.querySelector('#narrationDisplay');
         const parts = [];
-        if (editorAnnounceShotsCheckbox.checked) parts.push('Shots');
-        if (editorIntroMessageInput.value.trim()) parts.push('Intro');
-        if (editorOutroMessageInput.value.trim()) parts.push('Outro');
-        editorNarrationDisplay.textContent = parts.length ? parts.join(', ') : 'None';
+        if (context.querySelector('#announceShots').checked) parts.push('Shots');
+        if (context.querySelector('#introMessage').value.trim()) parts.push('Intro');
+        if (context.querySelector('#outroMessage').value.trim()) parts.push('Outro');
+        display.textContent = parts.length ? parts.join(', ') : 'None';
       };
 
-      const updateEditorSequencingDisplay = () => {
-          const value = Array.from(editorSeriesOrderRadios).find(radio => radio.checked).value;
-          editorSequencingOrderDisplay.textContent = value === 'in-order' ? 'In order' : 'Randomized';
+      const updateSequencingDisplay = (context) => {
+          const display = context.querySelector('#sequencingOrderDisplay');
+          const value = context.querySelector('input[name="seriesOrder"]:checked').value;
+          display.textContent = value === 'in-order' ? 'In order' : 'Randomized';
       };
 
-      const updateEditorIntervalDisplay = () => {
-        const interval = parseFloat(editorShotIntervalSlider.value).toFixed(1);
-        const offset = parseFloat(editorRandomOffsetSlider.value).toFixed(1);
-        const nextShotAnnounce = parseFloat(editorNextShotAnnouncementSlider.value).toFixed(1);
+      const updateIntervalDisplay = (context) => {
+        const display = context.querySelector('#intervalCombinedDisplay');
+        const interval = parseFloat(context.querySelector('#shotInterval').value).toFixed(1);
+        const offset = parseFloat(context.querySelector('#randomOffset').value).toFixed(1);
+        const nextShotAnnounce = parseFloat(context.querySelector('#nextShotAnnouncement').value).toFixed(1);
 
         let text = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
-        if (editorAnnounceShotsCheckbox.checked) {
+        if (context.querySelector('#announceShots').checked) {
             text += ` (${nextShotAnnounce}s)`;
         }
-        editorIntervalCombinedDisplay.textContent = text;
+        display.textContent = text;
       };
 
-      const handleEditorAnnounceShotsChange = () => {
-          const isChecked = editorAnnounceShotsCheckbox.checked;
-          const currentShotInterval = parseFloat(editorShotIntervalSlider.value);
+      const handleAnnounceShotsChange = (context) => {
+          const announceShotsCheckbox = context.querySelector('#announceShots');
+          const nextShotAnnouncementSlider = context.querySelector('#nextShotAnnouncement');
+          const shotIntervalSlider = context.querySelector('#shotInterval');
 
-          editorNextShotAnnouncementSlider.disabled = !isChecked;
-          editorNextShotAnnouncementSlider.max = Math.max(0, currentShotInterval - 0.1);
+          nextShotAnnouncementSlider.disabled = !announceShotsCheckbox.checked;
 
-          if (parseFloat(editorNextShotAnnouncementSlider.value) > editorNextShotAnnouncementSlider.max) {
-              editorNextShotAnnouncementSlider.value = editorNextShotAnnouncementSlider.max;
+          if (announceShotsCheckbox.checked) {
+              const currentShotInterval = parseFloat(shotIntervalSlider.value);
+              nextShotAnnouncementSlider.max = Math.max(0.0, currentShotInterval - 0.1);
+              if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
+                  nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
+              }
+              if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
+                nextShotAnnouncementSlider.value = 1.25;
+              }
+          } else {
+              nextShotAnnouncementSlider.value = 0;
           }
-          // No opacity/cursor-not-allowed as per user request
-          updateEditorNarrationDisplay();
-          updateEditorIntervalDisplay();
+          updateIntervalDisplay(context);
+          updateNarrationDisplay(context);
       };
 
 
-      const handleEditorLimitTypeChange = () => {
-        const select = editorLimitTypeSelect;
-        const slider = editorPatternLimitSlider;
+      const handleLimitTypeChange = (context) => {
+        const select = context.querySelector('#limitTypeSelect');
+        const slider = context.querySelector('#patternLimitSlider');
 
-        const currentPattern = sequences.find(p => p.id === activePatternId);
+        const currentPattern = sequences[activeSequenceIndex];
         if (!currentPattern) return;
 
         const newLimitType = select.value;
         const prevLimitTypeInState = currentPattern.limitType;
 
+        // Save the current patternLimit to the appropriate 'previous' field before updating currentData
         if (prevLimitTypeInState === 'shot') {
             currentPattern.previousShotLimit = parseInt(slider.value);
         } else if (prevLimitTypeInState === 'time') {
@@ -962,83 +1000,78 @@
         slider.value = Math.min(Math.max(proposedValue, parseInt(slider.min)), parseInt(slider.max));
         currentPattern.patternLimit = parseInt(slider.value);
 
-        updateEditorLimitsDisplay();
+        updateLimitsDisplay(context);
         calculateTotalWorkoutTime();
       };
 
-      const updateEditorLimitsDisplay = () => {
-        const type = editorLimitTypeSelect.value;
-        const value = parseInt(editorPatternLimitSlider.value);
+      const updateLimitsDisplay = (context) => {
+        const display = context.querySelector('#limitsDisplay');
+        const type = context.querySelector('#limitTypeSelect').value;
+        const value = parseInt(context.querySelector('#patternLimitSlider').value);
         if (type === 'shot') {
-          editorLimitsDisplay.textContent = `${value} shots`;
+          display.textContent = `${value} shots`;
         } else if (type === 'time') {
-          editorLimitsDisplay.textContent = formatTime(value);
+          display.textContent = formatTime(value);
         }
       };
 
-      const updateEditorPostRestDisplay = () => {
-        const value = parseInt(editorPostSequenceRestSlider.value);
-        editorPostSequenceRestDisplay.textContent = formatTime(value);
+      const updatePostRestDisplay = (context) => {
+        const display = context.querySelector('#postSequenceRestDisplay');
+        const value = parseInt(context.querySelector('#postSequenceRest').value);
+        display.textContent = formatTime(value);
       };
 
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
       const addSequence = () => {
-        if (activePatternId) {
-            // If an editor was active, save its state before adding new pattern
-            // and switch back to main view.
-            saveCurrentPatternState();
-            activePatternId = null; // Clear active pattern
-            showView('main');
+        if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
+            saveCurrentSequenceState();
         }
 
         const newSequence = getNewSequenceData();
         newSequence.patternName = `Pattern ${sequences.length + 1}`;
         sequences.push(newSequence);
 
-        // After adding, immediately switch to editing the new pattern
-        activePatternId = newSequence.id;
-        showView('editor');
+        activeSequenceIndex = sequences.length - 1; // Make the new pattern the active one
+        selectedPatternId = newSequence.id; // Select the new pattern in the list
+        showView('editor'); // Go to editor view
         calculateTotalWorkoutTime();
         focusOnTop();
       };
 
       const cloneSequence = () => {
-        const patternToClone = sequences.find(p => p.id === activePatternId);
-        if (!patternToClone) {
+        if (activeSequenceIndex === -1) {
             showAlert('Clone Error', 'No pattern selected to clone.');
             return;
         }
-        saveCurrentPatternState();
+        saveCurrentSequenceState();
 
-        const clonedData = JSON.parse(JSON.stringify(patternToClone));
+        const clonedData = JSON.parse(JSON.stringify(sequences[activeSequenceIndex]));
         clonedData.id = Date.now() + Math.random();
         clonedData.patternName = `${clonedData.patternName} (Clone)`;
 
-        const originalIndex = sequences.findIndex(p => p.id === patternToClone.id);
-        if (originalIndex !== -1) {
-            sequences.splice(originalIndex + 1, 0, clonedData);
-            activePatternId = clonedData.id; // Make the new clone the active pattern in editor
-        } else {
-            sequences.push(clonedData);
-            activePatternId = clonedData.id;
-        }
+        sequences.splice(activeSequenceIndex + 1, 0, clonedData);
+        activeSequenceIndex++; // Move active index to the newly cloned pattern
+        selectedPatternId = clonedData.id; // Select the new clone in the list
 
-        populatePatternEditor(); // Re-populate editor with cloned data
+        renderPatternEditor(); // Re-render editor with cloned data
         calculateTotalWorkoutTime();
         focusOnTop();
       };
 
       const movePattern = (index, direction) => {
-          // No need to save activePatternState here, as move/delete are for list view
           const patternIdToSelect = sequences[index].id;
 
           if (direction === 'up' && index > 0) {
               [sequences[index], sequences[index - 1]] = [sequences[index - 1], sequences[index]];
+              if (activeSequenceIndex === index) activeSequenceIndex--;
+              else if (activeSequenceIndex === index - 1) activeSequenceIndex++;
           } else if (direction === 'down' && index < sequences.length - 1) {
               [sequences[index], sequences[index + 1]] = [sequences[index + 1], sequences[index]];
+              if (activeSequenceIndex === index) activeSequenceIndex++;
+              else if (activeSequenceIndex === index + 1) activeSequenceIndex--;
           }
-          // activePatternId remains the same if it was already selected and not directly moved
+          selectedPatternId = patternIdToSelect;
           renderAccordionView(); // Re-render the list to show new order
           calculateTotalWorkoutTime();
       };
@@ -1050,85 +1083,94 @@
               sequences = [];
               sequences.push({ ...getNewSequenceData(), id: currentPatternId });
               sequences[0].patternName = "Pattern 1";
-              activePatternId = null; // No pattern active after reset
+              activeSequenceIndex = 0; // The single pattern becomes active at index 0
+              selectedPatternId = sequences[0].id;
               showAlert('Pattern Reset', 'Last pattern reset to default settings.');
-              showView('main'); // Go back to main accordion view
+              if (patternEditorContainer.classList.contains('hidden')) {
+                  showView('main'); // Ensure main view is rendered to show the single pattern
+              } else {
+                  renderPatternEditor(); // Re-render editor with reset pattern
+              }
               calculateTotalWorkoutTime();
               return;
           }
 
-          // Perform the deletion
           sequences.splice(indexToDelete, 1);
-          activePatternId = null; // Always clear activePatternId on delete from list
-          showView('main'); // Always go back to main accordion view after deletion
+
+          // Adjust activeSequenceIndex based on the deletion
+          if (activeSequenceIndex === indexToDelete) {
+              activeSequenceIndex = Math.max(0, indexToDelete - 1);
+              if (sequences.length === 0) activeSequenceIndex = -1;
+          } else if (activeSequenceIndex > indexToDelete) {
+              activeSequenceIndex--;
+          }
+
+          selectedPatternId = activeSequenceIndex !== -1 ? sequences[activeSequenceIndex].id : null;
+
+          if (sequences.length === 0 || activeSequenceIndex === -1) {
+              showView('main');
+          } else if (!patternEditorContainer.classList.contains('hidden') && sequences[activeSequenceIndex]) {
+              renderPatternEditor(); // Re-render the new active sequence in editor if still in editor view
+          } else {
+            showView('main'); // Go back to main accordion view
+          }
           calculateTotalWorkoutTime();
           focusOnTop();
       };
 
 
       const resetCurrentSequence = () => {
-          if (!activePatternId) {
+          if (activeSequenceIndex === -1 || sequences.length === 0) {
             showAlert('Reset Error', 'No pattern selected to reset.');
             return;
           }
-          const patternIndex = sequences.findIndex(p => p.id === activePatternId);
-          if (patternIndex === -1) return;
-
-          const currentId = sequences[patternIndex].id;
-          sequences[patternIndex] = { ...getNewSequenceData(), id: currentId };
-          sequences[patternIndex].patternName = `Pattern ${patternIndex + 1}`;
-          populatePatternEditor(); // Re-populate editor with reset data
+          const currentId = sequences[activeSequenceIndex].id;
+          sequences[activeSequenceIndex] = { ...getNewSequenceData(), id: currentId };
+          sequences[activeSequenceIndex].patternName = `Pattern ${activeSequenceIndex + 1}`;
+          selectedPatternId = sequences[activeSequenceIndex].id;
+          renderPatternEditor(); // Re-populate editor with reset data
           calculateTotalWorkoutTime();
       };
 
       // Function to handle pattern name editing in the editor screen
-      const editPatternNameInEditor = () => {
-          // Make the display H3 element editable
-          editorPatternNameDisplay.contentEditable = "true";
-          editorPatternNameDisplay.focus(); // Focus on the editable element
-          // Select all text in the editable element (optional, for convenience)
-          const range = document.createRange();
-          range.selectNodeContents(editorPatternNameDisplay);
-          const selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
+      const editPatternName = (currentData, displayElement) => {
+          setInteractionMode(null); // Ensure modes are off
+
+          const inputElement = document.createElement('input');
+          inputElement.type = 'text';
+          inputElement.value = currentData.patternName;
+          inputElement.className = 'text-xl font-bold text-indigo-700 dark:text-indigo-300 w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1';
+
+          displayElement.parentNode.replaceChild(inputElement, displayElement);
+          inputElement.focus();
 
           const saveAndRevert = () => {
-              // Get the new name directly from the content-editable H3
-              let newName = editorPatternNameDisplay.textContent.trim();
+              let newName = inputElement.value.trim();
               if (newName === '') {
                   newName = 'Unnamed Pattern';
               }
-              const currentPattern = sequences.find(p => p.id === activePatternId);
-              if (currentPattern) {
-                  currentPattern.patternName = newName;
-              }
-              editorPatternNameDisplay.contentEditable = "false"; // Make it non-editable again
-              saveCurrentPatternState();
+              currentData.patternName = newName;
+              renderPatternEditor(); // Re-render to show updated label
               calculateTotalWorkoutTime();
           };
 
-          const handleKeyDown = (e) => {
+          inputElement.addEventListener('blur', saveAndRevert);
+          inputElement.addEventListener('keydown', (e) => {
               if (e.key === 'Enter') {
-                  e.preventDefault(); // Prevent new line from being added
                   saveAndRevert();
-                  editorPatternNameDisplay.blur(); // Trigger blur to ensure save and listener removal
+                  inputElement.blur();
               }
-          };
-
-          // Add listeners directly to the editorPatternNameDisplay
-          editorPatternNameDisplay.addEventListener('blur', saveAndRevert, { once: true });
-          editorPatternNameDisplay.addEventListener('keydown', handleKeyDown, { once: true });
+          });
       };
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS (for the separate editor) ---
       const savePatternConfig = () => {
-        const patternToSave = sequences.find(p => p.id === activePatternId);
+        const patternToSave = sequences[activeSequenceIndex];
         if (!patternToSave) {
           showAlert('Save Error', 'No pattern selected to save.');
           return;
         }
-        saveCurrentPatternState(); // Ensure data is synced from editor fields
+        saveCurrentSequenceState(); // Ensure data is synced from editor fields
         const dataStr = JSON.stringify(patternToSave, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1162,10 +1204,9 @@
             try {
               const importedData = JSON.parse(e.target.result);
               if (isValidPatternConfig(importedData)) {
-                const patternIndex = sequences.findIndex(p => p.id === activePatternId);
-                if (patternIndex !== -1) {
-                    sequences[patternIndex] = { ...importedData, id: activePatternId };
-                    populatePatternEditor(); // Re-populate editor with imported data
+                if (activeSequenceIndex !== -1) {
+                    sequences[activeSequenceIndex] = { ...importedData, id: sequences[activeSequenceIndex].id };
+                    renderPatternEditor(); // Re-populate editor with imported data
                     showAlert('Pattern Imported', `Pattern "${importedData.patternName}" imported successfully.`);
                 } else {
                     showAlert('Import Error', 'No active pattern to import into.');
@@ -1214,7 +1255,8 @@
               const importedWorkout = JSON.parse(e.target.result);
               if (isValidWorkoutFile(importedWorkout)) {
                 sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
-                activePatternId = null;
+                activeSequenceIndex = -1; // Go back to main view
+                selectedPatternId = null; // Clear selection when loading all
                 showView('main'); // Show the main accordion view
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
                 calculateTotalWorkoutTime();
@@ -1241,7 +1283,7 @@
       const saveAllPatterns = () => {
         setInteractionMode(null); // Turn off any list modes
         if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
-          saveCurrentPatternState();
+          saveCurrentSequenceState();
         }
 
         if (sequences.length === 0) {
@@ -1287,7 +1329,8 @@
               sequences = [];
               sequences.push(getNewSequenceData());
               sequences[0].patternName = "Pattern 1";
-              activePatternId = null;
+              activeSequenceIndex = -1; // Reset to main view
+              selectedPatternId = null; // Clear selection
               showView('main');
               modal.classList.add('hidden');
               calculateTotalWorkoutTime();
@@ -1565,7 +1608,7 @@
 
         // Save current active pattern state if in editor view
         if (!patternEditorContainer.classList.contains('hidden')) {
-            saveCurrentPatternState();
+            saveCurrentSequenceState();
         }
 
         initAudioContext();
@@ -1694,6 +1737,7 @@
         document.body.classList.remove('bg-red-500');
         synth.cancel();
 
+        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon
         currentShotDisplay.textContent = 'Paused';
         progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
         console.log('pauseWorkout: Workout paused. pausedTimePassed:', pausedTimePassed, 'pausedEffectiveInterval:', pausedEffectiveInterval, 'pausedRestTimeRemaining:', pausedRestTimeRemaining);
@@ -1726,7 +1770,6 @@
                 console.log('Rest remaining:', restRemaining);
 
                 if (restRemaining <= 0) {
-                    console.log('Rest period ended. Moving to next pattern.');
                     clearInterval(shotIntervalTimer);
                     shotIntervalTimer = null;
                     currentPatternIndex++;
@@ -1934,7 +1977,7 @@
             progressBar.style.width = '100%';
 
             let restRemaining = postRestTime;
-            pausedRestTimeRemaining = postRestTime;
+            pausedRestTimeRemaining = restRemaining;
 
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) {
@@ -2062,53 +2105,67 @@
                   showConfirmationModalForDelete(patternIndex);
               }
               e.stopPropagation();
+          } else {
+              // Normal mode: clicking the header (or pattern name) opens the editor
+              if (e.target.closest('.pattern-name-display') || e.target.closest('.right-chevron')) {
+                  activeSequenceIndex = patternIndex; // Set the active pattern for the editor
+                  showView('editor'); // Navigate to editor view
+                  e.stopPropagation(); // Prevent any other clicks from propagating
+              }
           }
-          // Normal mode: handled by the specific event listener on accordion header in renderAccordionView
-          // This allows the general accordion header click to navigate to editor
       });
 
 
       // Back to List button in editor
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
-          saveCurrentPatternState(); // Save changes from editor
-          activePatternId = null; // Clear active pattern
+          saveCurrentSequenceState(); // Save changes from editor
+          activeSequenceIndex = -1; // Clear active pattern
           showView('main'); // Go back to main accordion view
       });
 
-      // Pattern Name Edit in Editor
-      document.getElementById('editor-pattern-name-display').addEventListener('click', editPatternNameInEditor);
+      // Event listeners for inputs/changes within the currently rendered editor screen (delegated to sequencesContainer)
+      sequencesContainer.addEventListener('input', (e) => {
+          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
+              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element
+              if (!currentEl) return;
 
-
-      // Event listeners for inputs/changes within the currently rendered editor screen
-      activePatternEditorContent.addEventListener('input', (e) => {
-          // No need to check activePatternId here as this listener is only for the visible editor
-          if (e.target.id === 'editor-shot-options-input') updateEditorShotOptionsDisplay();
-          else if (e.target.id === 'editor-intro-message-input' || e.target.id === 'editor-outro-message-input' || e.target.id === 'editor-announce-shots-checkbox') updateEditorNarrationDisplay();
-          else if (e.target.id === 'editor-shot-interval-slider' || e.target.id === 'editor-random-offset-slider' || e.target.id === 'editor-next-shot-announcement-slider') {
-              updateEditorIntervalDisplay();
-              if (e.target.id === 'editor-shot-interval-slider') {
-                handleEditorAnnounceShotsChange();
-                const currentPattern = sequences.find(p => p.id === activePatternId);
-                if (currentPattern && currentPattern.limitType === 'time') {
-                    handleEditorLimitTypeChange(); // Re-evaluate limits if time-based and interval changes
-                }
+              if (e.target.closest('#limitTypeSelect')) {
+                  handleLimitTypeChange(currentEl);
+              } else {
+                  saveCurrentSequenceState();
               }
-          }
-          else if (e.target.id === 'editor-pattern-limit-slider') updateEditorLimitsDisplay();
-          else if (e.target.id === 'editor-post-sequence-rest-slider') updateEditorPostRestDisplay();
-          saveCurrentPatternState();
-      });
 
-      activePatternEditorContent.addEventListener('change', (e) => {
-          // No need to check activePatternId here as this listener is only for the visible editor
-          if (e.target.id === 'editor-limit-type-select') {
-              handleEditorLimitTypeChange();
-          } else if (e.target.name === 'editorSeriesOrder') {
-              updateEditorSequencingDisplay();
-          } else if (e.target.id === 'editor-announce-shots-checkbox') {
-              handleEditorAnnounceShotsChange();
+              if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
+              else if (e.target.closest('#introMessage') || e.target.closest('#outroMessage') || e.target.closest('#announceShots')) updateNarrationDisplay(currentEl);
+              else if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
+                  updateIntervalDisplay(currentEl);
+                  // Recalculate limit if type is time and interval changed
+                  if (sequences[activeSequenceIndex].limitType === 'time') {
+                     handleLimitTypeChange(currentEl); // This will re-evaluate patternLimit based on new interval
+                  }
+                  // Also re-evaluate nextShotAnnouncement max if shotInterval changes
+                  if (e.target.closest('#shotInterval')) {
+                    handleAnnounceShotsChange(currentEl); // Update max for nextShotAnnouncement based on new interval
+                  }
+              }
+              else if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
+              else if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
           }
-          saveCurrentPatternState();
+      });
+      sequencesContainer.addEventListener('change', (e) => {
+          if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
+              const currentEl = sequencesContainer.firstChild;
+              if (!currentEl) return;
+
+              if (e.target.closest('#limitTypeSelect')) {
+                  handleLimitTypeChange(currentEl);
+              } else {
+                  saveCurrentSequenceState();
+              }
+              
+              if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
+              if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
+          }
       });
 
       // Individual pattern action buttons in the editor
@@ -2134,7 +2191,8 @@
             sequences.push(getNewSequenceData());
             sequences[0].patternName = "Pattern 1";
         }
-        activePatternId = null; // Start with no pattern active in editor
+        activeSequenceIndex = -1; // Start with no pattern active in editor
+        selectedPatternId = sequences[0].id; // Select the first pattern by default
         showView('main'); // Start with the main accordion list view
         calculateTotalWorkoutTime();
 
