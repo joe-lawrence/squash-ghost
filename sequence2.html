@@ -62,7 +62,7 @@
     /* Custom styles for accordion items */
     .accordion-item {
         transition: all 0.3s ease-in-out;
-        border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        /* Removed border-bottom here, relying on divide-y on parent */
     }
     .accordion-item:last-child {
         border-bottom: none; /* No border for the last item */
@@ -105,9 +105,7 @@
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
-    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">
-    main accordion
-    </h1>
+    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">update</h1>
 
     <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -143,7 +141,7 @@
 
     <!-- Main View Container (holds the accordion list of patterns) -->
     <div id="main-view-container" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
 
         <!-- Accordion Container - This will be populated dynamically by JavaScript -->
         <div id="patterns-accordion-container" class="divide-y divide-gray-200 dark:divide-gray-700">
