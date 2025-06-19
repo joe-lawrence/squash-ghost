@@ -124,19 +124,6 @@
 
     <!-- Main View Container (holds the accordion list of patterns) -->
     <div id="main-view-container" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
-
-        <!-- Global Workout Order Radios (Moved up) -->
-        <div id="global-workout-order-options" class="flex justify-center space-x-4 px-6 py-2 border-y border-gray-200 dark:border-gray-700">
-            <label class="inline-flex items-center">
-                <input type="radio" name="globalWorkoutOrder" value="in-order" class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" checked />
-                <span class="ml-2 text-gray-700 dark:text-gray-300">In order</span>
-            </label>
-            <label class="inline-flex items-center">
-                <input type="radio" name="globalWorkoutOrder" value="randomized" class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" />
-                <span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span>
-            </label>
-        </div>
 
         <!-- Accordion Container - This will be populated dynamically by JavaScript -->
         <div id="patterns-accordion-container" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -162,8 +149,23 @@
             </button>
         </div>
 
+        <h2 id="workout-config" class="text-lg font-bold text-gray-900 dark:text-white text-center mb-1">Workout Config</h1>
+
+        <!-- Global Workout Order Radios -->
+        <div id="global-workout-order-options" class="flex justify-center space-x-4 px-6 py-2">
+            <label class="inline-flex items-center">
+                <input type="radio" name="globalWorkoutOrder" value="in-order" class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" checked />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">In order</span>
+            </label>
+            <label class="inline-flex items-center">
+                <input type="radio" name="globalWorkoutOrder" value="randomized" class="form-radio rounded-full text-indigo-600 focus:ring-indigo-500" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">Randomized</span>
+            </label>
+        </div>
+
+
         <!-- Workout Countdown Slider -->
-        <div id="workout-countdown-container" class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div id="workout-countdown-container" class="px-6 py-4">
             <label for="workout-countdown-slider" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Workout Countdown</label>
             <div class="flex items-center space-x-4">
                 <input id="workout-countdown-slider" type="range" min="0" max="60" value="0" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
@@ -172,7 +174,7 @@
         </div>
         
         <!-- Global Workout Limit Controls -->
-        <div id="global-limit-container" class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div id="global-limit-container" class="px-6 py-4">
             <label for="global-limit-type" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Workout Limit</label>
             <select id="global-limit-type" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                 <option value="all" selected>All pattern shots</option>
