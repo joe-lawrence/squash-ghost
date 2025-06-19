@@ -1741,7 +1741,7 @@
         const updateCountdownDisplay = () => {
             currentShotDisplay.textContent = countdown;
             progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
-            playTwoToneBeep();
+            speak(countdown.toString());
         };
 
         updateCountdownDisplay();
@@ -1755,7 +1755,7 @@
                 countdownTimer = null;
                 currentShotDisplay.textContent = 'Go!';
                 progressBar.style.width = '100%';
-                playTwoToneBeep();
+                speak('Go!');
                 setTimeout(runCurrentPattern, 1000); // Start patterns after "Go!"
             }
         }, 1000);
