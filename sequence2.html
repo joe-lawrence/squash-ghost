@@ -75,14 +75,12 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Custom style for selected row */
+    /* Custom style for selected row - REMOVED LEFT BORDER */
     .selected-row {
         background-color: #e0e7ff; /* Light indigo for selection */
-        border-left: 4px solid #4f46e5; /* Accent border */
     }
     .dark .selected-row {
         background-color: #374151; /* Darker gray for dark mode selection */
-        border-left-color: #6366f1; /* Dark mode accent */
     }
   </style>
 </head>
@@ -91,6 +89,7 @@
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
+    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">update</h1>
 
     <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -116,7 +115,7 @@
         </div>
         <!-- Main content area (shot display and progress bar) - this will flex-grow and center -->
         <div class="flex-grow flex flex-col items-center justify-center px-4 pb-4">
-            <h2 id="current-pattern-name" class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6 hidden"></h2> <!-- Hidden by default -->
+            <!-- Removed current-pattern-name display as per user request -->
             <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2 mb-10"></p>
             <div class="w-full max-w-lg bg-gray-200 rounded-full h-4 dark:bg-gray-700 mb-6">
                 <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-100 ease-linear" style="width: 0%"></div>
@@ -174,9 +173,7 @@
                         <span class="pattern-name-display text-lg font-semibold text-gray-800 dark:text-gray-200 flex-grow">Pattern Name</span>
                     </div>
                     <!-- Right Justified Icon (Right Chevron - for visual expand effect, clicking header navigates) -->
-                    <svg class="right-chevron h-5 w-5 text-gray-400 flex-shrink-0 transition-transform duration-150 ease-in-out" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
-                        <path d="m9 18 6-6-6-6"/>
-                    </svg>
+                    <svg class="right-chevron h-5 w-5 text-gray-400 flex-shrink-0 transition-transform duration-150 ease-in-out" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
                 </div>
                 <!-- This body will be minimal/empty as editor is separate -->
                 <div class="accordion-body hidden p-4 text-sm text-gray-600 dark:text-gray-400">
@@ -355,7 +352,7 @@
     <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden">
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
-        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset All</button>
+        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button> <!-- Changed from Reset All to Reset -->
     </div>
 
     <!-- The Confirmation Modal (for delete/reset) -->
@@ -415,7 +412,7 @@
       const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn');
       const currentShotDisplay = document.getElementById('current-shot-display');
       const progressBar = document.getElementById('progress-bar');
-      const currentPatternNameDisplay = document.getElementById('current-pattern-name');
+      // Removed currentPatternNameDisplay as per user request
       const appTitle = document.getElementById('app-title');
 
 
@@ -655,7 +652,8 @@
           globalControls.classList.add('hidden');
           workoutViewContainer.classList.add('hidden');
           patternEditorContainer.classList.add('hidden'); // Ensure editor is hidden
-          appTitle.classList.remove('hidden');
+          // App Title visibility handling
+          appTitle.classList.remove('hidden'); // Default to visible
 
           if (view === 'main') {
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
@@ -681,6 +679,7 @@
               appContainer.classList.add('absolute', 'inset-0', 'flex', 'flex-col');
               document.body.classList.add('p-0');
               workoutViewContainer.classList.remove('hidden');
+              appTitle.classList.add('hidden'); // Hide app title on workout screen
               focusOnTop();
           }
       };
@@ -1767,7 +1766,6 @@
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
                 pausedRestTimeRemaining = restRemaining;
-                console.log('Rest remaining:', restRemaining);
 
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
@@ -1797,8 +1795,9 @@
         }
 
         const currentPattern = sequences[currentPatternIndex];
-        currentPatternNameDisplay.textContent = currentPattern.patternName;
-        currentPatternNameDisplay.classList.remove('hidden');
+        // Removed currentPatternNameDisplay.textContent and classList.remove('hidden') as per user request
+        // currentPatternNameDisplay.textContent = currentPattern.patternName;
+        // currentPatternNameDisplay.classList.remove('hidden');
 
         currentShotOptions = currentPattern.shotOptions.split('\n').filter(option => option.trim() !== '');
 
