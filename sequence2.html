@@ -134,6 +134,30 @@
                 <span id="workout-countdown-display" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 w-12 text-center">0s</span>
             </div>
         </div>
+        
+        <!-- Global Workout Limit Controls -->
+        <div id="global-limit-container" class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <label for="global-limit-type" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Workout Limit</label>
+            <select id="global-limit-type" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                <option value="all" selected>All pattern shots</option>
+                <option value="shot">Shot limit</option>
+                <option value="time">Time limit</option>
+            </select>
+            <!-- Shot Limit Slider (conditionally shown) -->
+            <div id="global-shot-limit-controls" class="mt-4 hidden">
+                <div class="flex items-center space-x-4">
+                    <input id="global-shot-limit-slider" type="range" min="0" max="100" value="0" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                    <span id="global-shot-limit-display" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 w-20 text-center">0 shots</span>
+                </div>
+            </div>
+            <!-- Time Limit Slider (conditionally shown) -->
+            <div id="global-time-limit-controls" class="mt-4 hidden">
+                <div class="flex items-center space-x-4">
+                    <input id="global-time-limit-slider" type="range" min="60" max="3599" value="60" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                    <span id="global-time-limit-display" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 w-20 text-center">01:00</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Global Workout Order Radios -->
         <div id="global-workout-order-options" class="flex justify-center space-x-4 mb-4 px-6 py-2">
@@ -411,6 +435,10 @@
       let isDeleteModeOn = false; // State for delete mode in the accordion list
       let workoutOrderMode = 'in-order'; // New state for global workout order
       let workoutCountdownTime = 0; // New state for workout countdown
+      let globalLimitType = 'all'; // 'all', 'shot', or 'time'
+      let globalShotLimit = 0;
+      let globalTimeLimit = 60;
+
 
       const mainViewContainer = document.getElementById('main-view-container');
       const patternsAccordionContainer = document.getElementById('patterns-accordion-container');
@@ -434,6 +462,15 @@
       // --- Countdown Elements ---
       const workoutCountdownSlider = document.getElementById('workout-countdown-slider');
       const workoutCountdownDisplay = document.getElementById('workout-countdown-display');
+
+      // --- Global Limit Elements ---
+      const globalLimitTypeSelect = document.getElementById('global-limit-type');
+      const globalShotLimitControls = document.getElementById('global-shot-limit-controls');
+      const globalShotLimitSlider = document.getElementById('global-shot-limit-slider');
+      const globalShotLimitDisplay = document.getElementById('global-shot-limit-display');
+      const globalTimeLimitControls = document.getElementById('global-time-limit-controls');
+      const globalTimeLimitSlider = document.getElementById('global-time-limit-slider');
+      const globalTimeLimitDisplay = document.getElementById('global-time-limit-display');
 
 
       // --- Workout View Elements ---
@@ -693,6 +730,7 @@
               globalControls.classList.remove('hidden');
               globalWorkoutOrderOptions.classList.remove('hidden'); // Ensure radios are visible
               renderAccordionView(); // Render the list
+              updateGlobalLimitControls();
               calculateTotalWorkoutTime();
               focusOnTop();
               setInteractionMode(null); // Ensure modes are off when entering main view
@@ -720,16 +758,20 @@
       // --- ESTIMATED WORKOUT TIME CALCULATION ---
       const calculateTotalWorkoutTime = () => {
           let totalTime = 0;
-          sequences.forEach(pattern => {
-              let patternDuration = 0;
-              if (pattern.limitType === 'time') {
-                  patternDuration = pattern.patternLimit;
-              } else if (pattern.limitType === 'shot') {
-                  patternDuration = pattern.patternLimit * pattern.shotInterval;
-              }
-              totalTime += patternDuration;
-              totalTime += pattern.postSequenceRest;
-          });
+          if (globalLimitType === 'time') {
+              totalTime = globalTimeLimit;
+          } else {
+            sequences.forEach(pattern => {
+                let patternDuration = 0;
+                if (pattern.limitType === 'time') {
+                    patternDuration = pattern.patternLimit;
+                } else if (pattern.limitType === 'shot') {
+                    patternDuration = pattern.patternLimit * pattern.shotInterval;
+                }
+                totalTime += patternDuration;
+                totalTime += pattern.postSequenceRest;
+            });
+          }
           totalTime += workoutCountdownTime; // Add countdown time to total
           startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
       };
@@ -743,6 +785,7 @@
               noPatternsMessage.classList.add('p-6', 'text-center', 'text-gray-500', 'dark:text-gray-400');
               noPatternsMessage.textContent = 'No patterns configured. Click the "+" button to add one.';
               patternsAccordionContainer.appendChild(noPatternsMessage);
+              updateGlobalLimitControls();
               return;
           }
 
@@ -829,6 +872,7 @@
               patternsAccordionContainer.appendChild(newAccordionItem);
           });
           toggleOtherButtons(); // Ensure global buttons react to mode changes
+          updateGlobalLimitControls();
       };
 
       /**
@@ -951,6 +995,7 @@
           currentData.postSequenceRest = parseInt(postSequenceRest.value);
 
           calculateTotalWorkoutTime();
+          updateGlobalLimitControls();
       };
 
       // --- UI UPDATE FUNCTIONS (for the separate editor screen) ---
@@ -1469,10 +1514,11 @@
     let flashTimer = null;
     let nextAnnouncementTimeout = null;
     let currentPatternShotCount = 0;
+    let totalWorkoutShots = 0;
     let currentPatternTimeElapsed = 0;
+    let globalWorkoutTimeElapsed = 0;
     let currentShotOptions = [];
     let currentShotIndex = 0;
-    let globalWorkoutTimeElapsed = 0;
 
     let isPaused = false;
     let pausedTimePassed = 0;
@@ -1717,6 +1763,7 @@
         showView('workout');
         currentPatternIndex = 0;
         globalWorkoutTimeElapsed = 0;
+        totalWorkoutShots = 0;
         isPaused = false;
         
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
@@ -1866,27 +1913,52 @@
     }
 
     function runCurrentPattern() {
-        console.log('runCurrentPattern called. isPaused:', isPaused);
         if (isPaused) {
             console.log('runCurrentPattern: PAUSED, returning immediately.');
             return;
         }
-        while (currentPatternIndex < currentWorkoutPatterns.length) {
-            const pattern = currentWorkoutPatterns[currentPatternIndex];
-            if (pattern && typeof pattern.shotOptions === 'string') {
-                const shots = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
-                if (shots.length > 0) {
-                    console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
-                    startPatternExecution(pattern, shots);
-                    return;
+
+        // Check if we've gone past the end of the patterns list
+        if (currentPatternIndex >= currentWorkoutPatterns.length) {
+            // Check if a global limit is set and not yet reached, requiring a loop.
+            const needsToLoop = (globalLimitType === 'shot' && totalWorkoutShots < globalShotLimit) ||
+                                (globalLimitType === 'time' && globalWorkoutTimeElapsed < globalTimeLimit);
+
+            if (needsToLoop) {
+                console.log("Global limit not reached. Looping patterns.");
+                currentPatternIndex = 0; // Reset index to loop from the beginning
+                if (workoutOrderMode === 'randomized') {
+                    currentWorkoutPatterns = shuffleArray(sequences); // Re-shuffle for the next loop
+                    console.log("Re-shuffled patterns for next loop.");
                 }
+                // Fall-through to re-run with index 0
+            } else {
+                // No more loops needed, workout is complete.
+                console.log('runCurrentPattern: All patterns completed and global limit met (or not set). Ending workout.');
+                handleWorkoutCompletion();
+                return; // Exit function
             }
-            console.log(`runCurrentPattern: Skipping pattern ${currentPatternIndex} as it has no valid shots.`);
-            currentPatternIndex++;
         }
-        console.log('runCurrentPattern: No more valid patterns found. Ending workout.');
-        handleWorkoutCompletion();
+
+        const pattern = currentWorkoutPatterns[currentPatternIndex];
+        
+        // Check if the current pattern is valid and has shots
+        if (pattern && typeof pattern.shotOptions === 'string') {
+            const shots = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
+            if (shots.length > 0) {
+                // Found a valid pattern with shots, so execute it.
+                console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
+                startPatternExecution(pattern, shots);
+                return; // Exit, the pattern is now running.
+            }
+        }
+        
+        // If pattern is invalid or has no shots, skip to the next one.
+        console.log(`runCurrentPattern: Skipping pattern ${currentPatternIndex} as it is invalid or has no shots.`);
+        currentPatternIndex++;
+        runCurrentPattern(); // Recursively call to process the next index.
     }
+
 
     function startPatternExecution(pattern, shots) {
         currentShotOptions = shots;
@@ -1957,21 +2029,28 @@
 
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
+            
+            if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
+                handleWorkoutCompletion();
+                return;
+            }
 
             if (timePassed >= effectiveInterval) {
                 clearInterval(currentPatternTimer);
                 currentPatternShotCount++;
+                totalWorkoutShots++;
+                
+                if (shouldEndPattern(pattern)) {
+                    endPattern(pattern);
+                    return;
+                }
 
                 const nextShotToDisplay = currentShotOptions[currentShotIndex];
                 currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
-
-                if (shouldEndPattern(pattern)) {
-                    endPattern(pattern);
-                    return;
-                }
+                
                 startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
         }, 100);
@@ -1979,6 +2058,9 @@
 
 
     function shouldEndPattern(pattern) {
+        if (globalLimitType === 'shot' && totalWorkoutShots >= globalShotLimit) {
+            return true;
+        }
         if (pattern.limitType === 'shot' && currentPatternShotCount >= pattern.patternLimit) {
             return true;
         }
@@ -2013,6 +2095,11 @@
                 }
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
+                if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
+                    clearInterval(shotIntervalTimer);
+                    handleWorkoutCompletion();
+                    return;
+                }
                 pausedRestTimeRemaining = restRemaining;
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
@@ -2081,12 +2168,49 @@
     }
 
       // --- EVENT LISTENERS ---
+      
+      const updateGlobalLimitControls = () => {
+        globalLimitType = globalLimitTypeSelect.value;
+        globalShotLimitControls.classList.toggle('hidden', globalLimitType !== 'shot');
+        globalTimeLimitControls.classList.toggle('hidden', globalLimitType !== 'time');
+
+        if (globalLimitType === 'shot') {
+            const minShots = sequences.reduce((sum, p) => sum + (p.limitType === 'shot' ? p.patternLimit : 0), 0);
+            globalShotLimitSlider.min = minShots;
+            if (globalShotLimit < minShots) {
+                globalShotLimit = minShots;
+            }
+            globalShotLimitSlider.value = globalShotLimit;
+            globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
+        } else if (globalLimitType === 'time') {
+            const minTime = sequences.reduce((sum, p) => sum + (p.limitType === 'time' ? p.patternLimit : 0), 0);
+            globalTimeLimitSlider.min = minTime > 0 ? minTime : 60;
+            if (globalTimeLimit < globalTimeLimitSlider.min) {
+                globalTimeLimit = parseInt(globalTimeLimitSlider.min);
+            }
+            globalTimeLimitSlider.value = globalTimeLimit;
+            globalTimeLimitDisplay.textContent = formatTime(globalTimeLimit);
+        }
+        calculateTotalWorkoutTime();
+      };
 
       // Countdown slider
       workoutCountdownSlider.addEventListener('input', (e) => {
         workoutCountdownTime = parseInt(e.target.value);
         workoutCountdownDisplay.textContent = `${workoutCountdownTime}s`;
         calculateTotalWorkoutTime();
+      });
+
+      // Global Limit Controls
+      globalLimitTypeSelect.addEventListener('change', updateGlobalLimitControls);
+      globalShotLimitSlider.addEventListener('input', (e) => {
+          globalShotLimit = parseInt(e.target.value);
+          globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
+      });
+      globalTimeLimitSlider.addEventListener('input', (e) => {
+          globalTimeLimit = parseInt(e.target.value);
+          globalTimeLimitDisplay.textContent = formatTime(globalTimeLimit);
+          calculateTotalWorkoutTime();
       });
 
       // Global click listener to turn off modes if an unrelated element is clicked
