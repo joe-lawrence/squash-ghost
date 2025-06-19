@@ -89,7 +89,6 @@
   <div id="app-container" class="w-full">
     <!-- App Title -->
     <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-1">Squash Ghoster</h1>
-    <h1 id="fix" class="text-normal text-gray-900 dark:text-white text-center mb-8">build: rando</h1>
 
     <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -126,6 +125,15 @@
     <!-- Main View Container (holds the accordion list of patterns) -->
     <div id="main-view-container" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 p-6">Workout Patterns</h2>
+
+        <!-- Workout Countdown Slider -->
+        <div id="workout-countdown-container" class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <label for="workout-countdown-slider" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Workout Countdown</label>
+            <div class="flex items-center space-x-4">
+                <input id="workout-countdown-slider" type="range" min="0" max="60" value="0" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                <span id="workout-countdown-display" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 w-12 text-center">0s</span>
+            </div>
+        </div>
 
         <!-- Global Workout Order Radios -->
         <div id="global-workout-order-options" class="flex justify-center space-x-4 mb-4 px-6 py-2">
@@ -264,7 +272,7 @@
                                     </span>
                                     <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                                 </button>
-                            </h2>
+                            <h2>
                             <div id="accordion-sequencing-body" class="hidden" aria-labelledby="accordion-heading-sequencing">
                                 <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                     <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">How to iterate through the pattern options</p>
@@ -284,7 +292,7 @@
                                     </span>
                                     <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                                 </button>
-                            </h2>
+                            <h2>
                             <div id="accordion-interval-body" class="hidden" aria-labelledby="accordion-heading-interval">
                                 <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                     <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Time between each shot</p>
@@ -328,7 +336,7 @@
                                     </span>
                                     <svg data-accordion-icon class="h-3 w-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" /></svg>
                                 </button>
-                            </h2>
+                            <h2>
                             <div id="accordion-post-rest-body" class="hidden rounded-b-lg border border-t-0 border-gray-200 p-3 dark:border-gray-700">
                                 <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Resting period after this pattern</p>
                                 <input type="range" id="postSequenceRest" min="0" max="300" class="w-full accent-blue-600" />
@@ -402,6 +410,7 @@
       let isMoveModeOn = false; // State for move mode in the accordion list
       let isDeleteModeOn = false; // State for delete mode in the accordion list
       let workoutOrderMode = 'in-order'; // New state for global workout order
+      let workoutCountdownTime = 0; // New state for workout countdown
 
       const mainViewContainer = document.getElementById('main-view-container');
       const patternsAccordionContainer = document.getElementById('patterns-accordion-container');
@@ -419,8 +428,12 @@
       const startWorkoutButton = document.getElementById('start-workout-btn');
       const startWorkoutContainer = document.getElementById('start-workout-container');
 
-      const globalWorkoutOrderOptions = document.getElementById('global-workout-order-options'); // New element reference
-      const globalWorkoutOrderRadios = globalWorkoutOrderOptions.querySelectorAll('input[name="globalWorkoutOrder"]'); // New element reference
+      const globalWorkoutOrderOptions = document.getElementById('global-workout-order-options');
+      const globalWorkoutOrderRadios = globalWorkoutOrderOptions.querySelectorAll('input[name="globalWorkoutOrder"]');
+
+      // --- Countdown Elements ---
+      const workoutCountdownSlider = document.getElementById('workout-countdown-slider');
+      const workoutCountdownDisplay = document.getElementById('workout-countdown-display');
 
 
       // --- Workout View Elements ---
@@ -717,6 +730,7 @@
               totalTime += patternDuration;
               totalTime += pattern.postSequenceRest;
           });
+          totalTime += workoutCountdownTime; // Add countdown time to total
           startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
       };
 
@@ -1448,6 +1462,7 @@
 
 
     // --- Workout Logic ---
+    let countdownTimer = null;
     let currentPatternIndex = 0;
     let currentPatternTimer = null;
     let shotIntervalTimer = null;
@@ -1464,6 +1479,7 @@
     let pausedEffectiveInterval = 0;
     let pausedRestTimeRemaining = 0;
     let pausedShotDisplayContent = '';
+    let pausedCountdownTimeRemaining = 0;
 
     let isToggleDebouncing = false;
     const DEBOUNCE_TIME = 300;
@@ -1679,58 +1695,30 @@
 
 
     async function startWorkout() {
-        console.log('startWorkout called. isPaused:', isPaused);
         if (sequences.length === 0) {
             showAlert('Workout Error', 'Please create at least one workout pattern first!');
             return;
         }
-
-        // Save current active pattern state if in editor view
         if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
         }
-
         initAudioContext();
         initSpeechSynthesis();
-
         isRoutineRunning = true;
         startSpeechKeepAlive();
-
         if (audioContext && audioContext.state === 'suspended') {
-            try {
-                await audioContext.resume();
-                console.log('startWorkout: AudioContext resumed successfully before workout start.');
-            } catch (error) {
-                console.error("startWorkout: Error resuming AudioContext at startWorkout:", error);
-                showAlert('Audio Error', 'Could not resume audio. Please try again.');
-                stopWorkout();
-                return;
-            }
-        } else if (audioContext && audioContext.state === 'closed') {
-             initAudioContext();
-             try {
-                await audioContext.resume();
-                console.log('startWorkout: AudioContext re-initialized and resumed successfully before workout start.');
-             } catch (error) {
-                console.error("startWorkout: Error re-initializing and resuming AudioContext at startWorkout:", error);
-                showAlert('Audio Error', 'Could not re-initialize audio. Please try again.');
-                stopWorkout();
-                return;
-             }
+            await audioContext.resume();
         }
-
-        // --- BUG FIX & CLEANUP START ---
-        // Determine the order of patterns for this workout
         if (workoutOrderMode === 'randomized') {
-            // The shuffleArray function now returns a new shuffled array.
             currentWorkoutPatterns = shuffleArray(sequences);
         } else {
-            // Use a copy to avoid modifying the original 'sequences' array during workout
             currentWorkoutPatterns = [...sequences];
         }
-        // --- BUG FIX & CLEANUP END ---
-
-
+        showView('workout');
+        currentPatternIndex = 0;
+        globalWorkoutTimeElapsed = 0;
+        isPaused = false;
+        
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
         stopWorkoutBtn.onclick = stopWorkout;
         stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700');
@@ -1740,56 +1728,76 @@
         pauseResumeWorkoutBtn.onclick = togglePauseResume;
         pauseResumeWorkoutBtn.classList.remove('hidden');
 
-        showView('workout');
-        currentPatternIndex = 0;
-        globalWorkoutTimeElapsed = 0;
-        isPaused = false;
-        runCurrentPattern();
+        if (workoutCountdownTime > 0) {
+            startCountdown(workoutCountdownTime);
+        } else {
+            runCurrentPattern();
+        }
+    }
+
+    function startCountdown(timeRemaining) {
+        let countdown = timeRemaining;
+        
+        const updateCountdownDisplay = () => {
+            currentShotDisplay.textContent = countdown;
+            progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
+            playTwoToneBeep();
+        };
+
+        updateCountdownDisplay();
+
+        countdownTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                updateCountdownDisplay();
+            } else {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+                currentShotDisplay.textContent = 'Go!';
+                progressBar.style.width = '100%';
+                playTwoToneBeep();
+                setTimeout(runCurrentPattern, 1000); // Start patterns after "Go!"
+            }
+        }, 1000);
     }
 
     function stopWorkout() {
         console.log('stopWorkout: Stopping workout...');
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+        }
         if (currentPatternTimer) {
             clearInterval(currentPatternTimer);
             currentPatternTimer = null;
-            console.log('stopWorkout: Cleared currentPatternTimer.');
         }
         if (shotIntervalTimer) {
             clearInterval(shotIntervalTimer);
             shotIntervalTimer = null;
-            console.log('stopWorkout: Cleared shotIntervalTimer.');
         }
         if (flashTimer) {
             clearTimeout(flashTimer);
             flashTimer = null;
-            console.log('stopWorkout: Cleared flashTimer.');
         }
         if (nextAnnouncementTimeout) {
             clearTimeout(nextAnnouncementTimeout);
             nextAnnouncementTimeout = null;
-            console.log('stopWorkout: Cleared nextAnnouncementTimeout.');
         }
 
         document.body.classList.remove('bg-red-500');
         isRoutineRunning = false;
         stopSpeechKeepAlive();
-        synth.cancel();
+        if(synth) synth.cancel();
         showView('main'); // Return to main view
         calculateTotalWorkoutTime();
         console.log('stopWorkout: Workout stopped.');
     }
 
     function togglePauseResume() {
-        if (isToggleDebouncing) {
-            console.log('togglePauseResume: Debouncing, ignoring click.');
-            return;
-        }
+        if (isToggleDebouncing) return;
         isToggleDebouncing = true;
-        setTimeout(() => {
-            isToggleDebouncing = false;
-        }, DEBOUNCE_TIME);
+        setTimeout(() => { isToggleDebouncing = false; }, DEBOUNCE_TIME);
 
-        console.log('togglePauseResume called. isPaused (before toggle):', isPaused);
         if (isPaused) {
             resumeWorkout();
         } else {
@@ -1800,38 +1808,28 @@
     function pauseWorkout() {
         console.log('pauseWorkout: Pausing workout...');
         isPaused = true;
-
-        pausedShotDisplayContent = currentShotDisplay.textContent;
-
-        if (currentPatternTimer) {
-            console.log('pauseWorkout: Clearing currentPatternTimer:', currentPatternTimer);
-            clearInterval(currentPatternTimer);
-            currentPatternTimer = null;
+        
+        if(countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            pausedCountdownTimeRemaining = parseInt(currentShotDisplay.textContent);
+        } else {
+            pausedShotDisplayContent = currentShotDisplay.textContent;
+            if (currentPatternTimer) clearInterval(currentPatternTimer);
+            if (shotIntervalTimer) clearInterval(shotIntervalTimer);
+            if (flashTimer) clearTimeout(flashTimer);
+            if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
+            currentPatternTimer = shotIntervalTimer = flashTimer = nextAnnouncementTimeout = null;
         }
-        if (shotIntervalTimer) {
-            console.log('pauseWorkout: Clearing shotIntervalTimer (rest):', shotIntervalTimer);
-            clearInterval(shotIntervalTimer);
-            shotIntervalTimer = null;
-        }
-        if (flashTimer) {
-            console.log('pauseWorkout: Clearing flashTimer:', flashTimer);
-            clearTimeout(flashTimer);
-            flashTimer = null;
-        }
-        if (nextAnnouncementTimeout) {
-            console.log('pauseWorkout: Clearing nextAnnouncementTimeout:', nextAnnouncementTimeout);
-            clearTimeout(nextAnnouncementTimeout);
-            nextAnnouncementTimeout = null;
-        }
+        
         stopSpeechKeepAlive();
-
         document.body.classList.remove('bg-red-500');
-        synth.cancel();
+        if(synth) synth.cancel();
 
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon
         currentShotDisplay.textContent = 'Paused';
-        progressBar.style.width = `${(pausedTimePassed / pausedEffectiveInterval) * 100}%`;
-        console.log('pauseWorkout: Workout paused. pausedTimePassed:', pausedTimePassed, 'pausedEffectiveInterval:', pausedEffectiveInterval, 'pausedRestTimeRemaining:', pausedRestTimeRemaining);
+        // Do not reset progress bar here for better UX when resuming
+        console.log('pauseWorkout: Workout paused.');
     }
 
     function resumeWorkout() {
@@ -1840,17 +1838,14 @@
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
         startSpeechKeepAlive();
 
-        const currentPattern = currentWorkoutPatterns[currentPatternIndex];
-
-        if (pausedShotDisplayContent === 'Rest!') {
-            console.log('resumeWorkout: Resuming Rest! period.');
+        if (pausedCountdownTimeRemaining > 0) {
+            startCountdown(pausedCountdownTimeRemaining);
+            pausedCountdownTimeRemaining = 0;
+        } else if (pausedShotDisplayContent === 'Rest!') {
             let restRemaining = pausedRestTimeRemaining;
             currentShotDisplay.textContent = 'Rest!';
-
             shotIntervalTimer = setInterval(() => {
-                console.log('Rest interval tick. isPaused:', isPaused, 'shotIntervalTimer ID:', shotIntervalTimer);
                 if (isPaused) {
-                    console.log('Rest interval tick: Paused, clearing shotIntervalTimer and returning.');
                     clearInterval(shotIntervalTimer);
                     shotIntervalTimer = null;
                     return;
@@ -1858,7 +1853,6 @@
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
                 pausedRestTimeRemaining = restRemaining;
-
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
                     shotIntervalTimer = null;
@@ -1866,105 +1860,59 @@
                     runCurrentPattern();
                 }
             }, 1000);
-            console.log('resumeWorkout: New shotIntervalTimer set for rest:', shotIntervalTimer);
         } else {
-            console.log('resumeWorkout: Resuming Shot Interval.');
-            startShotInterval(currentPattern, pausedTimePassed, pausedEffectiveInterval, pausedShotDisplayContent);
+            startShotInterval(currentWorkoutPatterns[currentPatternIndex], pausedTimePassed, pausedEffectiveInterval, pausedShotDisplayContent);
         }
     }
 
-    // --- CODE CLEANUP: Refactored runCurrentPattern for clarity and robustness ---
     function runCurrentPattern() {
         console.log('runCurrentPattern called. isPaused:', isPaused);
         if (isPaused) {
             console.log('runCurrentPattern: PAUSED, returning immediately.');
             return;
         }
-
-        // Find the next pattern in the list that has actual shots to perform.
         while (currentPatternIndex < currentWorkoutPatterns.length) {
             const pattern = currentWorkoutPatterns[currentPatternIndex];
-
-            // Check if the pattern is valid and its shotOptions can be parsed into a non-empty list.
             if (pattern && typeof pattern.shotOptions === 'string') {
                 const shots = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
                 if (shots.length > 0) {
-                    // Found a valid pattern with shots, so let's execute it.
                     console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
                     startPatternExecution(pattern, shots);
-                    return; // Exit this function; we are now running the pattern.
+                    return;
                 }
             }
-
-            // If the pattern is invalid or has no shots, log it and skip to the next one.
             console.log(`runCurrentPattern: Skipping pattern ${currentPatternIndex} as it has no valid shots.`);
             currentPatternIndex++;
         }
-
-        // If the while loop finishes, it means no more valid patterns were found in the list.
         console.log('runCurrentPattern: No more valid patterns found. Ending workout.');
         handleWorkoutCompletion();
     }
 
     function startPatternExecution(pattern, shots) {
-        // This function now contains the logic to execute a single, validated pattern.
-        currentShotOptions = shots; // Use the pre-parsed shots.
-
+        currentShotOptions = shots;
         if (pattern.seriesOrder === 'randomized') {
-            // The updated shuffleArray returns a new array, so we must re-assign.
             currentShotOptions = shuffleArray(currentShotOptions);
         }
         currentPatternShotCount = 0;
         currentPatternTimeElapsed = 0;
-
         if (pattern.announceShots && pattern.introMessage.trim()) {
             speak(pattern.introMessage);
         }
-
         const firstShotToDisplay = currentShotOptions[0];
         currentShotIndex = 1 % currentShotOptions.length;
         if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-            // Re-shuffle if we've wrapped around in randomized mode.
             currentShotOptions = shuffleArray(currentShotOptions);
         }
         startShotInterval(pattern, 0, -1, firstShotToDisplay);
     }
-    // --- END REFACTOR ---
-
 
     function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
-        console.log('startShotInterval called. isPaused:', isPaused);
-        if (isPaused) {
-            console.log('startShotInterval: PAUSED, returning immediately.');
-            return;
-        }
+        if (isPaused) return;
 
-        if (currentPatternTimer) {
-            clearInterval(currentPatternTimer);
-            currentPatternTimer = null;
-            console.log('startShotInterval: Cleared existing currentPatternTimer.');
-        }
-        if (shotIntervalTimer) {
-            clearInterval(shotIntervalTimer);
-            shotIntervalTimer = null;
-            console.log('startShotInterval: Cleared existing shotIntervalTimer.');
-        }
-        if (flashTimer) {
-            clearTimeout(flashTimer);
-            flashTimer = null;
-            console.log('startShotInterval: Cleared existing flashTimer.');
-        }
-        if (nextAnnouncementTimeout) {
-            clearTimeout(nextAnnouncementTimeout);
-            nextAnnouncementTimeout = null;
-            console.log('startShotInterval: Cleared existing nextAnnouncementTimeout.');
-        }
-        if (nextSilentUtteranceTimeout) {
-            clearTimeout(nextSilentUtteranceTimeout);
-            nextSilentUtteranceTimeout = null;
-            console.log('startShotInterval: Cleared existing nextSilentUtteranceTimeout.');
-        }
-
+        if (currentPatternTimer) clearInterval(currentPatternTimer);
+        if (shotIntervalTimer) clearInterval(shotIntervalTimer);
+        if (flashTimer) clearTimeout(flashTimer);
+        if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
 
         const baseInterval = parseFloat(pattern.shotInterval);
         const randomOffset = parseFloat(pattern.randomOffset);
@@ -1986,62 +1934,37 @@
 
         let announcementSpokenForThisInterval = false;
         if (pattern.announceShots && nextShotAnnouncementTime > 0) {
-            if (initialTimePassed === 0) { // Schedule if starting fresh
+            const delay = (initialTimePassed < nextShotAnnouncementTime) ? (nextShotAnnouncementTime - initialTimePassed) * 1000 : 0;
+            if(delay > 0){
                 nextAnnouncementTimeout = setTimeout(() => {
-                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
+                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '') {
                         speak(currentDisplayedShot);
                         announcementSpokenForThisInterval = true;
                     }
-                }, nextShotAnnouncementTime * 1000);
-            } else if (initialTimePassed < nextShotAnnouncementTime) { // If resuming, reschedule if not already passed
-                 nextAnnouncementTimeout = setTimeout(() => {
-                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
-                        speak(currentDisplayedShot);
-                        announcementSpokenForThisInterval = true;
-                    }
-                }, (nextShotAnnouncementTime - initialTimePassed) * 1000);
-            } else { // If resuming and already passed announcement time
-                announcementSpokenForThisInterval = true;
+                }, delay);
             }
         }
 
-
-        function timerTick() {
+        currentPatternTimer = setInterval(() => {
             if (isPaused) {
                 clearInterval(currentPatternTimer);
-                currentPatternTimer = null;
                 return;
             }
             timePassed += 0.1;
             currentPatternTimeElapsed += 0.1;
             globalWorkoutTimeElapsed += 0.1;
-
             pausedTimePassed = timePassed;
 
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
 
-            if (pattern.announceShots && !announcementSpokenForThisInterval &&
-                nextShotAnnouncementTime > 0 &&
-                timePassed >= nextShotAnnouncementTime &&
-                timePassed < effectiveInterval
-            ) {
-                if (currentDisplayedShot && currentDisplayedShot.trim() !== '' && currentDisplayedShot !== 'No shots defined for this pattern') {
-                    speak(currentDisplayedShot);
-                    announcementSpokenForThisInterval = true;
-                }
-            }
-
             if (timePassed >= effectiveInterval) {
                 clearInterval(currentPatternTimer);
-                currentPatternTimer = null;
                 currentPatternShotCount++;
 
                 const nextShotToDisplay = currentShotOptions[currentShotIndex];
                 currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-                    // --- BUG FIX & CLEANUP ---
-                    // Re-assign the result of shuffleArray
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
 
@@ -2051,9 +1974,7 @@
                 }
                 startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
-        }
-
-        currentPatternTimer = setInterval(timerTick, 100);
+        }, 100);
     }
 
 
@@ -2068,12 +1989,12 @@
     }
 
     function endPattern(pattern) {
-        if (currentPatternTimer) { clearInterval(currentPatternTimer); currentPatternTimer = null; }
-        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); shotIntervalTimer = null; }
-        if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
-        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
+        if (currentPatternTimer) { clearInterval(currentPatternTimer); }
+        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
+        if (flashTimer) { clearTimeout(flashTimer); }
+        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         document.body.classList.remove('bg-red-500');
-        synth.cancel();
+        if(synth) synth.cancel();
 
         if (pattern.announceShots && pattern.outroMessage.trim()) {
             speak(pattern.outroMessage);
@@ -2083,23 +2004,18 @@
         if (postRestTime > 0) {
             currentShotDisplay.textContent = "Rest!";
             progressBar.style.width = '100%';
-
             let restRemaining = postRestTime;
             pausedRestTimeRemaining = restRemaining;
-
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) {
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null;
                     return;
                 }
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
                 pausedRestTimeRemaining = restRemaining;
-
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null;
                     currentPatternIndex++;
                     runCurrentPattern();
                 }
@@ -2111,15 +2027,15 @@
     }
 
     function handleWorkoutCompletion() {
-        if (currentPatternTimer) { clearInterval(currentPatternTimer); currentPatternTimer = null; }
-        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); shotIntervalTimer = null; }
-        if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
-        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
+        if (currentPatternTimer) { clearInterval(currentPatternTimer); }
+        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
+        if (flashTimer) { clearTimeout(flashTimer); }
+        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         document.body.classList.remove('bg-red-500');
 
         isRoutineRunning = false;
         stopSpeechKeepAlive();
-        synth.cancel();
+        if(synth) synth.cancel();
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
@@ -2128,14 +2044,12 @@
         pauseResumeWorkoutBtn.onclick = null;
         pauseResumeWorkoutBtn.addEventListener('click', () => {
             currentPatternIndex = 0;
-            // Re-shuffle if workout mode is randomized for replay
             if (workoutOrderMode === 'randomized') {
-                // --- BUG FIX & CLEANUP ---
                 currentWorkoutPatterns = shuffleArray(sequences);
             } else {
                 currentWorkoutPatterns = [...sequences];
             }
-            startWorkout(); // Restart the workout
+            startWorkout();
         }, { once: true });
         pauseResumeWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
         pauseResumeWorkoutBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
@@ -2157,25 +2071,23 @@
         }, 150);
     }
 
-    // --- BUG FIX & CLEANUP: This function now returns a new shuffled array ---
-    /**
-     * Shuffles an array using the Fisher-Yates algorithm and returns a new array.
-     * @param {Array} array The array to shuffle.
-     * @returns {Array} A new array containing the same elements in a random order.
-     */
     function shuffleArray(array) {
-        // Create a copy of the array to avoid modifying the original.
         const shuffledArray = [...array];
-        // Fisher-Yates shuffle algorithm.
         for (let i = shuffledArray.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
         }
-        // Return the new shuffled array.
         return shuffledArray;
     }
 
       // --- EVENT LISTENERS ---
+
+      // Countdown slider
+      workoutCountdownSlider.addEventListener('input', (e) => {
+        workoutCountdownTime = parseInt(e.target.value);
+        workoutCountdownDisplay.textContent = `${workoutCountdownTime}s`;
+        calculateTotalWorkoutTime();
+      });
 
       // Global click listener to turn off modes if an unrelated element is clicked
       document.addEventListener('click', (e) => {
