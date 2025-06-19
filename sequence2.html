@@ -760,19 +760,40 @@
           let totalTime = 0;
           if (globalLimitType === 'time') {
               totalTime = globalTimeLimit;
-          } else {
-            sequences.forEach(pattern => {
-                let patternDuration = 0;
-                if (pattern.limitType === 'time') {
-                    patternDuration = pattern.patternLimit;
-                } else if (pattern.limitType === 'shot') {
-                    patternDuration = pattern.patternLimit * pattern.shotInterval;
-                }
-                totalTime += patternDuration;
-                totalTime += pattern.postSequenceRest;
-            });
+          } else if (globalLimitType === 'shot') {
+              // Calculate average shot interval across all patterns to estimate time for global shot limit
+              let totalIntervalSum = 0;
+              let patternCountWithShots = 0;
+              sequences.forEach(pattern => {
+                  const shotsInPattern = (pattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length;
+                  if (shotsInPattern > 0) {
+                      // Average expected interval for this pattern
+                      totalIntervalSum += (parseFloat(pattern.shotInterval) + parseFloat(pattern.randomOffset) / 2);
+                      patternCountWithShots++;
+                  }
+              });
+
+              if (patternCountWithShots > 0) {
+                  const averageShotInterval = totalIntervalSum / patternCountWithShots;
+                  totalTime = globalShotLimit * averageShotInterval;
+              } else {
+                  totalTime = 0; // No patterns with shots, so estimated time for shots is 0
+              }
+          } else { // globalLimitType === 'all'
+              sequences.forEach(pattern => {
+                  let patternDuration = 0;
+                  if (pattern.limitType === 'time') {
+                      patternDuration = pattern.patternLimit;
+                  } else if (pattern.limitType === 'shot') {
+                      // Use average interval for estimation
+                      patternDuration = pattern.patternLimit * (parseFloat(pattern.shotInterval) + parseFloat(pattern.randomOffset) / 2);
+                  }
+                  totalTime += patternDuration;
+                  totalTime += pattern.postSequenceRest;
+              });
           }
-          totalTime += workoutCountdownTime; // Add countdown time to total
+          // Do NOT add workoutCountdownTime to totalTime for display in the "Start" button.
+          // totalTime += workoutCountdownTime; // Original line - REMOVED
           startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
       };
 
@@ -2124,6 +2145,8 @@
         stopSpeechKeepAlive();
         if(synth) synth.cancel();
 
+        speak('Workout complete'); // Announce workout completion
+
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
 
@@ -2175,6 +2198,7 @@
         globalTimeLimitControls.classList.toggle('hidden', globalLimitType !== 'time');
 
         if (globalLimitType === 'shot') {
+            // Recalculate minimum shot limit based on accumulated pattern shots if individual limits are shot-based
             const minShots = sequences.reduce((sum, p) => sum + (p.limitType === 'shot' ? p.patternLimit : 0), 0);
             globalShotLimitSlider.min = minShots;
             if (globalShotLimit < minShots) {
@@ -2183,8 +2207,9 @@
             globalShotLimitSlider.value = globalShotLimit;
             globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
         } else if (globalLimitType === 'time') {
+            // Recalculate minimum time limit based on accumulated pattern times if individual limits are time-based
             const minTime = sequences.reduce((sum, p) => sum + (p.limitType === 'time' ? p.patternLimit : 0), 0);
-            globalTimeLimitSlider.min = minTime > 0 ? minTime : 60;
+            globalTimeLimitSlider.min = minTime > 0 ? minTime : 60; // Ensure minimum of 60 seconds if no time-based patterns
             if (globalTimeLimit < globalTimeLimitSlider.min) {
                 globalTimeLimit = parseInt(globalTimeLimitSlider.min);
             }
@@ -2206,6 +2231,7 @@
       globalShotLimitSlider.addEventListener('input', (e) => {
           globalShotLimit = parseInt(e.target.value);
           globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
+          calculateTotalWorkoutTime(); // Update total time on shot limit change
       });
       globalTimeLimitSlider.addEventListener('input', (e) => {
           globalTimeLimit = parseInt(e.target.value);
