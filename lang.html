@@ -195,12 +195,19 @@
 
         // Event listener for when voices are loaded
         // This is important because voices might not be immediately available
-        if (synth.onvoiceschanged !== undefined) {
-            synth.onvoiceschanged = populateVoiceList;
-        } else {
-            // Fallback for browsers that don't fire onvoiceschanged immediately
-            populateVoiceList();
-        }
+        synth.onvoiceschanged = populateVoiceList; // Always set the event listener
+
+        // Call populateVoiceList immediately on page load
+        populateVoiceList();
+
+        // Add a fallback for browsers (like some iOS Safari versions)
+        // where voices might not be immediately available or onvoiceschanged doesn't fire as expected.
+        // Check if voices are available after a short delay, and if not, try again.
+        setTimeout(() => {
+            if (synth.getVoices().length === 0) {
+                populateVoiceList();
+            }
+        }, 500); // Try again after 500ms if no voices found
 
 
         // Event listener for speech rate slider
