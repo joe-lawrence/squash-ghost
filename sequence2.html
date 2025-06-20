@@ -1376,8 +1376,9 @@
           if (sequences.length <= 1) {
               const currentPatternId = sequences.length > 0 ? sequences[0].id : null;
               sequences = [];
-              sequences.push({ ...getNewSequenceData(), id: currentPatternId });
+              sequences.push(getNewSequenceData());
               sequences[0].patternName = "Pattern 1";
+              if (currentPatternId) sequences[0].id = currentPatternId; // Retain original ID if it existed
               activeSequenceIndex = 0; // The single pattern becomes active at index 0
               selectedPatternId = sequences[0].id;
               showAlert('Pattern Reset', 'Last pattern reset to default settings.');
@@ -1917,6 +1918,7 @@
         }
     }
 
+    // Function to speak with pattern-specific voice and rate
     function speak(text) {
         if (!synth) {
             console.warn('speak: Speech Synthesis API not supported or not initialized.');
@@ -1939,7 +1941,6 @@
         if (text !== '') {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US'; // Fallback language
-            utterance.volume = 1;
 
             // Apply voice and rate from the current pattern being executed
             if (globalSpeechVoice) {
@@ -1947,6 +1948,7 @@
                 utterance.lang = globalSpeechVoice.lang; // Use voice's language
             }
             utterance.rate = globalSpeechRate;
+            utterance.volume = 1; // Always full volume for audible speech
 
             utterance.onend = () => {
                 console.log(`speak: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
@@ -1969,6 +1971,61 @@
                 console.log(`speak: Speaking: "${text}"`);
             } catch (e) {
                 console.error("speak: Error speaking audible utterance:", e);
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            }
+        }
+    }
+
+    // New: Function to speak with default voice and rate (for countdown/completion)
+    function speakDefault(text) {
+        if (!synth) {
+            console.warn('speakDefault: Speech Synthesis API not supported or not initialized.');
+            return;
+        }
+
+        if (synth.speaking || synth.pending) {
+            synth.cancel();
+            if (nextSilentUtteranceTimeout) {
+                clearTimeout(nextSilentUtteranceTimeout);
+                nextSilentUtteranceTimeout = null;
+            }
+            if (nextAnnouncementTimeout) {
+                clearTimeout(nextAnnouncementTimeout);
+                nextAnnouncementTimeout = null;
+            }
+            console.log("speakDefault: Cancelled existing speech for new default message.");
+        }
+
+        if (text !== '') {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // Explicitly set default language
+            utterance.voice = null; // Explicitly set to default system voice
+            utterance.rate = 1.0;   // Explicitly set to default rate
+            utterance.volume = 1;
+
+            utterance.onend = () => {
+                console.log(`speakDefault: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            };
+            utterance.onerror = (event) => {
+                if (event.error !== 'interrupted') {
+                    console.error(`speakDefault: Default speech synthesis error: ${event.error}`);
+                } else {
+                    console.info('speakDefault: Default SpeechSynthesisUtterance was interrupted, which is expected behavior.');
+                }
+                if (isRoutineRunning && !isPaused) {
+                    startSpeechKeepAlive();
+                }
+            };
+            try {
+                synth.speak(utterance);
+                console.log(`speakDefault: Speaking (default): "${text}"`);
+            } catch (e) {
+                console.error("speakDefault: Error speaking default utterance:", e);
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
@@ -2025,7 +2082,7 @@
         const updateCountdownDisplay = () => {
             currentShotDisplay.textContent = countdown;
             progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
-            speak(countdown.toString());
+            speakDefault(countdown.toString()); // Use speakDefault for countdown
         };
 
         updateCountdownDisplay();
@@ -2039,7 +2096,7 @@
                 countdownTimer = null;
                 currentShotDisplay.textContent = 'Go!';
                 progressBar.style.width = '100%';
-                speak('Go!');
+                speakDefault('Go!'); // Use speakDefault for "Go!"
                 setTimeout(runCurrentPattern, 1000); // Start patterns after "Go!"
             }
         }, 1000);
@@ -2186,7 +2243,7 @@
 
         const pattern = currentWorkoutPatterns[currentPatternIndex];
 
-        // Set global speech properties from the current pattern
+        // Set global speech properties from the current pattern for workout routines
         globalSpeechRate = pattern.speechRate || 1.0;
         const selectedVoiceName = pattern.speechVoice;
         const voices = synth.getVoices();
@@ -2262,7 +2319,7 @@
             if(delay > 0){
                 nextAnnouncementTimeout = setTimeout(() => {
                     if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '') {
-                        speak(currentDisplayedShot);
+                        speak(currentDisplayedShot); // Use speak for pattern-specific announcements
                         announcementSpokenForThisInterval = true;
                     }
                 }, delay);
@@ -2331,7 +2388,7 @@
         if(synth) synth.cancel();
 
         if (pattern.announceShots && pattern.outroMessage.trim()) {
-            speak(pattern.outroMessage);
+            speak(pattern.outroMessage); // Use speak for pattern-specific outro
         }
 
         const postRestTime = parseInt(pattern.postSequenceRest);
@@ -2377,7 +2434,7 @@
         stopSpeechKeepAlive();
         if(synth) synth.cancel();
 
-        speak('Workout complete'); // Announce workout completion
+        speakDefault('Workout complete'); // Use speakDefault for workout completion
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
