@@ -189,9 +189,19 @@
                 filteredVoices = voices.filter(voice => voice.lang.startsWith(langCode));
             }
 
-
-            // Add each filtered voice to the dropdown
+            // Use a Map to store unique voices based on their name to prevent duplicates
+            const uniqueVoicesMap = new Map();
             filteredVoices.forEach(voice => {
+                if (!uniqueVoicesMap.has(voice.name)) {
+                    uniqueVoicesMap.set(voice.name, voice);
+                }
+            });
+
+            // Convert map values back to an array for iteration
+            const uniqueFilteredVoices = Array.from(uniqueVoicesMap.values());
+
+            // Add each unique filtered voice to the dropdown
+            uniqueFilteredVoices.forEach(voice => {
                 const option = document.createElement('option');
                 option.textContent = `${voice.name} (${voice.lang})`;
                 option.value = voice.name; // Use voice name as value
@@ -200,7 +210,7 @@
 
             // If the previously selected voice is no longer available (due to filtering),
             // reset the utterance voice to null (default) or the first available voice.
-            if (utterance.voice && !filteredVoices.some(v => v.name === utterance.voice.name)) {
+            if (utterance.voice && !uniqueFilteredVoices.some(v => v.name === utterance.voice.name)) {
                 utterance.voice = null; // Revert to system default
                 voiceSelect.value = 'default';
             }
@@ -238,6 +248,9 @@
             if (selectedVoiceName === 'default') {
                 utterance.voice = null; // Set to null for system default
             } else {
+                // To find the voice, we should use the unique list obtained from populateVoiceList
+                // However, since synth.getVoices() always returns all available voices,
+                // we can search through that list directly.
                 utterance.voice = voices.find(voice => voice.name === selectedVoiceName);
             }
         });
