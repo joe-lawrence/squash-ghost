@@ -129,7 +129,7 @@
 
         <div class="mb-6">
             <label for="rate-slider" class="block text-gray-700 text-sm font-bold mb-2">Speech Rate: <span id="rate-value">1.0</span>x</label>
-            <input type="range" id="rate-slider" min="0.5" max="2" value="1" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <input type="range" id="rate-slider" min="0.5" max="1.5" value="1" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
         </div>
 
         <div class="mb-6">
@@ -160,11 +160,15 @@
         const currentLang = document.documentElement.lang || navigator.language || 'en-US';
         const langCode = currentLang.split('-')[0]; // Get the primary language code (e.g., 'en' from 'en-US')
 
+        // Function to detect if the user is on an iOS device
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
 
         // Function to populate voice options in the dropdown
         function populateVoiceList() {
             // Get available voices
-            const voices = synth.getVoices();
+            let voices = synth.getVoices();
             // Clear existing options
             voiceSelect.innerHTML = '';
 
@@ -174,8 +178,17 @@
             defaultOption.value = 'default';
             voiceSelect.appendChild(defaultOption);
 
-            // Filter voices by the current document's language
-            const filteredVoices = voices.filter(voice => voice.lang.startsWith(langCode));
+            let filteredVoices = [];
+
+            // Apply specific filtering for English on iOS
+            if (isIOS() && langCode === 'en') {
+                const iOSVoices = ['Karen', 'Daniel', 'Moira', 'Rishi', 'Samantha'];
+                filteredVoices = voices.filter(voice => iOSVoices.includes(voice.name));
+            } else {
+                // Filter voices by the current document's language for other cases
+                filteredVoices = voices.filter(voice => voice.lang.startsWith(langCode));
+            }
+
 
             // Add each filtered voice to the dropdown
             filteredVoices.forEach(voice => {
@@ -194,8 +207,7 @@
         }
 
         // Event listener for when voices are loaded
-        // This is important because voices might not be immediately available
-        synth.onvoiceschanged = populateVoiceList; // Always set the event listener
+        synth.onvoiceschanged = populateVoiceList;
 
         // Call populateVoiceList immediately on page load
         populateVoiceList();
@@ -237,8 +249,6 @@
 
             if (textToSpeak === '') {
                 // Show a message if no text is entered
-                // Using a simple alert for demonstration, consider a custom modal in a real app
-                // Instead of alert, we can use a custom message box
                 displayMessage('Please enter some text to speak!');
                 return;
             }
