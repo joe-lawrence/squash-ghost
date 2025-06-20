@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Speech App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff; /* White background for the card */
+            padding: 2.5rem; /* Increased padding */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Softer shadow */
+            max-width: 90%; /* Max width for responsiveness */
+            width: 500px; /* Fixed width for larger screens */
+            text-align: center;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        h1 {
+            color: #2c3e50; /* Darker blue for heading */
+            margin-bottom: 1.5rem;
+            font-size: 2.25rem; /* Larger heading */
+            font-weight: 700; /* Bold */
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px; /* Min height for textarea */
+            border: 2px solid #cbd5e0; /* Light gray border */
+            transition: border-color 0.2s ease-in-out;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo border on focus */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); /* Focus ring */
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4a5568; /* Grayish text */
+            font-weight: 600;
+            text-align: left;
+        }
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #e2e8f0; /* Light gray track */
+            border-radius: 5px;
+            outline: none;
+            transition: opacity .2s;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #6366f1; /* Indigo thumb */
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); /* Thumb shadow */
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #6366f1; /* Indigo thumb */
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); /* Thumb shadow */
+        }
+        select {
+            border: 2px solid #cbd5e0;
+            transition: border-color 0.2s ease-in-out;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%234A5568'%3e%3cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e"); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Make space for the arrow */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        button {
+            background-color: #6366f1; /* Indigo button */
+            color: #ffffff;
+            font-weight: 700;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem; /* Rounded button */
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+            border: none; /* Remove default button border */
+        }
+        button:hover {
+            background-color: #4f46e5; /* Darker indigo on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text-to-Speech</h1>
+
+        <div class="mb-6">
+            <label for="text-input" class="block text-gray-700 text-sm font-bold mb-2">Enter Text:</label>
+            <textarea id="text-input" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Type something here..."></textarea>
+        </div>
+
+        <div class="mb-6">
+            <label for="rate-slider" class="block text-gray-700 text-sm font-bold mb-2">Speech Rate: <span id="rate-value">1.0</span>x</label>
+            <input type="range" id="rate-slider" min="0.5" max="2" value="1" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <div class="mb-6">
+            <label for="voice-select" class="block text-gray-700 text-sm font-bold mb-2">Select Voice:</label>
+            <select id="voice-select" class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <!-- Voices will be populated here by JavaScript -->
+            </select>
+        </div>
+
+        <button id="speak-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline">
+            Speak
+        </button>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const textInput = document.getElementById('text-input');
+        const rateSlider = document.getElementById('rate-slider');
+        const rateValue = document.getElementById('rate-value');
+        const voiceSelect = document.getElementById('voice-select');
+        const speakButton = document.getElementById('speak-button');
+
+        // Initialize SpeechSynthesisUtterance object
+        const utterance = new SpeechSynthesisUtterance();
+        const synth = window.speechSynthesis;
+
+        // Get the current document language, default to 'en-US' if not available
+        const currentLang = document.documentElement.lang || navigator.language || 'en-US';
+        const langCode = currentLang.split('-')[0]; // Get the primary language code (e.g., 'en' from 'en-US')
+
+
+        // Function to populate voice options in the dropdown
+        function populateVoiceList() {
+            // Get available voices
+            const voices = synth.getVoices();
+            // Clear existing options
+            voiceSelect.innerHTML = '';
+
+            // Add a default option
+            const defaultOption = document.createElement('option');
+            defaultOption.textContent = 'Default System Voice';
+            defaultOption.value = 'default';
+            voiceSelect.appendChild(defaultOption);
+
+            // Filter voices by the current document's language
+            const filteredVoices = voices.filter(voice => voice.lang.startsWith(langCode));
+
+            // Add each filtered voice to the dropdown
+            filteredVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.name; // Use voice name as value
+                voiceSelect.appendChild(option);
+            });
+
+            // If the previously selected voice is no longer available (due to filtering),
+            // reset the utterance voice to null (default) or the first available voice.
+            if (utterance.voice && !filteredVoices.some(v => v.name === utterance.voice.name)) {
+                utterance.voice = null; // Revert to system default
+                voiceSelect.value = 'default';
+            }
+        }
+
+        // Event listener for when voices are loaded
+        // This is important because voices might not be immediately available
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = populateVoiceList;
+        } else {
+            // Fallback for browsers that don't fire onvoiceschanged immediately
+            populateVoiceList();
+        }
+
+
+        // Event listener for speech rate slider
+        rateSlider.addEventListener('input', () => {
+            // Update the displayed rate value
+            rateValue.textContent = rateSlider.value;
+            // Set the rate for the utterance
+            utterance.rate = parseFloat(rateSlider.value);
+        });
+
+        // Event listener for voice selection dropdown
+        voiceSelect.addEventListener('change', () => {
+            const selectedVoiceName = voiceSelect.value;
+            // Find the selected voice object
+            const voices = synth.getVoices();
+            if (selectedVoiceName === 'default') {
+                utterance.voice = null; // Set to null for system default
+            } else {
+                utterance.voice = voices.find(voice => voice.name === selectedVoiceName);
+            }
+        });
+
+        // Event listener for the Speak button
+        speakButton.addEventListener('click', () => {
+            // Get text from the textarea
+            const textToSpeak = textInput.value.trim();
+
+            if (textToSpeak === '') {
+                // Show a message if no text is entered
+                // Using a simple alert for demonstration, consider a custom modal in a real app
+                // Instead of alert, we can use a custom message box
+                displayMessage('Please enter some text to speak!');
+                return;
+            }
+
+            // Set the text for the utterance
+            utterance.text = textToSpeak;
+
+            // Stop any ongoing speech before starting a new one
+            if (synth.speaking) {
+                synth.cancel();
+            }
+
+            // Speak the text
+            synth.speak(utterance);
+        });
+
+        // Function to display a custom message (replaces alert)
+        function displayMessage(message) {
+            const messageBox = document.createElement('div');
+            messageBox.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: #333;
+                color: #fff;
+                padding: 20px;
+                border-radius: 10px;
+                z-index: 1000;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                font-family: 'Inter', sans-serif;
+                text-align: center;
+            `;
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+
+            setTimeout(() => {
+                document.body.removeChild(messageBox);
+            }, 3000); // Remove after 3 seconds
+        }
+
+
+        // Initial setup for default rate and voice
+        utterance.rate = parseFloat(rateSlider.value); // Set initial rate
+        // The voice will be set by the populateVoiceList function once voices are loaded.
+
+        // Add a placeholder if no text is present
+        window.addEventListener('load', () => {
+            if (!textInput.value) {
+                textInput.value = "Hello! Welcome to the Text-to-Speech app. Enter some text and click 'Speak'.";
+            }
+        });
+
+    </script>
+</body>
+</html>
+
