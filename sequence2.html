@@ -19,6 +19,9 @@
     /* Custom font for a clean look */
     body {
       font-family: "Inter", sans-serif;
+      /* This ensures direct changes to background-color are instant,
+         overriding any transition-colors from Tailwind for this property. */
+      transition: background-color 0s !important;
     }
     /* Style for range input thumb and track */
     input[type="range"]::-webkit-slider-thumb {
@@ -181,7 +184,7 @@
                 <span id="workout-countdown-display" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 w-12 text-center">0s</span>
             </div>
         </div>
-        
+
         <!-- Global Workout Limit Controls -->
         <div id="global-limit-container" class="px-6 py-4">
             <label for="global-limit-type" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Workout Limit</label>
@@ -1429,7 +1432,7 @@
                 }
 
                 sequences = importedData.patterns.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
-                
+
                 const settings = importedData.globalSettings;
                 workoutOrderMode = settings.workoutOrderMode || 'in-order';
                 workoutCountdownTime = settings.workoutCountdownTime || 0;
@@ -1829,7 +1832,7 @@
         globalWorkoutTimeElapsed = 0;
         totalWorkoutShots = 0;
         isPaused = false;
-        
+
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
         stopWorkoutBtn.onclick = stopWorkout;
         stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700');
@@ -1848,7 +1851,7 @@
 
     function startCountdown(timeRemaining) {
         let countdown = timeRemaining;
-        
+
         const updateCountdownDisplay = () => {
             currentShotDisplay.textContent = countdown;
             progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
@@ -1895,7 +1898,8 @@
             nextAnnouncementTimeout = null;
         }
 
-        document.body.classList.remove('bg-red-500');
+        // Revert body background immediately on stop
+        document.body.style.backgroundColor = ''; // Clear inline style
         isRoutineRunning = false;
         stopSpeechKeepAlive();
         if(synth) synth.cancel();
@@ -1919,7 +1923,7 @@
     function pauseWorkout() {
         console.log('pauseWorkout: Pausing workout...');
         isPaused = true;
-        
+
         if(countdownTimer) {
             clearInterval(countdownTimer);
             countdownTimer = null;
@@ -1932,9 +1936,10 @@
             if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
             currentPatternTimer = shotIntervalTimer = flashTimer = nextAnnouncementTimeout = null;
         }
-        
+
         stopSpeechKeepAlive();
-        document.body.classList.remove('bg-red-500');
+        // Revert body background immediately on pause
+        document.body.style.backgroundColor = ''; // Clear inline style
         if(synth) synth.cancel();
 
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon
@@ -2010,7 +2015,7 @@
         }
 
         const pattern = currentWorkoutPatterns[currentPatternIndex];
-        
+
         // Check if the current pattern is valid and has shots
         if (pattern && typeof pattern.shotOptions === 'string') {
             const shots = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
@@ -2021,7 +2026,7 @@
                 return; // Exit, the pattern is now running.
             }
         }
-        
+
         // If pattern is invalid or has no shots, skip to the next one.
         console.log(`runCurrentPattern: Skipping pattern ${currentPatternIndex} as it is invalid or has no shots.`);
         currentPatternIndex++;
@@ -2098,7 +2103,7 @@
 
             const progress = (timePassed / effectiveInterval) * 100;
             progressBar.style.width = `${progress}%`;
-            
+
             if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
                 handleWorkoutCompletion();
                 return;
@@ -2108,7 +2113,7 @@
                 clearInterval(currentPatternTimer);
                 currentPatternShotCount++;
                 totalWorkoutShots++;
-                
+
                 if (shouldEndPattern(pattern)) {
                     endPattern(pattern);
                     return;
@@ -2119,7 +2124,7 @@
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
-                
+
                 startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
         }, 100);
@@ -2142,9 +2147,9 @@
     function endPattern(pattern) {
         if (currentPatternTimer) { clearInterval(currentPatternTimer); }
         if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
-        if (flashTimer) { clearTimeout(flash); }
+        if (flashTimer) { clearTimeout(flashTimer); } // Changed from clearTimeout(flash);
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
-        document.body.classList.remove('bg-red-500');
+        document.body.style.backgroundColor = ''; // Clear inline style
         if(synth) synth.cancel();
 
         if (pattern.announceShots && pattern.outroMessage.trim()) {
@@ -2172,6 +2177,7 @@
                 pausedRestTimeRemaining = restRemaining;
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
+                    shotIntervalTimer = null;
                     currentPatternIndex++;
                     runCurrentPattern();
                 }
@@ -2187,7 +2193,7 @@
         if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
-        document.body.classList.remove('bg-red-500');
+        document.body.style.backgroundColor = ''; // Clear inline style
 
         isRoutineRunning = false;
         stopSpeechKeepAlive();
@@ -2221,12 +2227,20 @@
 
     function flashScreenRed() {
         if (isPaused) { return; }
-        document.body.classList.add('bg-red-500');
-        void document.body.offsetWidth;
+
+        // Apply the flash color directly using the Tailwind red-500 hex value
+        document.body.style.backgroundColor = '#ef4444';
+
+        // Clear any existing flash timer to prevent conflicts
+        if (flashTimer) clearTimeout(flashTimer);
+
+        // Schedule restoration of the original background after a short flash duration
+        const flashDurationMs = 150; // Keep the visual flash very short
         flashTimer = setTimeout(() => {
-            document.body.classList.remove('bg-red-500');
+            // Clear the inline style to let the original Tailwind classes re-apply
+            document.body.style.backgroundColor = '';
             flashTimer = null;
-        }, 150);
+        }, flashDurationMs);
     }
 
     function shuffleArray(array) {
@@ -2239,7 +2253,7 @@
     }
 
       // --- EVENT LISTENERS ---
-      
+
       const updateGlobalLimitControls = () => {
         globalLimitType = globalLimitTypeSelect.value;
         globalShotLimitControls.classList.toggle('hidden', globalLimitType !== 'shot');
@@ -2398,7 +2412,7 @@
               } else {
                   saveCurrentSequenceState();
               }
-              
+
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
               if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
           }
@@ -2456,4 +2470,3 @@
   </script>
 </body>
 </html>
-
