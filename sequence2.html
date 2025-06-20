@@ -92,6 +92,25 @@
     .dark .selected-row {
         background-color: #374151; /* Darker gray for dark mode selection */
     }
+
+    /* Style for dropdown arrows */
+    select {
+        border: 2px solid #cbd5e0;
+        transition: border-color 0.2s ease-in-out;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%234A5568'%3e%3cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e"); /* Custom arrow */
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem; /* Make space for the arrow */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
   </style>
 </head>
 <body class="flex min-h-screen items-center justify-center p-4 bg-gray-100 dark:bg-gray-900 transition-colors duration-75">
@@ -298,6 +317,20 @@
                                     <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
                                     <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
                                     <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
+
+                                    <!-- Speech Rate Slider -->
+                                    <div class="mt-4">
+                                        <label for="speechRate" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Speech Rate: <span id="speechRateValue">1.0</span>x</label>
+                                        <input type="range" id="speechRate" min="0.5" max="1.5" value="1" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                    </div>
+
+                                    <!-- Select Voice Dropdown -->
+                                    <div class="mt-4 mb-4">
+                                        <label for="speechVoiceSelect" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Select Voice:</label>
+                                        <select id="speechVoiceSelect" class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <!-- Voices will be populated here by JavaScript -->
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -505,6 +538,10 @@
       let isRoutineRunning = false;
       let nextSilentUtteranceTimeout = null;
 
+      // --- Speech Voice & Rate state (for global usage during workout) ---
+      let globalSpeechVoice = null; // Will store the selected SpeechSynthesisVoice object
+      let globalSpeechRate = 1.0;
+
       // --- SVG Icons ---
       const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
       const PLAY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m6 3 14 9-14 9z"/></svg>`;
@@ -543,7 +580,9 @@
           patternLimit: defaultMaxShots,
           postSequenceRest: 0,
           previousShotLimit: defaultMaxShots,
-          previousTimeLimit: defaultMaxTimeSeconds
+          previousTimeLimit: defaultMaxTimeSeconds,
+          speechRate: 1.0, // New: Default speech rate
+          speechVoice: 'default' // New: Default voice name or 'default'
         };
       };
 
@@ -560,7 +599,8 @@
       const isValidPatternConfig = (data) => {
         const requiredProps = [
           'patternName', 'shotOptions', 'announceShots', 'introMessage', 'outroMessage',
-          'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'limitType', 'patternLimit', 'postSequenceRest'
+          'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'limitType', 'patternLimit',
+          'postSequenceRest', 'speechRate', 'speechVoice' // Added new properties
         ];
         const hasAllProps = requiredProps.every(prop => Object.prototype.hasOwnProperty.call(data, prop));
         if (!hasAllProps) return false;
@@ -575,7 +615,9 @@
             typeof data.nextShotAnnouncement !== 'number' ||
             !['shot', 'time'].includes(data.limitType) ||
             typeof data.patternLimit !== 'number' ||
-            typeof data.postSequenceRest !== 'number') {
+            typeof data.postSequenceRest !== 'number' ||
+            typeof data.speechRate !== 'number' || // Type check for new property
+            typeof data.speechVoice !== 'string') { // Type check for new property
             return false;
         }
         return true;
@@ -945,6 +987,11 @@
           const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
           const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
+          // New: Speech Rate and Voice elements
+          const speechRateSlider = newSequenceEl.querySelector('#speechRate');
+          const speechRateValueDisplay = newSequenceEl.querySelector('#speechRateValue');
+          const speechVoiceSelect = newSequenceEl.querySelector('#speechVoiceSelect');
+
 
           // Set values to editor fields from currentData
           patternNameDisplay.textContent = currentData.patternName;
@@ -959,6 +1006,12 @@
           limitTypeSelect.value = currentData.limitType;
           patternLimitSlider.value = currentData.patternLimit;
           postSequenceRest.value = currentData.postSequenceRest;
+
+          // New: Set speech rate and voice
+          speechRateSlider.value = currentData.speechRate;
+          speechRateValueDisplay.textContent = currentData.speechRate.toFixed(1);
+          populateVoiceList(speechVoiceSelect, currentData.speechVoice); // Pass the specific select element and current voice
+
 
           // Apply specific logic for sliders/displays
           handleAnnounceShotsChange(newSequenceEl); // Update nextShotAnnouncement max/disabled state
@@ -1002,11 +1055,17 @@
           const patternLimitSlider = currentEl.querySelector('#patternLimitSlider');
           const postSequenceRest = currentEl.querySelector('#postSequenceRest');
 
+          // New: Speech Rate and Voice elements
+          const speechRateSlider = currentEl.querySelector('#speechRate');
+          const speechVoiceSelect = currentEl.querySelector('#speechVoiceSelect');
+
+
           // Before attempting to access properties, ensure the element exists.
           // If any critical element is null, we should probably log an error and exit.
           if (!patternNameDisplay || !shotOptions || !announceShots || !introMessage || !outroMessage ||
               !seriesOrderCheckedRadio || !shotInterval || !randomOffset || !nextShotAnnouncement ||
-              !limitTypeSelect || !patternLimitSlider || !postSequenceRest) {
+              !limitTypeSelect || !patternLimitSlider || !postSequenceRest ||
+              !speechRateSlider || !speechVoiceSelect) { // Added new elements to check
               console.error('saveCurrentSequenceState: One or more required editor elements are null. Skipping save.');
               return;
           }
@@ -1031,6 +1090,8 @@
           currentData.limitType = limitTypeSelect.value;
           currentData.patternLimit = parseInt(patternLimitSlider.value);
           currentData.postSequenceRest = parseInt(postSequenceRest.value);
+          currentData.speechRate = parseFloat(speechRateSlider.value); // Save speech rate
+          currentData.speechVoice = speechVoiceSelect.value; // Save selected voice name
 
           calculateTotalWorkoutTime();
           updateGlobalLimitControls();
@@ -1193,6 +1254,67 @@
             display.textContent = formatTime(value);
         }
       };
+
+      // --- Speech Synthesis specific functions (reused from previous text-to-speech app) ---
+      const currentLang = document.documentElement.lang || navigator.language || 'en-US';
+      const langCode = currentLang.split('-')[0]; // Get the primary language code (e.g., 'en' from 'en-US')
+
+      // Function to detect if the user is on an iOS device
+      function isIOS() {
+          return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      }
+
+      // Function to populate voice options in the dropdown
+      // Takes the select element and the initially selected voice name as arguments
+      function populateVoiceList(selectElement, selectedVoiceName) {
+            if (!synth) {
+                console.warn("Speech synthesis not initialized, cannot populate voice list.");
+                return;
+            }
+            const voices = synth.getVoices();
+            selectElement.innerHTML = ''; // Clear existing options
+
+            // Add a default option
+            const defaultOption = document.createElement('option');
+            defaultOption.textContent = 'Default System Voice';
+            defaultOption.value = 'default';
+            selectElement.appendChild(defaultOption);
+
+            let filteredVoices = [];
+
+            // Apply specific filtering for English on iOS
+            if (isIOS() && langCode === 'en') {
+                const iOSVoices = ['Karen', 'Daniel', 'Moira', 'Rishi', 'Samantha'];
+                filteredVoices = voices.filter(voice => iOSVoices.includes(voice.name));
+            } else {
+                // Filter voices by the current document's language for other cases
+                filteredVoices = voices.filter(voice => voice.lang.startsWith(langCode));
+            }
+
+            // Use a Map to store unique voices based on their name to prevent duplicates
+            const uniqueVoicesMap = new Map();
+            filteredVoices.forEach(voice => {
+                if (!uniqueVoicesMap.has(voice.name)) {
+                    uniqueVoicesMap.set(voice.name, voice);
+                }
+            });
+
+            const uniqueFilteredVoices = Array.from(uniqueVoicesMap.values());
+
+            uniqueFilteredVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.name;
+                selectElement.appendChild(option);
+            });
+
+            // Set the selected voice
+            if (selectedVoiceName && uniqueFilteredVoices.some(v => v.name === selectedVoiceName)) {
+                selectElement.value = selectedVoiceName;
+            } else {
+                selectElement.value = 'default';
+            }
+      }
 
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
@@ -1376,6 +1498,10 @@
           reader.onload = (e) => {
             try {
               const importedData = JSON.parse(e.target.result);
+              // Provide default values for new speech properties if not present in old files
+              if (typeof importedData.speechRate === 'undefined') importedData.speechRate = 1.0;
+              if (typeof importedData.speechVoice === 'undefined') importedData.speechVoice = 'default';
+
               if (isValidPatternConfig(importedData)) {
                 if (activeSequenceIndex !== -1) {
                     sequences[activeSequenceIndex] = { ...importedData, id: sequences[activeSequenceIndex].id };
@@ -1431,7 +1557,12 @@
                     return;
                 }
 
-                sequences = importedData.patterns.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
+                sequences = importedData.patterns.map(pattern => {
+                    // Provide default values for new speech properties if not present in old files
+                    if (typeof pattern.speechRate === 'undefined') pattern.speechRate = 1.0;
+                    if (typeof pattern.speechVoice === 'undefined') pattern.speechVoice = 'default';
+                    return { ...pattern, id: Date.now() + Math.random() };
+                });
 
                 const settings = importedData.globalSettings;
                 workoutOrderMode = settings.workoutOrderMode || 'in-order';
@@ -1629,11 +1760,42 @@
             silentUtterance.onend = null;
             silentUtterance.onerror = null;
             try {
+                // Initial "wake-up" utterance
                 synth.speak(silentUtterance);
                 console.log('SpeechSynthesis initialized and wake-up utterance sent.');
             } catch (e) {
                 console.warn('Initial silent utterance failed (may not be an issue if audio is already active):', e);
             }
+
+            // Ensure voice list is populated when synth is ready
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = () => {
+                    // Re-populate voice lists in all active pattern editor instances if open
+                    if (!patternEditorContainer.classList.contains('hidden')) {
+                        const currentEl = sequencesContainer.firstChild;
+                        if (currentEl) {
+                            const speechVoiceSelect = currentEl.querySelector('#speechVoiceSelect');
+                            if (speechVoiceSelect) {
+                                const currentData = sequences[activeSequenceIndex];
+                                populateVoiceList(speechVoiceSelect, currentData.speechVoice);
+                            }
+                        }
+                    }
+                };
+            }
+            // Fallback for browsers that might not fire onvoiceschanged immediately
+            setTimeout(() => {
+                if (!patternEditorContainer.classList.contains('hidden')) {
+                    const currentEl = sequencesContainer.firstChild;
+                    if (currentEl) {
+                        const speechVoiceSelect = currentEl.querySelector('#speechVoiceSelect');
+                        if (speechVoiceSelect && synth.getVoices().length > 0 && speechVoiceSelect.options.length <= 1) { // Only if not already populated
+                            const currentData = sequences[activeSequenceIndex];
+                            populateVoiceList(speechVoiceSelect, currentData.speechVoice);
+                        }
+                    }
+                }
+            }, 500); // Small delay to allow voices to load
         } else {
             console.warn('Speech Synthesis API not supported in this browser.');
         }
@@ -1654,7 +1816,7 @@
         }
 
         const utterance = new SpeechSynthesisUtterance('');
-        utterance.lang = 'en-US';
+        utterance.lang = 'en-US'; // Default lang for silent utterance
         utterance.volume = 0;
 
         utterance.onend = () => {
@@ -1776,8 +1938,16 @@
 
         if (text !== '') {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
+            utterance.lang = 'en-US'; // Fallback language
             utterance.volume = 1;
+
+            // Apply voice and rate from the current pattern being executed
+            if (globalSpeechVoice) {
+                utterance.voice = globalSpeechVoice;
+                utterance.lang = globalSpeechVoice.lang; // Use voice's language
+            }
+            utterance.rate = globalSpeechRate;
+
             utterance.onend = () => {
                 console.log(`speak: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
                 if (isRoutineRunning && !isPaused) {
@@ -2015,6 +2185,14 @@
         }
 
         const pattern = currentWorkoutPatterns[currentPatternIndex];
+
+        // Set global speech properties from the current pattern
+        globalSpeechRate = pattern.speechRate || 1.0;
+        const selectedVoiceName = pattern.speechVoice;
+        const voices = synth.getVoices();
+        globalSpeechVoice = (selectedVoiceName && selectedVoiceName !== 'default') ?
+                            voices.find(voice => voice.name === selectedVoiceName) : null;
+
 
         // Check if the current pattern is valid and has shots
         if (pattern && typeof pattern.shotOptions === 'string') {
@@ -2400,6 +2578,13 @@
               }
               else if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
               else if (e.target.closest('#postSequenceRest')) updatePostRestDisplay(currentEl);
+              else if (e.target.closest('#speechRate')) {
+                  const speechRateValueDisplay = currentEl.querySelector('#speechRateValue');
+                  if (speechRateValueDisplay) {
+                      speechRateValueDisplay.textContent = parseFloat(e.target.value).toFixed(1);
+                  }
+                  saveCurrentSequenceState(); // Save after updating display
+              }
           }
       });
       sequencesContainer.addEventListener('change', (e) => {
@@ -2415,6 +2600,9 @@
 
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
               if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
+              if (e.target.closest('#speechVoiceSelect')) {
+                  saveCurrentSequenceState(); // Save the selected voice
+              }
           }
       });
 
@@ -2470,3 +2658,4 @@
   </script>
 </body>
 </html>
+
