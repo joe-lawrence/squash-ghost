@@ -579,10 +579,13 @@
       };
 
       const isValidWorkoutFile = (data) => {
-        if (!Array.isArray(data)) {
-            return false;
-        }
-        return data.every(pattern => isValidPatternConfig(pattern));
+          if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+              return false;
+          }
+          if (!Object.prototype.hasOwnProperty.call(data, 'patterns') || !Object.prototype.hasOwnProperty.call(data, 'globalSettings')) {
+              return false;
+          }
+          return Array.isArray(data.patterns) && data.patterns.every(isValidPatternConfig);
       };
 
       // Custom Alert Modal
@@ -1401,7 +1404,7 @@
 
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
-      const loadAllPatterns = () => {
+      const loadWorkout = () => {
         setInteractionMode(null); // Turn off any list modes
 
         const fileInput = document.createElement('input');
@@ -1419,17 +1422,34 @@
           const reader = new FileReader();
           reader.onload = (e) => {
             try {
-              const importedWorkout = JSON.parse(e.target.result);
-              if (isValidWorkoutFile(importedWorkout)) {
-                sequences = importedWorkout.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
+                const importedData = JSON.parse(e.target.result);
+                if (!isValidWorkoutFile(importedData)) {
+                    showAlert('Load Error', 'Invalid workout file format. Please select a valid workout file.');
+                    return;
+                }
+
+                sequences = importedData.patterns.map(pattern => ({ ...pattern, id: Date.now() + Math.random() }));
+                
+                const settings = importedData.globalSettings;
+                workoutOrderMode = settings.workoutOrderMode || 'in-order';
+                workoutCountdownTime = settings.workoutCountdownTime || 0;
+                globalLimitType = settings.globalLimitType || 'all';
+                globalShotLimit = settings.globalShotLimit || 0;
+                globalTimeLimit = settings.globalTimeLimit || 60;
+
+                // Update UI from loaded global settings
+                globalWorkoutOrderRadios.forEach(radio => radio.checked = (radio.value === workoutOrderMode));
+                workoutCountdownSlider.value = workoutCountdownTime;
+                workoutCountdownDisplay.textContent = `${workoutCountdownTime}s`;
+                globalLimitTypeSelect.value = globalLimitType;
+                globalShotLimitSlider.value = globalShotLimit;
+                globalTimeLimitSlider.value = globalTimeLimit;
+
                 activeSequenceIndex = -1; // Go back to main view
-                selectedPatternId = null; // Clear selection when loading all
-                showView('main'); // Show the main accordion view
+                selectedPatternId = null; // Clear selection
+                showView('main'); // This will call renderAccordionView, updateGlobalLimitControls, and calculateTotalWorkoutTime
                 showAlert('Workout Loaded', `Successfully loaded ${sequences.length} patterns.`);
-                calculateTotalWorkoutTime();
-              } else {
-                showAlert('Load Error', 'Invalid workout file. Please select a valid .workout.json file containing an array of patterns.');
-              }
+
             } catch (error) {
               showAlert('Load Error', 'Failed to parse workout file. Please ensure it is a valid JSON file.');
             } finally {
@@ -1447,7 +1467,7 @@
         fileInput.click();
       };
 
-      const saveAllPatterns = () => {
+      const saveWorkout = () => {
         setInteractionMode(null); // Turn off any list modes
         if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
           saveCurrentSequenceState();
@@ -1457,7 +1477,19 @@
             showAlert('Save Error', 'No patterns to save in the workout file.');
             return;
         }
-        const dataStr = JSON.stringify(sequences, null, 2);
+
+        const workoutData = {
+          patterns: sequences,
+          globalSettings: {
+            workoutOrderMode: workoutOrderMode,
+            workoutCountdownTime: workoutCountdownTime,
+            globalLimitType: globalLimitType,
+            globalShotLimit: globalShotLimit,
+            globalTimeLimit: globalTimeLimit
+          }
+        };
+
+        const dataStr = JSON.stringify(workoutData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
 
@@ -1468,7 +1500,7 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showAlert('Workout Saved', `Successfully saved ${sequences.length} patterns to a workout file.`);
+        showAlert('Workout Saved', 'Successfully saved workout.');
         calculateTotalWorkoutTime();
       };
 
@@ -2380,8 +2412,8 @@
 
 
       // Global buttons for all patterns
-      document.getElementById('load-all-btn').addEventListener('click', loadAllPatterns);
-      document.getElementById('save-all-btn').addEventListener('click', saveAllPatterns);
+      document.getElementById('load-all-btn').addEventListener('click', loadWorkout);
+      document.getElementById('save-all-btn').addEventListener('click', saveWorkout);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
 
       // --- Workout Buttons Event Listeners ---
