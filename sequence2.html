@@ -1745,23 +1745,27 @@
     let currentWorkoutPatterns = [];
 
     function initAudioContext() {
+        if (audioContext) return; // Already initialized
         try {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioContext.state === 'suspended') {
-                    const resumeAudio = () => {
-                        audioContext.resume().then(() => {
-                            console.log('AudioContext resumed successfully.');
-                            document.removeEventListener('click', resumeAudio);
-                            document.removeEventListener('touchend', resumeAudio);
-                        }).catch(error => console.error("Error resuming AudioContext:", error));
-                    };
-                    document.addEventListener('click', resumeAudio, { once: true, passive: true });
-                    document.addEventListener('touchend', resumeAudio, { once: true, passive: true });
-                }
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // If the context is in a suspended state, it requires a user gesture to resume.
+            // We'll attach a one-time event listener to resume it on the first user interaction.
+            if (audioContext.state === 'suspended') {
+                const resumeAudio = () => {
+                    audioContext.resume().then(() => {
+                        console.log('AudioContext resumed successfully by user gesture.');
+                        // Clean up the event listeners once resumed
+                        document.removeEventListener('click', resumeAudio);
+                        document.removeEventListener('touchend', resumeAudio);
+                    }).catch(error => console.error("Error resuming AudioContext:", error));
+                };
+                document.addEventListener('click', resumeAudio, { once: true, passive: true });
+                document.addEventListener('touchend', resumeAudio, { once: true, passive: true });
             }
         } catch (error) {
             console.error("Failed to initialize AudioContext:", error);
+            // We can also show a user-friendly alert here if needed
+            // showAlert('Audio Error', 'Could not initialize audio for beeps.');
         }
     }
 
@@ -1894,6 +1898,10 @@
         try {
             if (!audioContext || audioContext.state !== 'running') {
                 console.warn("playTwoToneBeep: AudioContext not ready for two-tone beep. State:", audioContext ? audioContext.state : 'null');
+                // Attempt to resume it one last time, in case the user interaction happened right before this call
+                if(audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 return;
             }
 
@@ -2054,13 +2062,17 @@
         if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
         }
-        initAudioContext();
+        initAudioContext(); // Ensure it's initialized
         initSpeechSynthesis();
         isRoutineRunning = true;
         startSpeechKeepAlive();
+
+        // Explicitly try to resume the AudioContext right before starting.
+        // This is a key change for iOS reliability.
         if (audioContext && audioContext.state === 'suspended') {
             await audioContext.resume();
         }
+
         if (workoutOrderMode === 'randomized') {
             currentWorkoutPatterns = shuffleArray(sequences);
         } else {
@@ -2755,4 +2767,3 @@
   </script>
 </body>
 </html>
-
