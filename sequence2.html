@@ -1759,6 +1759,17 @@
         if (audioContext) return; // Already initialized
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // For iIOS 17+: work around ringer mode: https://bugs.webkit.org/show_bug.cgi?id=237322 ***
+            if (window.navigator.audioSession && window.navigator.audioSession.type !== "playback") {
+                try {
+                    window.navigator.audioSession.type = "playback";
+                    console.log("navigator.audioSession.type set to 'playback'");
+                } catch (e) {
+                    console.warn("Failed to set navigator.audioSession.type:", e);
+                }
+            }
+
             // If the context is in a suspended state, it requires a user gesture to resume.
             // We'll attach a one-time event listener to resume it on the first user interaction.
             if (audioContext.state === 'suspended') {
