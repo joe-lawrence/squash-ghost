@@ -460,6 +460,12 @@
         </div>
     </div>
 
+    <!-- App Footer -->
+    <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
+    <div id="app-footer-container" class="text-center mt-8">
+      <img id="app-footer" src="" alt="Squash Ghoster Footer" class="mx-auto w-full max-w-md h-auto">
+    </div>
+
     <!-- Custom Alert Modal -->
     <div id="alert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -530,6 +536,7 @@
       // const appTitle = document.getElementById('app-title'); // This is now removed
 
       const appBanner = document.getElementById('app-banner'); // Reference to the image banner
+      const appFooter = document.getElementById('app-footer'); // Reference to the footer image banner
 
 
       // --- Web Audio API ---
@@ -780,8 +787,10 @@
           globalControls.classList.add('hidden');
           workoutViewContainer.classList.add('hidden');
           patternEditorContainer.classList.add('hidden'); // Ensure editor is hidden
-          // App Banner visibility handling
+          // App Banner & Footer visibility handling
           document.getElementById('app-banner-container').classList.remove('hidden'); // Default to visible
+          document.getElementById('app-footer-container').classList.remove('hidden'); // Default to visible
+
 
           if (view === 'main') {
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
@@ -811,6 +820,7 @@
               document.body.classList.add('p-0');
               workoutViewContainer.classList.remove('hidden');
               document.getElementById('app-banner-container').classList.add('hidden'); // Hide app banner on workout screen
+              document.getElementById('app-footer-container').classList.add('hidden'); // Hide app footer on workout screen
               globalWorkoutOrderOptions.classList.add('hidden'); // Hide radios in workout view
               focusOnTop();
           }
@@ -2489,23 +2499,27 @@
         return shuffledArray;
     }
 
-      // --- THEME-BASED BANNER IMAGE LOGIC ---
-      const updateBannerImage = () => {
+      // --- THEME-BASED BANNER FOOTER IMAGE LOGIC ---
+      const updateImages = () => {
           const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches || document.body.classList.contains('dark');
           if (isDarkMode) {
               appBanner.src = 'banner-black.png';
+              appFooter.src = 'footer-black.png';
           } else {
               appBanner.src = 'banner-white.png';
+              appFooter.src = 'footer-white.png';
           }
       };
 
       // Observe changes to system color scheme and also manual dark mode toggle (if any)
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBannerImage);
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          updateImages();
+      });
       // Also keep the MutationObserver for cases where the 'dark' class is manually toggled on the body
       const bodyClassObserver = new MutationObserver((mutationsList) => {
           for (const mutation of mutationsList) {
               if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                  updateBannerImage();
+                  updateImages();
               }
           }
       });
@@ -2733,7 +2747,7 @@
 
         initAudioContext();
         initSpeechSynthesis();
-        updateBannerImage(); // Set initial banner image
+        updateImages(); // Set initial banner and footer image
       };
 
       initialize();
