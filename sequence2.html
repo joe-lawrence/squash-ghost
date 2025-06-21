@@ -1271,9 +1271,20 @@
       const currentLang = document.documentElement.lang || navigator.language || 'en-US';
       const langCode = currentLang.split('-')[0]; // Get the primary language code (e.g., 'en' from 'en-US')
 
-      // Function to detect if the user is on an iOS device
-      function isIOS() {
-          return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      // Function to detect if the user is on an Apple device
+      function isAppleOS() {
+          const userAgent = navigator.userAgent;
+      
+          // 1. Detect macOS:
+          // Look for "MacIntel" in navigator.platform or "Macintosh" in userAgent
+          const isMacOS = navigator.platform.includes('Mac') || userAgent.includes('Macintosh');
+      
+          // 2. Detect iOS/iPadOS (including newer iPadOS that presents as Mac):
+          // Use the logic from the previous answer for iOS/iPadOS detection.
+          const isIOS = /iPad|iPhone|iPod/.test(userAgent) ||
+                        (navigator.platform === 'MacIntel' && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
+      
+          return isMacOS || isIOS;
       }
 
       // Function to populate voice options in the dropdown
@@ -1295,7 +1306,7 @@
             let filteredVoices = [];
 
             // Apply specific filtering for English on iOS
-            if (isIOS() && langCode === 'en') {
+            if (isAppleOS() && langCode === 'en') {
                 const iOSVoices = ['Karen', 'Daniel', 'Moira', 'Rishi', 'Samantha'];
                 filteredVoices = voices.filter(voice => iOSVoices.includes(voice.name));
             } else {
