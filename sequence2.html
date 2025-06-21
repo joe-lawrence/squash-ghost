@@ -2491,26 +2491,26 @@
 
       // --- THEME-BASED BANNER IMAGE LOGIC ---
       const updateBannerImage = () => {
-          const isDarkMode = document.body.classList.contains('dark');
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches || document.body.classList.contains('dark');
           if (isDarkMode) {
-              appBanner.src = 'banner-black.png';
+              appBanner.src = 'banner-black.jpg';
           } else {
-              appBanner.src = 'banner-white.png';
+              appBanner.src = 'banner-white.jpg';
           }
       };
 
-      // Observe changes to the `class` attribute of the body element
-      // This allows reacting to dark/light mode toggles (assuming Tailwind's dark mode class is added/removed from body)
-      const observer = new MutationObserver((mutationsList) => {
+      // Observe changes to system color scheme and also manual dark mode toggle (if any)
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBannerImage);
+      // Also keep the MutationObserver for cases where the 'dark' class is manually toggled on the body
+      const bodyClassObserver = new MutationObserver((mutationsList) => {
           for (const mutation of mutationsList) {
               if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                   updateBannerImage();
               }
           }
       });
+      bodyClassObserver.observe(document.body, { attributes: true });
 
-      // Start observing the body for class attribute changes
-      observer.observe(document.body, { attributes: true });
 
       // --- EVENT LISTENERS ---
 
