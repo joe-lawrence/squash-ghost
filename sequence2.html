@@ -117,7 +117,9 @@
 
   <div id="app-container" class="w-full">
     <!-- App Title -->
-    <h1 id="app-title" class="text-4xl font-extrabold text-gray-900 dark:text-white text-center mb-8">Squash Ghoster</h1>
+    <div id="app-banner-container" class="text-center mb-8">
+      <img id="app-banner" src="" alt="Squash Ghoster" class="mx-auto w-full max-w-md h-auto">
+    </div>
 
     <!-- Start Workout Button (visible in main view) -->
     <div id="start-workout-container" class="mb-6 hidden">
@@ -470,8 +472,6 @@
     </div>
   </div>
 
-  <!-- Flowbite CDN for accordion functionality - MOVED HERE -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // --- STATE MANAGEMENT ---
@@ -527,7 +527,9 @@
       const currentShotDisplay = document.getElementById('current-shot-display');
       const progressBar = document.getElementById('progress-bar');
       // Removed currentPatternNameDisplay as per user request
-      const appTitle = document.getElementById('app-title');
+      // const appTitle = document.getElementById('app-title'); // This is now removed
+
+      const appBanner = document.getElementById('app-banner'); // Reference to the image banner
 
 
       // --- Web Audio API ---
@@ -778,8 +780,8 @@
           globalControls.classList.add('hidden');
           workoutViewContainer.classList.add('hidden');
           patternEditorContainer.classList.add('hidden'); // Ensure editor is hidden
-          // App Title visibility handling
-          appTitle.classList.remove('hidden'); // Default to visible
+          // App Banner visibility handling
+          document.getElementById('app-banner-container').classList.remove('hidden'); // Default to visible
 
           if (view === 'main') {
               appContainer.classList.add('max-w-2xl', 'rounded-xl', 'bg-white', 'p-6', 'shadow-lg', 'dark:bg-gray-800');
@@ -808,7 +810,7 @@
               appContainer.classList.add('absolute', 'inset-0', 'flex', 'flex-col');
               document.body.classList.add('p-0');
               workoutViewContainer.classList.remove('hidden');
-              appTitle.classList.add('hidden'); // Hide app title on workout screen
+              document.getElementById('app-banner-container').classList.add('hidden'); // Hide app banner on workout screen
               globalWorkoutOrderOptions.classList.add('hidden'); // Hide radios in workout view
               focusOnTop();
           }
@@ -2487,6 +2489,29 @@
         return shuffledArray;
     }
 
+      // --- THEME-BASED BANNER IMAGE LOGIC ---
+      const updateBannerImage = () => {
+          const isDarkMode = document.body.classList.contains('dark');
+          if (isDarkMode) {
+              appBanner.src = 'banner-black.png';
+          } else {
+              appBanner.src = 'banner-white.png';
+          }
+      };
+
+      // Observe changes to the `class` attribute of the body element
+      // This allows reacting to dark/light mode toggles (assuming Tailwind's dark mode class is added/removed from body)
+      const observer = new MutationObserver((mutationsList) => {
+          for (const mutation of mutationsList) {
+              if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                  updateBannerImage();
+              }
+          }
+      });
+
+      // Start observing the body for class attribute changes
+      observer.observe(document.body, { attributes: true });
+
       // --- EVENT LISTENERS ---
 
       const updateGlobalLimitControls = () => {
@@ -2708,6 +2733,7 @@
 
         initAudioContext();
         initSpeechSynthesis();
+        updateBannerImage(); // Set initial banner image
       };
 
       initialize();
