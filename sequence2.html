@@ -2075,21 +2075,20 @@
                 resolve();
             };
             utterance.onerror = (event) => {
-                console.error(`speakDefault: Default speech synthesis error: ${event.error}. Full event:`, event);
+                // Fix: Only log as error if the error is not 'interrupted'
                 if (event.error !== 'interrupted') {
-                    // If it's not an expected interruption, then potentially re-schedule keep-alive
-                    // Only re-initiate keep-alive if the routine is still running and not paused
+                    console.error(`speakDefault: Default speech synthesis error: ${event.error}. Full event:`, event);
                     if (isRoutineRunning && !isPaused) {
                         startSpeechKeepAlive();
                     }
-                    reject(new Error(event.error || 'Speech synthesis error')); // Reject with a more informative Error object
+                    reject(new Error(event.error || 'Speech synthesis error'));
                 } else {
                     console.info('speakDefault: Default SpeechSynthesisUtterance was interrupted, which is expected behavior.');
                     // For 'interrupted', still re-schedule keep-alive if routine is running
                     if (isRoutineRunning && !isPaused) {
                         startSpeechKeepAlive();
                     }
-                    resolve(); // For 'interrupted', just resolve the promise
+                    resolve();
                 }
             };
             try {
@@ -2273,8 +2272,8 @@
             pausedCountdownTimeRemaining = 0;
         } else if (pausedShotDisplayContent === 'Rest!') {
             let restRemaining = pausedRestTimeRemaining;
-            currentShotDisplay.textContent = 'Rest!';
-            progressBar.style.width = '100%'; // Progress bar full for rest period
+            const originalPostRestTime = currentWorkoutPatterns[currentPatternIndex - 1].postSequenceRest; // Get total rest duration
+
             // Removed redundant 'let' declaration for restRemaining here.
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) {
@@ -2283,12 +2282,19 @@
                 }
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
-                if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
-                    clearInterval(shotIntervalTimer);
-                    handleWorkoutCompletion();
-                    return;
-                }
                 pausedRestTimeRemaining = restRemaining;
+
+                // Update display and progress bar for rest
+                currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
+                progressBar.style.width = `${((originalPostRestTime - restRemaining) / originalPostRestTime) * 100}%`;
+
+                // Countdown/Beep/Flash for last 10 seconds of rest
+                if (restRemaining > 0 && restRemaining <= 10) {
+                    speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
+                    playTwoToneBeep();
+                    flashScreenRed();
+                }
+
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
                     shotIntervalTimer = null;
@@ -2498,9 +2504,14 @@
         const postRestTime = parseInt(pattern.postSequenceRest);
         if (postRestTime > 0) {
             currentShotDisplay.textContent = "Rest!";
-            progressBar.style.width = '100%'; // Progress bar full for rest period
+            // progressBar.style.width = '100%'; // Progress bar full for rest period - REMOVED
             let restRemaining = postRestTime;
             pausedRestTimeRemaining = restRemaining;
+
+            // Initial update for rest display and progress bar
+            currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
+            progressBar.style.width = `${((postRestTime - restRemaining) / postRestTime) * 100}%`;
+
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) {
                     clearInterval(shotIntervalTimer);
@@ -2508,12 +2519,24 @@
                 }
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
+                pausedRestTimeRemaining = restRemaining;
+
+                // Update display and progress bar for rest
+                currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
+                progressBar.style.width = `${((postRestTime - restRemaining) / postRestTime) * 100}%`;
+
+                // Countdown/Beep/Flash for last 10 seconds of rest
+                if (restRemaining > 0 && restRemaining <= 10) {
+                    speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
+                    playTwoToneBeep();
+                    flashScreenRed();
+                }
+
                 if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
                     clearInterval(shotIntervalTimer);
                     handleWorkoutCompletion();
                     return;
                 }
-                pausedRestTimeRemaining = restRemaining;
                 if (restRemaining <= 0) {
                     clearInterval(shotIntervalTimer);
                     shotIntervalTimer = null;
@@ -2847,3 +2870,4 @@
   </script>
 </body>
 </html>
+
