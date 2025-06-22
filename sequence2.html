@@ -1274,16 +1274,16 @@
       // Function to detect if the user is on an Apple device
       function isAppleOS() {
           const userAgent = navigator.userAgent;
-      
+
           // 1. Detect macOS:
           // Look for "MacIntel" in navigator.platform or "Macintosh" in userAgent
           const isMacOS = navigator.platform.includes('Mac') || userAgent.includes('Macintosh');
-      
+
           // 2. Detect iOS/iPadOS (including newer iPadOS that presents as Mac):
           // Use the logic from the previous answer for iOS/iPadOS detection.
           const isIOS = /iPad|iPhone|iPod/.test(userAgent) ||
                         (navigator.platform === 'MacIntel' && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
-      
+
           return isMacOS || isIOS;
       }
 
@@ -1869,14 +1869,19 @@
 
         utterance.onerror = (event) => {
             if (event.error !== 'interrupted') {
-                console.error(`speakSilent: Silent speech synthesis error: ${event.error}`);
+                console.error(`speakSilent: Silent speech synthesis error: ${event.error}. Full event:`, event); // Log only real errors as error
+                if (isRoutineRunning && !isPaused) {
+                    nextSilentUtteranceTimeout = setTimeout(() => {
+                        speakSilent();
+                    }, 50);
+                }
             } else {
-                console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.');
-            }
-            if (isRoutineRunning && !isPaused) {
-                nextSilentUtteranceTimeout = setTimeout(() => {
-                    speakSilent();
-                }, 50);
+                console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.'); // Log expected interruptions as info
+                if (isRoutineRunning && !isPaused) {
+                    nextSilentUtteranceTimeout = setTimeout(() => {
+                        speakSilent();
+                    }, 50);
+                }
             }
         };
 
@@ -1962,25 +1967,31 @@
 
     // Function to speak with pattern-specific voice and rate
     function speak(text) {
-        if (!synth) {
-            console.warn('speak: Speech Synthesis API not supported or not initialized.');
-            return;
-        }
-
-        if (synth.speaking || synth.pending) {
-            synth.cancel();
-            if (nextSilentUtteranceTimeout) {
-                clearTimeout(nextSilentUtteranceTimeout);
-                nextSilentUtteranceTimeout = null;
+        return new Promise((resolve, reject) => {
+            if (!synth) {
+                console.warn('speak: Speech Synthesis API not supported or not initialized.');
+                reject('Speech Synthesis API not available');
+                return;
             }
-            if (nextAnnouncementTimeout) {
-                clearTimeout(nextAnnouncementTimeout);
-                nextAnnouncementTimeout = null;
-            }
-            console.log("speak: Cancelled existing speech for new audible message.");
-        }
 
-        if (text !== '') {
+            if (synth.speaking || synth.pending) {
+                synth.cancel();
+                if (nextSilentUtteranceTimeout) {
+                    clearTimeout(nextSilentUtteranceTimeout);
+                    nextSilentUtteranceTimeout = null;
+                }
+                if (nextAnnouncementTimeout) {
+                    clearTimeout(nextAnnouncementTimeout);
+                    nextAnnouncementTimeout = null;
+                }
+                console.log("speak: Cancelled existing speech for new audible message.");
+            }
+
+            if (text.trim() === '') {
+                resolve(); // Resolve immediately if no text to speak
+                return;
+            }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US'; // Fallback language
 
@@ -1997,50 +2008,66 @@
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
+                resolve();
             };
             utterance.onerror = (event) => {
                 if (event.error !== 'interrupted') {
-                    console.error(`speak: Audible speech synthesis error: ${event.error}`);
+                    console.error(`speak: Audible speech synthesis error: ${event.error}. Full event:`, event); // Log only real errors as error
+                    // If it's not an expected interruption, then potentially re-schedule keep-alive
+                    // Only re-initiate keep-alive if the routine is still running and not paused
+                    if (isRoutineRunning && !isPaused) {
+                        startSpeechKeepAlive();
+                    }
+                    reject(new Error(event.error || 'Speech synthesis error')); // Reject with a more informative Error object
                 } else {
-                    console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.');
-                }
-                if (isRoutineRunning && !isPaused) {
-                    startSpeechKeepAlive();
+                    console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.'); // Log expected interruptions as info
+                    // For 'interrupted', still re-schedule keep-alive if routine is running
+                    if (isRoutineRunning && !isPaused) {
+                        startSpeechKeepAlive();
+                    }
+                    resolve(); // For 'interrupted', just resolve the promise
                 }
             };
             try {
                 synth.speak(utterance);
                 console.log(`speak: Speaking: "${text}"`);
             } catch (e) {
-                console.error("speak: Error speaking audible utterance:", e);
+                console.error("speak: Error speaking audible utterance directly:", e);
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
+                reject(e);
             }
-        }
+        });
     }
 
     // New: Function to speak with default voice and rate (for countdown/completion)
     function speakDefault(text) {
-        if (!synth) {
-            console.warn('speakDefault: Speech Synthesis API not supported or not initialized.');
-            return;
-        }
-
-        if (synth.speaking || synth.pending) {
-            synth.cancel();
-            if (nextSilentUtteranceTimeout) {
-                clearTimeout(nextSilentUtteranceTimeout);
-                nextSilentUtteranceTimeout = null;
+        return new Promise((resolve, reject) => {
+            if (!synth) {
+                console.warn('speakDefault: Speech Synthesis API not supported or not initialized.');
+                reject('Speech Synthesis API not available');
+                return;
             }
-            if (nextAnnouncementTimeout) {
-                clearTimeout(nextAnnouncementTimeout);
-                nextAnnouncementTimeout = null;
-            }
-            console.log("speakDefault: Cancelled existing speech for new default message.");
-        }
 
-        if (text !== '') {
+            if (synth.speaking || synth.pending) {
+                synth.cancel();
+                if (nextSilentUtteranceTimeout) {
+                    clearTimeout(nextSilentUtteranceTimeout);
+                    nextSilentUtteranceTimeout = null;
+                }
+                if (nextAnnouncementTimeout) {
+                    clearTimeout(nextAnnouncementTimeout);
+                    nextAnnouncementTimeout = null;
+                }
+                console.log("speakDefault: Cancelled existing speech for new default message.");
+            }
+
+            if (text.trim() === '') {
+                resolve(); // Resolve immediately if no text to speak
+                return;
+            }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US'; // Explicitly set default language
             utterance.voice = null; // Explicitly set to default system voice
@@ -2052,15 +2079,24 @@
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
+                resolve();
             };
             utterance.onerror = (event) => {
+                console.error(`speakDefault: Default speech synthesis error: ${event.error}. Full event:`, event);
                 if (event.error !== 'interrupted') {
-                    console.error(`speakDefault: Default speech synthesis error: ${event.error}`);
+                    // If it's not an expected interruption, then potentially re-schedule keep-alive
+                    // Only re-initiate keep-alive if the routine is still running and not paused
+                    if (isRoutineRunning && !isPaused) {
+                        startSpeechKeepAlive();
+                    }
+                    reject(new Error(event.error || 'Speech synthesis error')); // Reject with a more informative Error object
                 } else {
                     console.info('speakDefault: Default SpeechSynthesisUtterance was interrupted, which is expected behavior.');
-                }
-                if (isRoutineRunning && !isPaused) {
-                    startSpeechKeepAlive();
+                    // For 'interrupted', still re-schedule keep-alive if routine is running
+                    if (isRoutineRunning && !isPaused) {
+                        startSpeechKeepAlive();
+                    }
+                    resolve(); // For 'interrupted', just resolve the promise
                 }
             };
             try {
@@ -2071,8 +2107,9 @@
                 if (isRoutineRunning && !isPaused) {
                     startSpeechKeepAlive();
                 }
+                reject(e);
             }
-        }
+        });
     }
 
 
@@ -2128,21 +2165,32 @@
         const updateCountdownDisplay = () => {
             currentShotDisplay.textContent = countdown;
             progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
-            speakDefault(countdown.toString()); // Use speakDefault for countdown
+
+            // Announce 10 specifically, then every 10th above 10, and all below 10.
+            if (countdown === 10) {
+                speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+            } else if (countdown > 10) {
+                if (countdown % 10 === 0) {
+                    speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+                }
+            } else { // countdown < 10
+                speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+            }
         };
 
+        // Initial display and announcement
         updateCountdownDisplay();
 
         countdownTimer = setInterval(() => {
             countdown--;
             if (countdown > 0) {
-                updateCountdownDisplay();
+                updateCountdownDisplay(); // Update and announce next number
             } else {
                 clearInterval(countdownTimer);
                 countdownTimer = null;
                 currentShotDisplay.textContent = 'Go!';
                 progressBar.style.width = '100%';
-                speakDefault('Go!'); // Use speakDefault for "Go!"
+                speakDefault('Go!').catch(e => console.error('Go! speech error:', e)); // Use speakDefault for "Go!"
                 setTimeout(runCurrentPattern, 1000); // Start patterns after "Go!"
             }
         }, 1000);
@@ -2233,6 +2281,8 @@
         } else if (pausedShotDisplayContent === 'Rest!') {
             let restRemaining = pausedRestTimeRemaining;
             currentShotDisplay.textContent = 'Rest!';
+            progressBar.style.width = '100%'; // Progress bar full for rest period
+            // Removed redundant 'let' declaration for restRemaining here.
             shotIntervalTimer = setInterval(() => {
                 if (isPaused) {
                     clearInterval(shotIntervalTimer);
@@ -2240,7 +2290,6 @@
                 }
                 restRemaining--;
                 globalWorkoutTimeElapsed++;
-                pausedRestTimeRemaining = restRemaining;
                 if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
                     clearInterval(shotIntervalTimer);
                     handleWorkoutCompletion();
@@ -2259,7 +2308,7 @@
         }
     }
 
-    function runCurrentPattern() {
+    async function runCurrentPattern() {
         if (isPaused) {
             console.log('runCurrentPattern: PAUSED, returning immediately.');
             return;
@@ -2282,7 +2331,7 @@
             } else {
                 // No more loops needed, workout is complete.
                 console.log('runCurrentPattern: All patterns completed and global limit met (or not set). Ending workout.');
-                handleWorkoutCompletion();
+                await handleWorkoutCompletion();
                 return; // Exit function
             }
         }
@@ -2303,7 +2352,7 @@
             if (shots.length > 0) {
                 // Found a valid pattern with shots, so execute it.
                 console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
-                startPatternExecution(pattern, shots);
+                await startPatternExecution(pattern, shots); // Await for intro message to finish
                 return; // Exit, the pattern is now running.
             }
         }
@@ -2315,16 +2364,20 @@
     }
 
 
-    function startPatternExecution(pattern, shots) {
+    async function startPatternExecution(pattern, shots) {
         currentShotOptions = shots;
         if (pattern.seriesOrder === 'randomized') {
             currentShotOptions = shuffleArray(currentShotOptions);
         }
         currentPatternShotCount = 0;
         currentPatternTimeElapsed = 0;
+
         if (pattern.announceShots && pattern.introMessage.trim()) {
-            speak(pattern.introMessage);
+            currentShotDisplay.textContent = 'Starting...'; // Display message during intro
+            progressBar.style.width = '0%'; // Reset progress bar for next pattern
+            await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish
         }
+
         const firstShotToDisplay = currentShotOptions[0];
         currentShotIndex = 1 % currentShotOptions.length;
         if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
@@ -2354,6 +2407,7 @@
         const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : pausedShotDisplayContent;
         currentShotDisplay.textContent = currentDisplayedShot;
 
+        // This block is for triggering the beep/flash *at the start of each interval* (i.e., for the NEXT shot)
         if (initialTimePassed === 0) {
             playTwoToneBeep();
             flashScreenRed();
@@ -2365,7 +2419,7 @@
             if(delay > 0){
                 nextAnnouncementTimeout = setTimeout(() => {
                     if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '') {
-                        speak(currentDisplayedShot); // Use speak for pattern-specific announcements
+                        speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e)); // Use speak for pattern-specific announcements
                         announcementSpokenForThisInterval = true;
                     }
                 }, delay);
@@ -2396,7 +2450,7 @@
                 totalWorkoutShots++;
 
                 if (shouldEndPattern(pattern)) {
-                    endPattern(pattern);
+                    endPattern(pattern); // Call endPattern when pattern is finished
                     return;
                 }
 
@@ -2406,6 +2460,7 @@
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
 
+                // Recursively call to start the next shot interval, triggering its beep/flash at initialTimePassed === 0
                 startShotInterval(pattern, 0, -1, nextShotToDisplay);
             }
         }, 100);
@@ -2425,22 +2480,32 @@
         return false;
     }
 
-    function endPattern(pattern) {
+    async function endPattern(pattern) {
         if (currentPatternTimer) { clearInterval(currentPatternTimer); }
         if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
-        if (flashTimer) { clearTimeout(flashTimer); } // Changed from clearTimeout(flash);
+        if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         document.body.style.backgroundColor = ''; // Clear inline style
         if(synth) synth.cancel();
 
+        // ** Fix Start: Play beep and flash immediately for the last shot **
+        playTwoToneBeep();
+        flashScreenRed();
+        // ** Fix End **
+
+        // Add a small, guaranteed delay after the last shot's beep/flash before any outro or rest.
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         if (pattern.announceShots && pattern.outroMessage.trim()) {
-            speak(pattern.outroMessage); // Use speak for pattern-specific outro
+            currentShotDisplay.textContent = 'Finishing...'; // Display message during outro
+            progressBar.style.width = '100%'; // Mark pattern as complete visually
+            await speak(pattern.outroMessage).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish
         }
 
         const postRestTime = parseInt(pattern.postSequenceRest);
         if (postRestTime > 0) {
             currentShotDisplay.textContent = "Rest!";
-            progressBar.style.width = '100%';
+            progressBar.style.width = '100%'; // Progress bar full for rest period
             let restRemaining = postRestTime;
             pausedRestTimeRemaining = restRemaining;
             shotIntervalTimer = setInterval(() => {
@@ -2469,7 +2534,7 @@
         }
     }
 
-    function handleWorkoutCompletion() {
+    async function handleWorkoutCompletion() {
         if (currentPatternTimer) { clearInterval(currentPatternTimer); }
         if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
@@ -2480,7 +2545,7 @@
         stopSpeechKeepAlive();
         if(synth) synth.cancel();
 
-        speakDefault('Workout complete'); // Use speakDefault for workout completion
+        await speakDefault('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
@@ -2581,7 +2646,7 @@
             const minTime = sequences.reduce((sum, p) => sum + (p.limitType === 'time' ? p.patternLimit : 0), 0);
             globalTimeLimitSlider.min = minTime > 0 ? minTime : 60; // Ensure minimum of 60 seconds if no time-based patterns
             if (globalTimeLimit < globalTimeLimitSlider.min) {
-                globalTimeLimit = parseInt(globalTimeLimitSlider.min);
+                globalLimit = parseInt(globalTimeLimitSlider.min);
             }
             globalTimeLimitSlider.value = globalTimeLimit;
             globalTimeLimitDisplay.textContent = formatTime(globalTimeLimit);
