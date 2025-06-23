@@ -2398,7 +2398,7 @@
         timePassedInMainPhase = initialTimePassed; // Reset or continue from paused state
 
         // Clear display and reset progress bar at t=0s of this phase
-        currentShotDisplay.textContent = ''; // Blank to retain vertical spacing
+        currentShotDisplay.textContent = '\u00A0'; // Non-breaking space to retain vertical spacing
         progressBar.style.width = '0%';
 
         // --- Schedule Events within this `effectiveIntervalDuration` cycle ---
