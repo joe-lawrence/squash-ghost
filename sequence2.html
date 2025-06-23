@@ -2388,10 +2388,12 @@
     function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
         if (isPaused) return;
 
+        // Clear existing timers and shot display content
         if (currentPatternTimer) clearInterval(currentPatternTimer);
         if (shotIntervalTimer) clearInterval(shotIntervalTimer);
         if (flashTimer) clearTimeout(flashTimer);
         if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
+        currentShotDisplay.textContent = ''; // Clear the shot text immediately
 
         const baseInterval = parseFloat(pattern.shotInterval);
         const randomOffset = parseFloat(pattern.randomOffset);
@@ -2404,7 +2406,6 @@
         pausedTimePassed = initialTimePassed;
 
         const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : pausedShotDisplayContent;
-        currentShotDisplay.textContent = currentDisplayedShot;
 
         // This block is for triggering the beep/flash *at the start of each interval* (i.e., for the NEXT shot)
         if (initialTimePassed === 0) {
@@ -2412,17 +2413,26 @@
             flashScreenRed();
         }
 
-        let announcementSpokenForThisInterval = false;
+        // Determine when the shot name should appear
         if (pattern.announceShots && nextShotAnnouncementTime > 0) {
             const delay = (initialTimePassed < nextShotAnnouncementTime) ? (nextShotAnnouncementTime - initialTimePassed) * 1000 : 0;
             if(delay > 0){
                 nextAnnouncementTimeout = setTimeout(() => {
-                    if (!isPaused && currentShotDisplay.textContent === currentDisplayedShot && currentDisplayedShot.trim() !== '') {
-                        speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e)); // Use speak for pattern-specific announcements
-                        announcementSpokenForThisInterval = true;
+                    if (!isPaused && currentDisplayedShot.trim() !== '') {
+                        currentShotDisplay.textContent = currentDisplayedShot; // Update display at announcement time
+                        speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e));
                     }
                 }, delay);
+            } else {
+                // If delay is 0 or less, announce immediately and update display
+                currentShotDisplay.textContent = currentDisplayedShot;
+                if (currentDisplayedShot.trim() !== '') {
+                    speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e));
+                }
             }
+        } else {
+            // If no announcement, display the shot immediately with the beep/flash.
+            currentShotDisplay.textContent = currentDisplayedShot;
         }
 
         currentPatternTimer = setInterval(() => {
@@ -2445,6 +2455,7 @@
 
             if (timePassed >= effectiveInterval) {
                 clearInterval(currentPatternTimer);
+                // currentShotDisplay.textContent = ''; // Removed this line as per user correction
                 currentPatternShotCount++;
                 totalWorkoutShots++;
 
