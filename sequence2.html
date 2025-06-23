@@ -587,7 +587,7 @@
           seriesOrder: 'in-order',
           shotInterval: 6.0,
           randomOffset: 0.0,
-          nextShotAnnouncement: 3.0,
+          nextShotAnnouncement: 2.0, // Default to 2 seconds for consistency with user example
           limitType: 'shot',
           patternLimit: defaultMaxShots,
           postSequenceRest: 0,
@@ -1190,8 +1190,9 @@
               if (parseFloat(nextShotAnnouncementSlider.value) > nextShotAnnouncementSlider.max) {
                   nextShotAnnouncementSlider.value = nextShotAnnouncementSlider.max;
               }
+              // If current value is 0 and it's enabled, set a sensible default if possible
               if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
-                nextShotAnnouncementSlider.value = 1.25;
+                nextShotAnnouncementSlider.value = 2.0; // Default to 2s as per user example
               }
           } else {
               nextShotAnnouncementSlider.value = 0;
@@ -1734,8 +1735,7 @@
     // --- Workout Logic ---
     let countdownTimer = null;
     let currentPatternIndex = 0;
-    let currentPatternTimer = null;
-    let shotIntervalTimer = null;
+    let mainPhaseTimer = null; // Timer for the main shot phase (6 seconds)
     let flashTimer = null;
     let nextAnnouncementTimeout = null;
     let currentPatternShotCount = 0;
@@ -1743,15 +1743,18 @@
     let currentPatternTimeElapsed = 0;
     let globalWorkoutTimeElapsed = 0;
     let currentShotOptions = [];
-    let currentShotIndex = 0;
+    let currentShotIndex = 0; // Index for shot options within the *current pattern*
+    let timePassedInMainPhase = 0; // Tracks time within the 6-second main shot phase
+    let effectiveIntervalDuration = 0; // Stores the calculated effective interval (base + random offset)
 
     let isPaused = false;
-    let pausedTimePassed = 0;
-    let pausedEffectiveInterval = 0;
+    let pausedCountdownTimeRemaining = 0;
+    let pausedTimePassedInMainPhase = 0;
+    let pausedEffectiveIntervalDuration = 0; // For resuming main phase
     let pausedRestTimeRemaining = 0;
     let pausedShotDisplayContent = '';
-    let pausedCountdownTimeRemaining = 0;
 
+    let isFirstShotOfWorkout = false; // Flag to manage the initial shot sequence
     let isToggleDebouncing = false;
     const DEBOUNCE_TIME = 300;
 
@@ -2117,6 +2120,7 @@
         initSpeechSynthesis();
         isRoutineRunning = true;
         startSpeechKeepAlive();
+        isFirstShotOfWorkout = true; // Set to true when workout starts
 
         // Explicitly try to resume the AudioContext right before starting.
         // This is a key change for iOS reliability.
@@ -2134,6 +2138,7 @@
         globalWorkoutTimeElapsed = 0;
         totalWorkoutShots = 0;
         isPaused = false;
+        timePassedInMainPhase = 0; // Reset for a fresh start
 
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
         stopWorkoutBtn.onclick = stopWorkout;
@@ -2147,6 +2152,9 @@
         if (workoutCountdownTime > 0) {
             startCountdown(workoutCountdownTime);
         } else {
+            // The first shot will always be `currentShotOptions[0]` after processing a pattern.
+            // When starting the workout for the first time, `currentPatternIndex` is 0.
+            // `runCurrentPattern` handles setting `currentShotOptions` and `currentShotIndex`.
             runCurrentPattern();
         }
     }
@@ -2194,13 +2202,9 @@
             clearInterval(countdownTimer);
             countdownTimer = null;
         }
-        if (currentPatternTimer) {
-            clearInterval(currentPatternTimer);
-            currentPatternTimer = null;
-        }
-        if (shotIntervalTimer) {
-            clearInterval(shotIntervalTimer);
-            shotIntervalTimer = null;
+        if (mainPhaseTimer) {
+            clearInterval(mainPhaseTimer);
+            mainPhaseTimer = null;
         }
         if (flashTimer) {
             clearTimeout(flashTimer);
@@ -2241,14 +2245,15 @@
             clearInterval(countdownTimer);
             countdownTimer = null;
             pausedCountdownTimeRemaining = parseInt(currentShotDisplay.textContent);
-        } else {
-            pausedShotDisplayContent = currentShotDisplay.textContent;
-            if (currentPatternTimer) clearInterval(currentPatternTimer);
-            if (shotIntervalTimer) clearInterval(shotIntervalTimer);
-            if (flashTimer) clearTimeout(flashTimer);
-            if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
-            currentPatternTimer = shotIntervalTimer = flashTimer = nextAnnouncementTimeout = null;
+        } else if (mainPhaseTimer) {
+            clearInterval(mainPhaseTimer);
+            mainPhaseTimer = null;
+            pausedTimePassedInMainPhase = timePassedInMainPhase; // Capture current time
+            pausedEffectiveIntervalDuration = effectiveIntervalDuration; // Capture current interval duration
         }
+        // Always clear other specific timeouts when pausing
+        if (flashTimer) clearTimeout(flashTimer);
+        if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
 
         stopSpeechKeepAlive();
         // Revert body background immediately on pause
@@ -2256,6 +2261,7 @@
         if(synth) synth.cancel();
 
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon
+        pausedShotDisplayContent = currentShotDisplay.textContent; // Capture whatever was on screen
         currentShotDisplay.textContent = 'Paused';
         // Do not reset progress bar here for better UX when resuming
         console.log('pauseWorkout: Workout paused.');
@@ -2269,43 +2275,31 @@
 
         if (pausedCountdownTimeRemaining > 0) {
             startCountdown(pausedCountdownTimeRemaining);
-            pausedCountdownTimeRemaining = 0;
-        } else if (pausedShotDisplayContent === 'Rest!') {
-            let restRemaining = pausedRestTimeRemaining;
-            const originalPostRestTime = currentWorkoutPatterns[currentPatternIndex - 1].postSequenceRest; // Get total rest duration
+            pausedCountdownTimeRemaining = 0; // Reset
+        } else if (pausedRestTimeRemaining > 0) { // If it was paused during post-pattern rest
+            resumeRestInterval(pausedRestTimeRemaining);
+            pausedRestTimeRemaining = 0; // Reset
+        } else { // If it was paused during a main shot phase
+            const pattern = currentWorkoutPatterns[currentPatternIndex]; // The pattern that was active
+            if (pattern) {
+                // When resuming main shot phase, the `shotToAnnounce` should be for the *next* shot.
+                // This is `currentShotOptions[currentShotIndex]` from before the pause.
+                const nextShotText = currentShotOptions[currentShotIndex];
 
-            // Removed redundant 'let' declaration for restRemaining here.
-            shotIntervalTimer = setInterval(() => {
-                if (isPaused) {
-                    clearInterval(shotIntervalTimer);
-                    return;
-                }
-                restRemaining--;
-                globalWorkoutTimeElapsed++;
-                pausedRestTimeRemaining = restRemaining;
+                // Use the captured time passed and effective interval
+                startMainShotPhase(pattern, isFirstShotOfWorkout, nextShotText, pausedTimePassedInMainPhase, pausedEffectiveIntervalDuration);
 
-                // Update display and progress bar for rest
-                currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
-                progressBar.style.width = `${((originalPostRestTime - restRemaining) / originalPostRestTime) * 100}%`;
-
-                // Countdown/Beep/Flash for last 10 seconds of rest
-                if (restRemaining > 0 && restRemaining <= 10) {
-                    speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
-                    playTwoToneBeep();
-                    flashScreenRed();
-                }
-
-                if (restRemaining <= 0) {
-                    clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null;
-                    currentPatternIndex++;
-                    runCurrentPattern();
-                }
-            }, 1000);
-        } else {
-            startShotInterval(currentWorkoutPatterns[currentPatternIndex], pausedTimePassed, pausedEffectiveInterval, pausedShotDisplayContent);
+                // Reset relevant paused states
+                pausedTimePassedInMainPhase = 0;
+                pausedEffectiveIntervalDuration = 0;
+                pausedShotDisplayContent = '';
+            } else {
+                console.error("No active pattern found to resume workout interval from pause.");
+                stopWorkout(); // Fallback to stop if context is lost
+            }
         }
     }
+
 
     async function runCurrentPattern() {
         if (isPaused) {
@@ -2347,11 +2341,26 @@
 
         // Check if the current pattern is valid and has shots
         if (pattern && typeof pattern.shotOptions === 'string') {
-            const shots = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
-            if (shots.length > 0) {
-                // Found a valid pattern with shots, so execute it.
+            currentShotOptions = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
+            if (currentShotOptions.length > 0) {
+                if (pattern.seriesOrder === 'randomized') {
+                    currentShotOptions = shuffleArray(currentShotOptions);
+                }
+                currentPatternShotCount = 0; // Reset for each new pattern
+                currentPatternTimeElapsed = 0; // Reset for each new pattern
+                currentShotIndex = 0; // Reset shot index for the new pattern
+
                 console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
-                await startPatternExecution(pattern, shots); // Await for intro message to finish
+                if (pattern.announceShots && pattern.introMessage.trim()) {
+                    currentShotDisplay.textContent = 'Intro'; // Display message during intro
+                    progressBar.style.width = '0%'; // Reset progress bar for next pattern
+                    await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish
+                }
+
+                // Now, start the main shot phase. isFirstShotOfWorkout determines the timing variant.
+                // The `shotToAnnounce` for the very first shot of the workout is `currentShotOptions[0]`.
+                startMainShotPhase(pattern, isFirstShotOfWorkout, currentShotOptions[currentShotIndex]);
+                isFirstShotOfWorkout = false; // After the very first shot sequence starts, subsequent will be regular.
                 return; // Exit, the pattern is now running.
             }
         }
@@ -2363,117 +2372,124 @@
     }
 
 
-    async function startPatternExecution(pattern, shots) {
-        currentShotOptions = shots;
-        if (pattern.seriesOrder === 'randomized') {
-            currentShotOptions = shuffleArray(currentShotOptions);
-        }
-        currentPatternShotCount = 0;
-        currentPatternTimeElapsed = 0;
-
-        if (pattern.announceShots && pattern.introMessage.trim()) {
-            currentShotDisplay.textContent = 'Starting...'; // Display message during intro
-            progressBar.style.width = '0%'; // Reset progress bar for next pattern
-            await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish
-        }
-
-        const firstShotToDisplay = currentShotOptions[0];
-        currentShotIndex = 1 % currentShotOptions.length;
-        if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
-            currentShotOptions = shuffleArray(currentShotOptions);
-        }
-        startShotInterval(pattern, 0, -1, firstShotToDisplay);
-    }
-
-    function startShotInterval(pattern, initialTimePassed = 0, totalInterval = -1, shotToDisplayAtStart = null) {
+    /**
+     * Manages a single shot interval (e.g., 6 seconds).
+     * Handles progress bar, beep/flash, and next shot announcement based on whether it's
+     * the very first shot of the workout or a regular subsequent shot.
+     * @param {object} pattern The current pattern data.
+     * @param {boolean} isInitialWorkoutShot True if this is the very first shot of the entire workout.
+     * @param {string} shotToAnnounce The shot text to announce *during* this interval (for the *next* shot's preparation).
+     * @param {number} [initialTimePassed=0] Time already passed in this interval (for resuming from pause).
+     * @param {number} [predefinedEffectiveInterval=0] Use a predefined effective interval (for resuming from pause).
+     */
+    function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initialTimePassed = 0, predefinedEffectiveInterval = 0) {
         if (isPaused) return;
 
-        // Clear existing timers and shot display content
-        if (currentPatternTimer) clearInterval(currentPatternTimer);
-        if (shotIntervalTimer) clearInterval(shotIntervalTimer);
+        // Clear any previous timers/timeouts
+        if (mainPhaseTimer) clearInterval(mainPhaseTimer);
         if (flashTimer) clearTimeout(flashTimer);
         if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
-        currentShotDisplay.textContent = ''; // Clear the shot text immediately
 
+        // Calculate effective interval, including random offset
         const baseInterval = parseFloat(pattern.shotInterval);
         const randomOffset = parseFloat(pattern.randomOffset);
-        const nextShotAnnouncementTime = parseFloat(pattern.nextShotAnnouncement);
+        effectiveIntervalDuration = (predefinedEffectiveInterval > 0) ? predefinedEffectiveInterval : (baseInterval + (Math.random() * randomOffset));
 
-        let effectiveInterval = (totalInterval > 0) ? totalInterval : (baseInterval + (Math.random() * randomOffset));
-        let timePassed = initialTimePassed;
+        timePassedInMainPhase = initialTimePassed; // Reset or continue from paused state
 
-        pausedEffectiveInterval = effectiveInterval;
-        pausedTimePassed = initialTimePassed;
+        // Clear display and reset progress bar at t=0s of this phase
+        currentShotDisplay.textContent = ''; // Blank to retain vertical spacing
+        progressBar.style.width = '0%';
 
-        const currentDisplayedShot = (shotToDisplayAtStart !== null) ? shotToDisplayAtStart : pausedShotDisplayContent;
+        // --- Schedule Events within this `effectiveIntervalDuration` cycle ---
 
-        // This block is for triggering the beep/flash *at the start of each interval* (i.e., for the NEXT shot)
-        if (initialTimePassed === 0) {
-            playTwoToneBeep();
-            flashScreenRed();
+        // 1. Beep and Flash (at effectiveIntervalDuration / 2)
+        const flashBeepTime = effectiveIntervalDuration / 2;
+        if (flashBeepTime >= timePassedInMainPhase) {
+            flashTimer = setTimeout(() => {
+                if (!isPaused) {
+                    playTwoToneBeep();
+                    flashScreenRed();
+                }
+            }, (flashBeepTime - timePassedInMainPhase) * 1000);
         }
 
-        // Determine when the shot name should appear
-        if (pattern.announceShots && nextShotAnnouncementTime > 0) {
-            const delay = (initialTimePassed < nextShotAnnouncementTime) ? (nextShotAnnouncementTime - initialTimePassed) * 1000 : 0;
-            if(delay > 0){
-                nextAnnouncementTimeout = setTimeout(() => {
-                    if (!isPaused && currentDisplayedShot.trim() !== '') {
-                        currentShotDisplay.textContent = currentDisplayedShot; // Update display at announcement time
-                        speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e));
-                    }
-                }, delay);
+        // 2. Next Shot Announcement (timing depends on isInitialWorkoutShot)
+        if (pattern.announceShots && shotToAnnounce.trim() !== '') {
+            let announcementTime;
+            if (isInitialWorkoutShot) {
+                // For the very first shot (N=1), announcement is at (interval/2 - announcementTime) from t=0.
+                // Example: 6/2 - 2 = 1s from t=0. This happens in the first half of the the interval before the beep/flash.
+                announcementTime = (baseInterval / 2) - parseFloat(pattern.nextShotAnnouncement);
             } else {
-                // If delay is 0 or less, announce immediately and update display
-                currentShotDisplay.textContent = currentDisplayedShot;
-                if (currentDisplayedShot.trim() !== '') {
-                    speak(currentDisplayedShot).catch(e => console.error('Shot announcement speech error:', e));
+                // For subsequent shots (N > 1), announcement is at (effectiveIntervalDuration / 2 - nextShotAnnouncement) from t=0 of its interval.
+                // This means the announcement for the *next* shot occurs `nextShotAnnouncement` seconds *before* the beep/flash of the *current* shot.
+                announcementTime = (effectiveIntervalDuration / 2) - parseFloat(pattern.nextShotAnnouncement);
+            }
+
+            if (announcementTime >= timePassedInMainPhase) { // Only schedule if event time hasn't passed
+                nextAnnouncementTimeout = setTimeout(() => {
+                    if (!isPaused) {
+                        currentShotDisplay.textContent = shotToAnnounce;
+                        speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
+                    }
+                }, (announcementTime - timePassedInMainPhase) * 1000);
+            } else {
+                // If announcement time has passed (e.g., on resume), or if the calculated time is negative,
+                // display and announce immediately.
+                if (!isPaused) {
+                    currentShotDisplay.textContent = shotToAnnounce;
+                    speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
                 }
             }
-        } else {
-            // If no announcement, display the shot immediately with the beep/flash.
-            currentShotDisplay.textContent = currentDisplayedShot;
         }
 
-        currentPatternTimer = setInterval(() => {
+
+        // Main interval timer for progress bar updates and checking for end of interval
+        const intervalStep = 100; // 0.1 seconds
+        mainPhaseTimer = setInterval(() => {
             if (isPaused) {
-                clearInterval(currentPatternTimer);
+                clearInterval(mainPhaseTimer);
                 return;
             }
-            timePassed += 0.1;
-            currentPatternTimeElapsed += 0.1;
-            globalWorkoutTimeElapsed += 0.1;
-            pausedTimePassed = timePassed;
+            timePassedInMainPhase += (intervalStep / 1000);
+            currentPatternTimeElapsed += (intervalStep / 1000);
+            globalWorkoutTimeElapsed += (intervalStep / 1000);
 
-            const progress = (timePassed / effectiveInterval) * 100;
+            // Update progress bar
+            const progress = (timePassedInMainPhase / effectiveIntervalDuration) * 100;
             progressBar.style.width = `${progress}%`;
 
+            // Check global time limit
             if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
+                clearInterval(mainPhaseTimer);
                 handleWorkoutCompletion();
                 return;
             }
 
-            if (timePassed >= effectiveInterval) {
-                clearInterval(currentPatternTimer);
-                // currentShotDisplay.textContent = ''; // Removed this line as per user correction
+            // Check if this interval has completed
+            if (timePassedInMainPhase >= effectiveIntervalDuration) {
+                clearInterval(mainPhaseTimer); // Stop this interval timer
                 currentPatternShotCount++;
                 totalWorkoutShots++;
 
+                // Check if pattern/workout should end after this completed interval
                 if (shouldEndPattern(pattern)) {
-                    endPattern(pattern); // Call endPattern when pattern is finished
+                    endPattern(pattern);
                     return;
                 }
 
-                const nextShotToDisplay = currentShotOptions[currentShotIndex];
+                // Prepare for the next shot in the sequence
                 currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
+                const nextShotInSequence = currentShotOptions[currentShotIndex];
 
-                // Recursively call to start the next shot interval, triggering its beep/flash at initialTimePassed === 0
-                startShotInterval(pattern, 0, -1, nextShotToDisplay);
+                // Start the next regular shot interval (isInitialWorkoutShot is now false)
+                startMainShotPhase(pattern, false, nextShotInSequence);
             }
-        }, 100);
+        }, intervalStep);
     }
 
 
@@ -2490,71 +2506,73 @@
         return false;
     }
 
+    // New function to handle resuming rest after a pause
+    function resumeRestInterval(timeRemaining) {
+        currentShotDisplay.textContent = "Rest!";
+        const pattern = currentWorkoutPatterns[currentPatternIndex - 1]; // Previous pattern for total rest duration
+        const originalPostRestTime = pattern ? pattern.postSequenceRest : pausedRestTimeRemaining; // Fallback in case pattern is null or 0
+
+        let restRemaining = timeRemaining;
+        pausedRestTimeRemaining = restRemaining; // Keep updated for potential re-pause
+
+        // Update progress bar for rest based on initial duration
+        progressBar.style.width = `${((originalPostRestTime - restRemaining) / originalPostRestTime) * 100}%`;
+
+        mainPhaseTimer = setInterval(() => { // Using mainPhaseTimer for rest countdown
+            if (isPaused) {
+                clearInterval(mainPhaseTimer);
+                return;
+            }
+            restRemaining--;
+            globalWorkoutTimeElapsed++;
+            pausedRestTimeRemaining = restRemaining;
+
+            currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
+            progressBar.style.width = `${((originalPostRestTime - restRemaining) / originalPostRestTime) * 100}%`;
+
+            if (restRemaining > 0 && restRemaining <= 10) {
+                speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
+                playTwoToneBeep();
+                flashScreenRed();
+            }
+
+            if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
+                clearInterval(mainPhaseTimer);
+                handleWorkoutCompletion();
+                return;
+            }
+            if (restRemaining <= 0) {
+                clearInterval(mainPhaseTimer);
+                mainPhaseTimer = null; // Clear rest timer
+                currentPatternIndex++;
+                runCurrentPattern();
+            }
+        }, 1000);
+    }
+
+
     async function endPattern(pattern) {
-        if (currentPatternTimer) { clearInterval(currentPatternTimer); }
-        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
+        if (mainPhaseTimer) { clearInterval(mainPhaseTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         document.body.style.backgroundColor = ''; // Clear inline style
         if(synth) synth.cancel();
 
-        // ** Fix Start: Play beep and flash immediately for the last shot **
-        playTwoToneBeep();
-        flashScreenRed();
-        // ** Fix End **
+        // The last beep and flash for the final shot happened in startMainShotPhase at its halfway point.
+        // No extra beep/flash here.
 
-        // Add a small, guaranteed delay after the last shot's beep/flash before any outro or rest.
+        // Add a small, guaranteed delay after the last shot's interval ends before any outro or rest.
         await new Promise(resolve => setTimeout(resolve, 500));
 
         if (pattern.announceShots && pattern.outroMessage.trim()) {
-            currentShotDisplay.textContent = 'Finishing...'; // Display message during outro
+            currentShotDisplay.textContent = 'Outro'; // Display message during outro
             progressBar.style.width = '100%'; // Mark pattern as complete visually
             await speak(pattern.outroMessage).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish
         }
 
         const postRestTime = parseInt(pattern.postSequenceRest);
         if (postRestTime > 0) {
-            currentShotDisplay.textContent = "Rest!";
-            // progressBar.style.width = '100%'; // Progress bar full for rest period - REMOVED
-            let restRemaining = postRestTime;
-            pausedRestTimeRemaining = restRemaining;
-
-            // Initial update for rest display and progress bar
-            currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
-            progressBar.style.width = `${((postRestTime - restRemaining) / postRestTime) * 100}%`;
-
-            shotIntervalTimer = setInterval(() => {
-                if (isPaused) {
-                    clearInterval(shotIntervalTimer);
-                    return;
-                }
-                restRemaining--;
-                globalWorkoutTimeElapsed++;
-                pausedRestTimeRemaining = restRemaining;
-
-                // Update display and progress bar for rest
-                currentShotDisplay.textContent = `Rest: ${restRemaining}s`;
-                progressBar.style.width = `${((postRestTime - restRemaining) / postRestTime) * 100}%`;
-
-                // Countdown/Beep/Flash for last 10 seconds of rest
-                if (restRemaining > 0 && restRemaining <= 10) {
-                    speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
-                    playTwoToneBeep();
-                    flashScreenRed();
-                }
-
-                if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
-                    clearInterval(shotIntervalTimer);
-                    handleWorkoutCompletion();
-                    return;
-                }
-                if (restRemaining <= 0) {
-                    clearInterval(shotIntervalTimer);
-                    shotIntervalTimer = null;
-                    currentPatternIndex++;
-                    runCurrentPattern();
-                }
-            }, 1000);
+            resumeRestInterval(postRestTime); // Start the rest interval
         } else {
             currentPatternIndex++;
             runCurrentPattern();
@@ -2562,8 +2580,8 @@
     }
 
     async function handleWorkoutCompletion() {
-        if (currentPatternTimer) { clearInterval(currentPatternTimer); }
-        if (shotIntervalTimer) { clearInterval(shotIntervalTimer); }
+        if (countdownTimer) { clearInterval(countdownTimer); }
+        if (mainPhaseTimer) { clearInterval(mainPhaseTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         document.body.style.backgroundColor = ''; // Clear inline style
@@ -2676,7 +2694,7 @@
                 globalLimit = parseInt(globalTimeLimitSlider.min);
             }
             globalTimeLimitSlider.value = globalTimeLimit;
-            globalTimeLimitDisplay.textContent = formatTime(globalTimeLimit);
+            globalTimeLimitDisplay.textContent = formatTime(globalLimit);
         }
         calculateTotalWorkoutTime();
       };
