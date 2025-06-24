@@ -2984,11 +2984,11 @@
       const updateImages = () => {
           const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches || document.body.classList.contains('dark');
           if (isDarkMode) {
-              appBanner.src = 'https://placehold.co/400x100/1f2937/d1d5db?text=Squash+Ghoster'; // Placeholder for dark mode
-              appFooter.src = 'https://placehold.co/400x50/1f2937/d1d5db?text=Squash+Ghoster+Footer'; // Placeholder for dark mode
+              appBanner.src = 'banner-black.png';
+              appFooter.src = 'footer-black.png';
           } else {
-              appBanner.src = 'https://placehold.co/400x100/f3f4f6/4b5563?text=Squash+Ghoster'; // Placeholder for light mode
-              appFooter.src = 'https://placehold.co/400x50/f3f4f6/4b5563?text=Squash+Ghoster+Footer'; // Placeholder for light mode
+              appBanner.src = 'banner-white.png';
+              appFooter.src = 'footer-white.png';
           }
       };
 
