@@ -377,6 +377,17 @@
                                     <input type="range" id="randomOffset" min="0.0" max="1.0" step="0.1" class="w-full accent-blue-600">
                                     <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Next shot announcement</p>
                                     <input type="range" id="nextShotAnnouncement" min="0.0" max="7.0" step="0.1" class="w-full accent-blue-600">
+
+                                    <!-- Split-step Hint Dropdown -->
+                                    <div class="mt-4 mb-4">
+                                        <label for="splitStepHint" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Split-step hint:</label>
+                                        <select id="splitStepHint" class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <option value="None">None</option>
+                                            <option value="Slow">Slow</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Fast">Fast</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -448,7 +459,7 @@
     <div id="global-controls" class="flex justify-center space-x-4 mt-8 hidden">
         <button id="load-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Load</button>
         <button id="save-all-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Save</button>
-        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button> <!-- Changed from Reset All to Reset -->
+        <button id="reset-all-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 w-32">Reset</button>
     </div>
 
     <!-- The Confirmation Modal (for delete/reset) -->
@@ -489,8 +500,8 @@
       let selectedPatternId = null; // Store the ID of the selected row for focus tracking
       let isMoveModeOn = false; // State for move mode in the accordion list
       let isDeleteModeOn = false; // State for delete mode in the accordion list
-      let workoutOrderMode = 'in-order'; // New state for global workout order
-      let workoutCountdownTime = 0; // New state for workout countdown
+      let workoutOrderMode = 'in-order'; // State for global workout order
+      let workoutCountdownTime = 0; // State for workout countdown
       let globalLimitType = 'all'; // 'all', 'shot', or 'time'
       let globalShotLimit = 0;
       let globalTimeLimit = 60;
@@ -535,8 +546,6 @@
       const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn');
       const currentShotDisplay = document.getElementById('current-shot-display');
       const progressBar = document.getElementById('progress-bar');
-      // Removed currentPatternNameDisplay as per user request
-      // const appTitle = document.getElementById('app-title'); // This is now removed
 
       const appBanner = document.getElementById('app-banner'); // Reference to the image banner
       const appFooter = document.getElementById('app-footer'); // Reference to the footer image banner
@@ -551,7 +560,7 @@
       let nextSilentUtteranceTimeout = null;
 
       // --- Speech Voice & Rate state (for global usage during workout) ---
-      let globalSpeechVoice = null; // Will store the selected SpeechSynthesisVoice object
+      let globalSpeechVoice = null; // Stores the selected SpeechSynthesisVoice object
       let globalSpeechRate = 1.0;
 
       // --- SVG Icons ---
@@ -563,6 +572,11 @@
 
 
       // --- UTILITY FUNCTIONS ---
+      /**
+       * Formats a given number of seconds into a MM:SS string.
+       * @param {number} totalSeconds - The total number of seconds.
+       * @returns {string} Formatted time string (MM:SS).
+       */
       const formatTime = (totalSeconds) => {
         const roundedSeconds = Math.round(totalSeconds);
         if (roundedSeconds === 0) return 'None';
@@ -573,6 +587,10 @@
         return `${formattedMinutes}:${formattedSeconds}`;
       };
 
+      /**
+       * Returns a new default pattern data object.
+       * @returns {object} Default pattern configuration.
+       */
       const getNewSequenceData = () => {
         const defaultShotOptions = 'Front left\nFront right\nMid left\nMid right\nBack left\nBack right';
         const defaultMaxShots = 20;
@@ -587,32 +605,46 @@
           seriesOrder: 'in-order',
           shotInterval: 6.0,
           randomOffset: 0.0,
-          nextShotAnnouncement: 2.0, // Default to 2 seconds for consistency with user example
+          nextShotAnnouncement: 2.0,
+          splitStepHint: 'None',
           limitType: 'shot',
           patternLimit: defaultMaxShots,
           postSequenceRest: 0,
           previousShotLimit: defaultMaxShots,
           previousTimeLimit: defaultMaxTimeSeconds,
-          speechRate: 1.0, // New: Default speech rate
-          speechVoice: 'default' // New: Default voice name or 'default'
+          speechRate: 1.0,
+          speechVoice: 'default'
         };
       };
 
+      /**
+       * Scrolls the app container to the top smoothly.
+       */
       const focusOnTop = () => {
         if(appContainer) {
           appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       };
 
+      /**
+       * Sanitizes a string for use as a filename.
+       * @param {string} name - The original string.
+       * @returns {string} The sanitized string.
+       */
       const sanitizeFilename = (name) => {
         return name.replace(/[^a-z0-9\s-]/gi, '').replace(/\s+/g, '-');
       };
 
+      /**
+       * Validates if a given object matches the expected pattern configuration structure.
+       * @param {object} data - The object to validate.
+       * @returns {boolean} True if the object is a valid pattern configuration, false otherwise.
+       */
       const isValidPatternConfig = (data) => {
         const requiredProps = [
           'patternName', 'shotOptions', 'announceShots', 'introMessage', 'outroMessage',
-          'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'limitType', 'patternLimit',
-          'postSequenceRest', 'speechRate', 'speechVoice' // Added new properties
+          'seriesOrder', 'shotInterval', 'randomOffset', 'nextShotAnnouncement', 'splitStepHint', 'limitType', 'patternLimit',
+          'postSequenceRest', 'speechRate', 'speechVoice'
         ];
         const hasAllProps = requiredProps.every(prop => Object.prototype.hasOwnProperty.call(data, prop));
         if (!hasAllProps) return false;
@@ -625,16 +657,22 @@
             typeof data.shotInterval !== 'number' ||
             typeof data.randomOffset !== 'number' ||
             typeof data.nextShotAnnouncement !== 'number' ||
+            !['None', 'Slow', 'Medium', 'Fast'].includes(data.splitStepHint) ||
             !['shot', 'time'].includes(data.limitType) ||
             typeof data.patternLimit !== 'number' ||
             typeof data.postSequenceRest !== 'number' ||
-            typeof data.speechRate !== 'number' || // Type check for new property
-            typeof data.speechVoice !== 'string') { // Type check for new property
+            typeof data.speechRate !== 'number' ||
+            typeof data.speechVoice !== 'string') {
             return false;
         }
         return true;
       };
 
+      /**
+       * Validates if a given object matches the expected workout file structure.
+       * @param {object} data - The object to validate.
+       * @returns {boolean} True if the object is a valid workout file, false otherwise.
+       */
       const isValidWorkoutFile = (data) => {
           if (typeof data !== 'object' || data === null || Array.isArray(data)) {
               return false;
@@ -645,12 +683,17 @@
           return Array.isArray(data.patterns) && data.patterns.every(isValidPatternConfig);
       };
 
-      // Custom Alert Modal
+      // Custom Alert Modal elements
       const alertModal = document.getElementById('alert-modal');
       const alertTitle = document.getElementById('alert-title');
       const alertMessage = document.getElementById('alert-message');
       const alertOkBtn = document.getElementById('alert-ok-btn');
 
+      /**
+       * Displays a custom alert modal to the user.
+       * @param {string} title - The title of the alert.
+       * @param {string} message - The message content of the alert.
+       */
       const showAlert = (title, message) => {
           alertTitle.textContent = title;
           alertMessage.textContent = message;
@@ -660,7 +703,11 @@
           };
       };
 
-      // Function to set interaction mode (move, delete, or null for off)
+      /**
+       * Sets the interaction mode (move, delete, or none) for the pattern list.
+       * Updates UI elements to reflect the active mode.
+       * @param {string|null} mode - 'move', 'delete', or null to turn off modes.
+       */
       const setInteractionMode = (mode) => {
           const wasMoveModeOn = isMoveModeOn;
           const wasDeleteModeOn = isDeleteModeOn;
@@ -685,14 +732,17 @@
           deletePatternToggleButton.classList.toggle('dark:text-gray-300', !isDeleteModeOn);
           deletePatternToggleButton.dataset.state = isDeleteModeOn ? 'on' : 'off';
 
-          // Only re-render accordion if a mode state actually changed
+          // Re-render accordion if a mode state actually changed to show/hide specific buttons/icons.
           if (wasMoveModeOn !== isMoveModeOn || wasDeleteModeOn !== isDeleteModeOn) {
-              renderAccordionView(); // Re-render accordion to show/hide specific buttons/icons
+              renderAccordionView();
           }
-          toggleOtherButtons(); // Apply global disabling (no opacity for list view, only editor/global buttons)
+          // Apply global disabling for buttons not related to the active mode.
+          toggleOtherButtons();
       };
 
-      // Function to disable/enable other buttons and elements based on active mode
+      /**
+       * Disables or enables various UI elements based on the current interaction mode (move/delete).
+       */
       const toggleOtherButtons = () => {
           const disableGlobalActions = isMoveModeOn || isDeleteModeOn;
 
@@ -716,7 +766,6 @@
           elementsToToggleDisable.forEach(element => {
               if (element) {
                   element.disabled = disableGlobalActions;
-                  // NO OPACITY OR CURSOR-NOT-ALLOWED FOR GLOBAL BUTTONS AS PER NEW REQUIREMENT
               }
           });
 
@@ -728,7 +777,7 @@
               deletePatternToggleButton.disabled = isMoveModeOn;
           }
 
-          // Global Reset button is special, it's never disabled by these modes
+          // Global Reset button is never disabled by these modes.
           if (resetAllBtn) {
             resetAllBtn.disabled = false;
           }
@@ -776,6 +825,10 @@
 
 
       // --- VIEW MANAGEMENT ---
+      /**
+       * Shows a specific view of the application (main list, editor, or workout).
+       * @param {string} view - The view to show ('main', 'editor', or 'workout').
+       */
       const showView = (view) => {
           // Reset appContainer styles before applying view-specific ones
           appContainer.classList.remove(
@@ -789,10 +842,10 @@
           startWorkoutContainer.classList.add('hidden');
           globalControls.classList.add('hidden');
           workoutViewContainer.classList.add('hidden');
-          patternEditorContainer.classList.add('hidden'); // Ensure editor is hidden
+          patternEditorContainer.classList.add('hidden');
           // App Banner & Footer visibility handling
-          document.getElementById('app-banner-container').classList.remove('hidden'); // Default to visible
-          document.getElementById('app-footer-container').classList.remove('hidden'); // Default to visible
+          document.getElementById('app-banner-container').classList.remove('hidden');
+          document.getElementById('app-footer-container').classList.remove('hidden');
 
 
           if (view === 'main') {
@@ -801,7 +854,7 @@
               mainViewContainer.classList.remove('hidden');
               startWorkoutContainer.classList.remove('hidden');
               globalControls.classList.remove('hidden');
-              globalWorkoutOrderOptions.classList.remove('hidden'); // Ensure radios are visible
+              globalWorkoutOrderOptions.classList.remove('hidden');
               renderAccordionView(); // Render the list
               updateGlobalLimitControls();
               calculateTotalWorkoutTime();
@@ -830,6 +883,9 @@
       };
 
       // --- ESTIMATED WORKOUT TIME CALCULATION ---
+      /**
+       * Calculates and displays the estimated total workout time in the "Start" button.
+       */
       const calculateTotalWorkoutTime = () => {
           let totalTime = 0;
           if (globalLimitType === 'time') {
@@ -866,13 +922,14 @@
                   totalTime += pattern.postSequenceRest;
               });
           }
-          // Do NOT add workoutCountdownTime to totalTime for display in the "Start" button.
-          // totalTime += workoutCountdownTime; // Original line - REMOVED
           startWorkoutButton.textContent = `Start (${formatTime(totalTime)})`;
       };
 
 
       // --- ACCORDION LIST VIEW RENDERING ---
+      /**
+       * Renders or re-renders the accordion list of patterns in the main view.
+       */
       const renderAccordionView = () => {
           patternsAccordionContainer.innerHTML = '';
           if (sequences.length === 0) {
@@ -898,9 +955,10 @@
 
               patternNameDisplay.textContent = pattern.patternName;
 
-              // Update summary text (example summary, customize as needed)
+              // Update summary text
               const limitText = pattern.limitType === 'shot' ? `${pattern.patternLimit} shots` : formatTime(pattern.patternLimit);
-              patternSummarySpan.textContent = `Shots: ${(pattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length}, Limit: ${limitText}, Interval: ${pattern.shotInterval}s`;
+              let splitStepHintText = pattern.splitStepHint === 'None' ? '' : `, Hint: ${pattern.splitStepHint}`;
+              patternSummarySpan.textContent = `Shots: ${(pattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length}, Limit: ${limitText}, Interval: ${pattern.shotInterval}s${splitStepHintText}`;
 
 
               // Set visibility of move/delete icons based on mode
@@ -929,7 +987,7 @@
                   chevronDownToggle.classList.remove('opacity-30', 'cursor-not-allowed');
               }
 
-              // Apply 'selected-row' class if this pattern is currently selected in the list
+              // Apply 'selected-row' class if this pattern is currently selected in the list.
               // Only apply if no mode is active, otherwise selection is implicit by mode.
               if (selectedPatternId === pattern.id && !isMoveModeOn && !isDeleteModeOn) {
                 newAccordionItem.classList.add('selected-row');
@@ -955,7 +1013,6 @@
                       e.stopPropagation(); // Prevent navigation/other clicks
                   } else {
                       // Normal mode: clicking the header (or pattern name) opens the editor
-                      // We can also make the right chevron click expand/collapse a summary (optional)
                       if (clickedElement.closest('.pattern-name-display') || clickedElement.closest('.right-chevron')) {
                           activeSequenceIndex = index; // Set the active pattern for the editor
                           showView('editor'); // Navigate to editor view
@@ -984,7 +1041,6 @@
           const currentData = sequences[activeSequenceIndex];
           const newSequenceEl = sequenceTemplate.content.cloneNode(true).firstElementChild; // Clone the template content
           newSequenceEl.id = `sequence-${currentData.id}`; // Give the cloned element a unique ID
-          // Removed: newSequenceEl.classList.remove('hidden'); // The template itself is hidden, but the cloned element might not be if it was within the hidden template already.
 
           sequencesContainer.appendChild(newSequenceEl); // Add the cloned element to the container
 
@@ -998,11 +1054,12 @@
           const shotInterval = newSequenceEl.querySelector('#shotInterval');
           const randomOffset = newSequenceEl.querySelector('#randomOffset');
           const nextShotAnnouncement = newSequenceEl.querySelector('#nextShotAnnouncement');
+          const splitStepHintSelect = newSequenceEl.querySelector('#splitStepHint');
           const limitTypeSelect = newSequenceEl.querySelector('#limitTypeSelect');
           const patternLimitSlider = newSequenceEl.querySelector('#patternLimitSlider');
           const postSequenceRest = newSequenceEl.querySelector('#postSequenceRest');
 
-          // New: Speech Rate and Voice elements
+          // Speech Rate and Voice elements
           const speechRateSlider = newSequenceEl.querySelector('#speechRate');
           const speechRateValueDisplay = newSequenceEl.querySelector('#speechRateValue');
           const speechVoiceSelect = newSequenceEl.querySelector('#speechVoiceSelect');
@@ -1018,11 +1075,12 @@
           shotInterval.value = currentData.shotInterval;
           randomOffset.value = currentData.randomOffset;
           nextShotAnnouncement.value = currentData.nextShotAnnouncement;
+          splitStepHintSelect.value = currentData.splitStepHint;
           limitTypeSelect.value = currentData.limitType;
           patternLimitSlider.value = currentData.patternLimit;
           postSequenceRest.value = currentData.postSequenceRest;
 
-          // New: Set speech rate and voice
+          // Set speech rate and voice
           speechRateSlider.value = currentData.speechRate;
           speechRateValueDisplay.textContent = currentData.speechRate.toFixed(1);
           populateVoiceList(speechVoiceSelect, currentData.speechVoice); // Pass the specific select element and current voice
@@ -1062,25 +1120,26 @@
           const announceShots = currentEl.querySelector('#announceShots');
           const introMessage = currentEl.querySelector('#introMessage');
           const outroMessage = currentEl.querySelector('#outroMessage');
-          const seriesOrderCheckedRadio = currentEl.querySelector('input[name="seriesOrder"]:checked'); // This can be null if none checked
+          const seriesOrderCheckedRadio = currentEl.querySelector('input[name="seriesOrder"]:checked');
           const shotInterval = currentEl.querySelector('#shotInterval');
           const randomOffset = currentEl.querySelector('#randomOffset');
           const nextShotAnnouncement = currentEl.querySelector('#nextShotAnnouncement');
+          const splitStepHintSelect = currentEl.querySelector('#splitStepHint');
           const limitTypeSelect = currentEl.querySelector('#limitTypeSelect');
           const patternLimitSlider = currentEl.querySelector('#patternLimitSlider');
           const postSequenceRest = currentEl.querySelector('#postSequenceRest');
 
-          // New: Speech Rate and Voice elements
+          // Speech Rate and Voice elements
           const speechRateSlider = currentEl.querySelector('#speechRate');
           const speechVoiceSelect = currentEl.querySelector('#speechVoiceSelect');
 
 
           // Before attempting to access properties, ensure the element exists.
-          // If any critical element is null, we should probably log an error and exit.
+          // If any critical element is null, log an error and exit.
           if (!patternNameDisplay || !shotOptions || !announceShots || !introMessage || !outroMessage ||
               !seriesOrderCheckedRadio || !shotInterval || !randomOffset || !nextShotAnnouncement ||
-              !limitTypeSelect || !patternLimitSlider || !postSequenceRest ||
-              !speechRateSlider || !speechVoiceSelect) { // Added new elements to check
+              !splitStepHintSelect || !limitTypeSelect || !patternLimitSlider || !postSequenceRest ||
+              !speechRateSlider || !speechVoiceSelect) {
               console.error('saveCurrentSequenceState: One or more required editor elements are null. Skipping save.');
               return;
           }
@@ -1088,7 +1147,8 @@
           // Save the current patternLimit to the appropriate 'previous' field before updating currentData
           if (currentData.limitType === 'shot') {
               currentData.previousShotLimit = parseInt(patternLimitSlider.value);
-          } else if (currentData.limitType === 'time') {
+          }
+          else if (currentData.limitType === 'time') {
               currentData.previousTimeLimit = parseInt(patternLimitSlider.value);
           }
 
@@ -1102,17 +1162,22 @@
           currentData.shotInterval = parseFloat(shotInterval.value);
           currentData.randomOffset = parseFloat(randomOffset.value);
           currentData.nextShotAnnouncement = parseFloat(nextShotAnnouncement.value);
+          currentData.splitStepHint = splitStepHintSelect.value;
           currentData.limitType = limitTypeSelect.value;
           currentData.patternLimit = parseInt(patternLimitSlider.value);
           currentData.postSequenceRest = parseInt(postSequenceRest.value);
-          currentData.speechRate = parseFloat(speechRateSlider.value); // Save speech rate
-          currentData.speechVoice = speechVoiceSelect.value; // Save selected voice name
+          currentData.speechRate = parseFloat(speechRateSlider.value);
+          currentData.speechVoice = speechVoiceSelect.value;
 
           calculateTotalWorkoutTime();
           updateGlobalLimitControls();
       };
 
       // --- UI UPDATE FUNCTIONS (for the separate editor screen) ---
+      /**
+       * Updates all display fields within the pattern editor.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateAllDisplays = (context) => {
           updateShotOptionsDisplay(context);
           updateNarrationDisplay(context);
@@ -1122,22 +1187,30 @@
           updatePostRestDisplay(context);
       }
 
+      /**
+       * Updates the display for the number of shot options.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateShotOptionsDisplay = (context) => {
         const shotOptions = context.querySelector('#shotOptions');
         const display = context.querySelector('#optionsCountDisplay');
-        if (shotOptions && display) { // Add null checks
+        if (shotOptions && display) {
             const count = (shotOptions.value || '').trim().split(/[\n,]+/).filter(Boolean).length;
             display.textContent = `${count} shots`;
         }
       };
 
+      /**
+       * Updates the display for narration settings.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateNarrationDisplay = (context) => {
         const display = context.querySelector('#narrationDisplay');
         const announceShotsCheckbox = context.querySelector('#announceShots');
         const introMessageTextarea = context.querySelector('#introMessage');
         const outroMessageTextarea = context.querySelector('#outroMessage');
 
-        if (display && announceShotsCheckbox && introMessageTextarea && outroMessageTextarea) { // Add null checks
+        if (display && announceShotsCheckbox && introMessageTextarea && outroMessageTextarea) {
             const parts = [];
             if (announceShotsCheckbox.checked) parts.push('Shots');
             if (introMessageTextarea.value.trim()) parts.push('Intro');
@@ -1146,41 +1219,58 @@
         }
       };
 
+      /**
+       * Updates the display for sequencing order.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateSequencingDisplay = (context) => {
           const display = context.querySelector('#sequencingOrderDisplay');
           const seriesOrderRadio = context.querySelector('input[name="seriesOrder"]:checked');
-          if (display && seriesOrderRadio) { // Add null checks
+          if (display && seriesOrderRadio) {
               const value = seriesOrderRadio.value;
               display.textContent = value === 'in-order' ? 'In order' : 'Randomized';
           }
       };
 
+      /**
+       * Updates the display for interval settings, including next shot announcement and split-step hint.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateIntervalDisplay = (context) => {
         const display = context.querySelector('#intervalCombinedDisplay');
         const shotIntervalInput = context.querySelector('#shotInterval');
         const randomOffsetInput = context.querySelector('#randomOffset');
         const nextShotAnnouncementInput = context.querySelector('#nextShotAnnouncement');
         const announceShotsCheckbox = context.querySelector('#announceShots');
+        const splitStepHintSelect = context.querySelector('#splitStepHint');
 
-        if (display && shotIntervalInput && randomOffsetInput && nextShotAnnouncementInput && announceShotsCheckbox) { // Add null checks
+        if (display && shotIntervalInput && randomOffsetInput && nextShotAnnouncementInput && announceShotsCheckbox && splitStepHintSelect) {
             const interval = parseFloat(shotIntervalInput.value).toFixed(1);
             const offset = parseFloat(randomOffsetInput.value).toFixed(1);
             const nextShotAnnounce = parseFloat(nextShotAnnouncementInput.value).toFixed(1);
+            const splitStepHint = splitStepHintSelect.value;
 
             let text = offset > 0 ? `${interval} sec ± ${offset}` : `${interval} sec`;
             if (announceShotsCheckbox.checked) {
                 text += ` (${nextShotAnnounce}s)`;
             }
+            if (splitStepHint !== 'None') {
+                text += `, Hint: ${splitStepHint}`;
+            }
             display.textContent = text;
         }
       };
 
+      /**
+       * Handles changes to the "Announce Shots" checkbox, enabling/disabling the next shot announcement slider.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const handleAnnounceShotsChange = (context) => {
           const announceShotsCheckbox = context.querySelector('#announceShots');
           const nextShotAnnouncementSlider = context.querySelector('#nextShotAnnouncement');
           const shotIntervalSlider = context.querySelector('#shotInterval');
 
-          if (!announceShotsCheckbox || !nextShotAnnouncementSlider || !shotIntervalSlider) return; // Add null checks
+          if (!announceShotsCheckbox || !nextShotAnnouncementSlider || !shotIntervalSlider) return;
 
           nextShotAnnouncementSlider.disabled = !announceShotsCheckbox.checked;
 
@@ -1192,7 +1282,7 @@
               }
               // If current value is 0 and it's enabled, set a sensible default if possible
               if (parseFloat(nextShotAnnouncementSlider.value) === 0 && nextShotAnnouncementSlider.max >= 1.25) {
-                nextShotAnnouncementSlider.value = 2.0; // Default to 2s as per user example
+                nextShotAnnouncementSlider.value = 2.0;
               }
           } else {
               nextShotAnnouncementSlider.value = 0;
@@ -1202,12 +1292,17 @@
       };
 
 
+      /**
+       * Handles changes to the pattern limit type (shots or time).
+       * Adjusts the slider range and value based on the selected type.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const handleLimitTypeChange = (context) => {
         const select = context.querySelector('#limitTypeSelect');
         const slider = context.querySelector('#patternLimitSlider');
 
         const currentPattern = sequences[activeSequenceIndex];
-        if (!currentPattern || !select || !slider) return; // Add null checks
+        if (!currentPattern || !select || !slider) return;
 
         const newLimitType = select.value;
         const prevLimitTypeInState = currentPattern.limitType;
@@ -1227,9 +1322,9 @@
             slider.max = 100;
             proposedValue = (typeof currentPattern.previousShotLimit === 'number' && currentPattern.previousShotLimit > 0)
                                 ? currentPattern.previousShotLimit
-                                : ((currentPattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length); // Defensive check for shotOptions
+                                : ((currentPattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length);
         } else if (newLimitType === 'time') {
-            const shotOptionsCount = ((currentPattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length); // Defensive check
+            const shotOptionsCount = ((currentPattern.shotOptions || '').trim().split(/[\n,]+/).filter(Boolean).length);
             const estimatedTimeForOptions = shotOptionsCount * currentPattern.shotInterval;
 
             slider.min = Math.max(1, Math.round(currentPattern.shotInterval));
@@ -1247,11 +1342,15 @@
         calculateTotalWorkoutTime();
       };
 
+      /**
+       * Updates the display for pattern limits (shots or time).
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updateLimitsDisplay = (context) => {
         const display = context.querySelector('#limitsDisplay');
         const typeSelect = context.querySelector('#limitTypeSelect');
         const patternLimitSlider = context.querySelector('#patternLimitSlider');
-        if (display && typeSelect && patternLimitSlider) { // Add null checks
+        if (display && typeSelect && patternLimitSlider) {
             const type = typeSelect.value;
             const value = parseInt(patternLimitSlider.value);
             if (type === 'shot') {
@@ -1262,37 +1361,40 @@
         }
       };
 
+      /**
+       * Updates the display for post-pattern rest time.
+       * @param {HTMLElement} context - The DOM element representing the current pattern editor.
+       */
       const updatePostRestDisplay = (context) => {
         const display = context.querySelector('#postSequenceRestDisplay');
         const postSequenceRestInput = context.querySelector('#postSequenceRest');
-        if (display && postSequenceRestInput) { // Add null checks
+        if (display && postSequenceRestInput) {
             const value = parseInt(postSequenceRestInput.value);
             display.textContent = formatTime(value);
         }
       };
 
-      // --- Speech Synthesis specific functions (reused from previous text-to-speech app) ---
+      // --- Speech Synthesis specific functions ---
       const currentLang = document.documentElement.lang || navigator.language || 'en-US';
       const langCode = currentLang.split('-')[0]; // Get the primary language code (e.g., 'en' from 'en-US')
 
-      // Function to detect if the user is on an Apple device
+      /**
+       * Detects if the user is on an Apple operating system (macOS, iOS, iPadOS).
+       * @returns {boolean} True if on an Apple OS, false otherwise.
+       */
       function isAppleOS() {
           const userAgent = navigator.userAgent;
-
-          // 1. Detect macOS:
-          // Look for "MacIntel" in navigator.platform or "Macintosh" in userAgent
           const isMacOS = navigator.platform.includes('Mac') || userAgent.includes('Macintosh');
-
-          // 2. Detect iOS/iPadOS (including newer iPadOS that presents as Mac):
-          // Use the logic from the previous answer for iOS/iPadOS detection.
           const isIOS = /iPad|iPhone|iPod/.test(userAgent) ||
                         (navigator.platform === 'MacIntel' && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
-
           return isMacOS || isIOS;
       }
 
-      // Function to populate voice options in the dropdown
-      // Takes the select element and the initially selected voice name as arguments
+      /**
+       * Populates voice options in a given select dropdown element.
+       * @param {HTMLSelectElement} selectElement - The select element to populate.
+       * @param {string} selectedVoiceName - The name of the voice to pre-select.
+       */
       function populateVoiceList(selectElement, selectedVoiceName) {
             if (!synth) {
                 console.warn("Speech synthesis not initialized, cannot populate voice list.");
@@ -1345,8 +1447,12 @@
 
 
       // --- SEQUENCE MANAGEMENT FUNCTIONS ---
+      /**
+       * Adds a new default pattern to the sequences array and opens it in the editor.
+       */
       const addSequence = () => {
-        if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
+        // If in editor, save current changes before adding new.
+        if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
         }
 
@@ -1361,6 +1467,9 @@
         focusOnTop();
       };
 
+      /**
+       * Creates a clone of the currently active pattern and adds it to the sequences array.
+       */
       const cloneSequence = () => {
         if (activeSequenceIndex === -1) {
             showAlert('Clone Error', 'No pattern selected to clone.');
@@ -1381,6 +1490,11 @@
         focusOnTop();
       };
 
+      /**
+       * Moves a pattern up or down in the sequences array.
+       * @param {number} index - The current index of the pattern to move.
+       * @param {string} direction - 'up' or 'down'.
+       */
       const movePattern = (index, direction) => {
           const patternIdToSelect = sequences[index].id;
 
@@ -1398,6 +1512,10 @@
           calculateTotalWorkoutTime();
       };
 
+      /**
+       * Deletes a pattern from the sequences array. If only one pattern remains, it resets it to default.
+       * @param {number} indexToDelete - The index of the pattern to delete.
+       */
       const deleteSequence = (indexToDelete) => {
           // If only one pattern, clear and reset instead of deleting entirely
           if (sequences.length <= 1) {
@@ -1442,6 +1560,9 @@
       };
 
 
+      /**
+       * Resets the currently active pattern in the editor to its default values.
+       */
       const resetCurrentSequence = () => {
           if (activeSequenceIndex === -1 || sequences.length === 0) {
             showAlert('Reset Error', 'No pattern selected to reset.');
@@ -1455,7 +1576,11 @@
           calculateTotalWorkoutTime();
       };
 
-      // Function to handle pattern name editing in the editor screen
+      /**
+       * Allows editing the pattern name directly in the editor view.
+       * @param {object} currentData - The data object for the current pattern.
+       * @param {HTMLElement} displayElement - The HTML element displaying the pattern name.
+       */
       const editPatternName = (currentData, displayElement) => {
           setInteractionMode(null); // Ensure modes are off
 
@@ -1487,6 +1612,9 @@
       };
 
       // --- INDIVIDUAL PATTERN IMPORT / SAVE FUNCTIONS (for the separate editor) ---
+      /**
+       * Saves the current pattern's configuration to a JSON file.
+       */
       const savePatternConfig = () => {
         const patternToSave = sequences[activeSequenceIndex];
         if (!patternToSave) {
@@ -1509,6 +1637,9 @@
         calculateTotalWorkoutTime();
       };
 
+      /**
+       * Imports a pattern configuration from a JSON file.
+       */
       const importPatternConfig = () => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -1526,9 +1657,10 @@
           reader.onload = (e) => {
             try {
               const importedData = JSON.parse(e.target.result);
-              // Provide default values for new speech properties if not present in old files
+              // Provide default values for new properties if not present in old files.
               if (typeof importedData.speechRate === 'undefined') importedData.speechRate = 1.0;
               if (typeof importedData.speechVoice === 'undefined') importedData.speechVoice = 'default';
+              if (typeof importedData.splitStepHint === 'undefined') importedData.splitStepHint = 'None';
 
               if (isValidPatternConfig(importedData)) {
                 if (activeSequenceIndex !== -1) {
@@ -1561,6 +1693,9 @@
 
 
       // --- GLOBAL WORKOUT (ALL PATTERNS) FUNCTIONS ---
+      /**
+       * Loads a complete workout configuration from a JSON file.
+       */
       const loadWorkout = () => {
         setInteractionMode(null); // Turn off any list modes
 
@@ -1589,6 +1724,7 @@
                     // Provide default values for new speech properties if not present in old files
                     if (typeof pattern.speechRate === 'undefined') pattern.speechRate = 1.0;
                     if (typeof pattern.speechVoice === 'undefined') pattern.speechVoice = 'default';
+                    if (typeof pattern.splitStepHint === 'undefined') pattern.splitStepHint = 'None';
                     return { ...pattern, id: Date.now() + Math.random() };
                 });
 
@@ -1629,9 +1765,13 @@
         fileInput.click();
       };
 
+      /**
+       * Saves the current overall workout configuration (all patterns and global settings) to a JSON file.
+       */
       const saveWorkout = () => {
         setInteractionMode(null); // Turn off any list modes
-        if (!patternEditorContainer.classList.contains('hidden')) { // If in editor, save current
+        // If in editor, save current changes before saving all.
+        if (!patternEditorContainer.classList.contains('hidden')) {
           saveCurrentSequenceState();
         }
 
@@ -1666,6 +1806,9 @@
         calculateTotalWorkoutTime();
       };
 
+      /**
+       * Clears all patterns and resets the workout to a single default pattern.
+       */
       const clearAllPatterns = () => {
           setInteractionMode(null); // Turn off any list modes
 
@@ -1702,6 +1845,10 @@
           }, { once: true });
       };
 
+      /**
+       * Shows a confirmation modal before deleting a pattern.
+       * @param {number} indexToDelete - The index of the pattern to be deleted.
+       */
       const showConfirmationModalForDelete = (indexToDelete) => {
           const modal = document.getElementById('confirmation-modal');
           const modalTitle = document.getElementById('modal-title');
@@ -1732,19 +1879,20 @@
       };
 
 
-    // --- Workout Logic ---
+    // --- Workout Logic Variables ---
     let countdownTimer = null;
     let currentPatternIndex = 0;
-    let mainPhaseTimer = null; // Timer for the main shot phase (6 seconds)
+    let mainPhaseTimer = null; // Timer for the main shot phase
     let flashTimer = null;
     let nextAnnouncementTimeout = null;
+    let splitStepPowerUpTimeout = null;
     let currentPatternShotCount = 0;
     let totalWorkoutShots = 0;
     let currentPatternTimeElapsed = 0;
     let globalWorkoutTimeElapsed = 0;
     let currentShotOptions = [];
     let currentShotIndex = 0; // Index for shot options within the *current pattern*
-    let timePassedInMainPhase = 0; // Tracks time within the 6-second main shot phase
+    let timePassedInMainPhase = 0; // Tracks time within the current interval phase
     let effectiveIntervalDuration = 0; // Stores the calculated effective interval (base + random offset)
 
     let isPaused = false;
@@ -1752,27 +1900,31 @@
     let pausedTimePassedInMainPhase = 0;
     let pausedEffectiveIntervalDuration = 0; // For resuming main phase
     let pausedRestTimeRemaining = 0;
-    let pausedShotDisplayContent = '';
+    let pausedShotDisplayContent = ''; // Stores content displayed when paused
 
-    let isFirstShotOfWorkout = false; // Flag to manage the initial shot sequence
-    let isToggleDebouncing = false;
+    let isFirstShotOfWorkout = false; // Flag to manage the initial shot sequence special timing
+    let isToggleDebouncing = false; // Prevents rapid toggling of pause/resume
     const DEBOUNCE_TIME = 300;
 
-    // New variable to hold the patterns for the current workout run
+    // Stores the patterns for the current workout run (can be shuffled).
     let currentWorkoutPatterns = [];
 
+    /**
+     * Initializes the Web Audio API AudioContext.
+     * Attempts to resume if suspended, often necessary due to browser autoplay policies.
+     */
     function initAudioContext() {
         if (audioContext) return; // Already initialized
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-            // If the context is in a suspended state, it requires a user gesture to resume.
-            // We'll attach a one-time event listener to resume it on the first user interaction.
+            // If the context is suspended, it requires a user gesture to resume.
+            // Attach a one-time event listener to resume it on the first user interaction.
             if (audioContext.state === 'suspended') {
                 const resumeAudio = () => {
                     audioContext.resume().then(() => {
                         console.log('AudioContext resumed successfully by user gesture.');
-                        // Clean up the event listeners once resumed
+                        // Clean up the event listeners once resumed.
                         document.removeEventListener('click', resumeAudio);
                         document.removeEventListener('touchend', resumeAudio);
                     }).catch(error => console.error("Error resuming AudioContext:", error));
@@ -1782,11 +1934,13 @@
             }
         } catch (error) {
             console.error("Failed to initialize AudioContext:", error);
-            // We can also show a user-friendly alert here if needed
-            // showAlert('Audio Error', 'Could not initialize audio for beeps.');
         }
     }
 
+    /**
+     * Initializes the Speech Synthesis API.
+     * Sends a silent utterance to "wake up" the API and populates voice lists.
+     */
     function initSpeechSynthesis() {
         if ('speechSynthesis' in window) {
             synth = window.speechSynthesis;
@@ -1824,18 +1978,22 @@
                     const currentEl = sequencesContainer.firstChild;
                     if (currentEl) {
                         const speechVoiceSelect = currentEl.querySelector('#speechVoiceSelect');
-                        if (speechVoiceSelect && synth.getVoices().length > 0 && speechVoiceSelect.options.length <= 1) { // Only if not already populated
+                        // Only populate if not already populated.
+                        if (speechVoiceSelect && synth.getVoices().length > 0 && speechVoiceSelect.options.length <= 1) {
                             const currentData = sequences[activeSequenceIndex];
                             populateVoiceList(speechVoiceSelect, currentData.speechVoice);
                         }
                     }
                 }
-            }, 500); // Small delay to allow voices to load
+            }, 500);
         } else {
             console.warn('Speech Synthesis API not supported in this browser.');
         }
     }
 
+    /**
+     * Plays a silent utterance to keep the SpeechSynthesis API active in some browsers.
+     */
     function speakSilent() {
         if (!synth || !isRoutineRunning || isPaused) {
             console.log('speakSilent: Conditions not met. isRoutineRunning:', isRoutineRunning, 'isPaused:', isPaused);
@@ -1865,14 +2023,14 @@
 
         utterance.onerror = (event) => {
             if (event.error !== 'interrupted') {
-                console.error(`speakSilent: Silent speech synthesis error: ${event.error}. Full event:`, event); // Log only real errors as error
+                console.error(`speakSilent: Silent speech synthesis error: ${event.error}. Full event:`, event);
                 if (isRoutineRunning && !isPaused) {
                     nextSilentUtteranceTimeout = setTimeout(() => {
                         speakSilent();
                     }, 50);
                 }
             } else {
-                console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.'); // Log expected interruptions as info
+                console.info('speakSilent: Silent SpeechSynthesisUtterance was interrupted, which is expected behavior.');
                 if (isRoutineRunning && !isPaused) {
                     nextSilentUtteranceTimeout = setTimeout(() => {
                         speakSilent();
@@ -1894,16 +2052,22 @@
         }
     }
 
+    /**
+     * Starts the continuous silent utterance chain to keep speech synthesis active.
+     */
     function startSpeechKeepAlive() {
         if (!synth) {
             console.warn('startSpeechKeepAlive: SpeechSynthesis not available for keep-alive.');
             return;
         }
-        stopSpeechKeepAlive();
+        stopSpeechKeepAlive(); // Clear any existing chain before starting a new one.
         console.log('startSpeechKeepAlive: Initiating speech keep-alive chain...');
         speakSilent();
     }
 
+    /**
+     * Stops the continuous silent utterance chain and cancels any pending speech.
+     */
     function stopSpeechKeepAlive() {
         if (nextSilentUtteranceTimeout) {
             clearTimeout(nextSilentUtteranceTimeout);
@@ -1917,11 +2081,14 @@
         console.log('stopSpeechKeepAlive: Speech keep-alive stopped and cancelled.');
     }
 
+    /**
+     * Plays a two-tone beep sound.
+     */
     function playTwoToneBeep() {
         try {
             if (!audioContext || audioContext.state !== 'running') {
                 console.warn("playTwoToneBeep: AudioContext not ready for two-tone beep. State:", audioContext ? audioContext.state : 'null');
-                // Attempt to resume it one last time, in case the user interaction happened right before this call
+                // Attempt to resume it one last time.
                 if(audioContext && audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -1961,7 +2128,101 @@
         }
     }
 
-    // Function to speak with pattern-specific voice and rate
+    /**
+     * Plays a "power-up" sound effect for split-step hint.
+     * @param {string} speed - 'Slow', 'Medium', or 'Fast'.
+     * @param {string} [pitch='medium'] - 'low', 'medium', or 'high'.
+     */
+    function playSplitStepPowerUp(speed, pitch = 'medium') {
+        try {
+            if (!audioContext || audioContext.state !== 'running') {
+                console.warn("playSplitStepPowerUp: AudioContext not ready. State:", audioContext ? audioContext.state : 'null');
+                if(audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                return;
+            }
+
+            let baseFrequency;
+            // Determine base frequency based on pitch
+            switch (pitch) {
+                case 'low':
+                    baseFrequency = 220; // A3
+                    break;
+                case 'medium':
+                    baseFrequency = 440; // A4 (standard)
+                    break;
+                case 'high':
+                    baseFrequency = 880; // A5
+                    break;
+                default:
+                    baseFrequency = 440;
+            }
+
+            let durationPerStep;
+            // Determine speed
+            switch (speed) {
+                case 'Slow':
+                    durationPerStep = 0.08;
+                    break;
+                case 'Medium':
+                    durationPerStep = 0.06;
+                    break;
+                case 'Fast':
+                    durationPerStep = 0.04;
+                    break;
+                default:
+                    return; // Don't play if speed is not recognized or 'None'
+            }
+
+            const numberOfSteps = 8;
+            const attack = 0.01; // Attack phase duration for each step
+            const decay = 0.05;  // Decay phase duration for each step
+            const oscillatorType = 'triangle'; // Triangle wave for a distinct sound
+            const volume = 0.8; // 80% volume
+
+            const now = audioContext.currentTime;
+
+            for (let i = 0; i < numberOfSteps; i++) {
+                const startTime = now + (i * durationPerStep);
+                const frequency = baseFrequency * Math.pow(1.15, i); // Exponential increase for rising sound
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination); // Connect directly to audio context destination
+
+                oscillator.type = oscillatorType;
+                oscillator.frequency.setValueAtTime(frequency, startTime);
+
+                // ADSR envelope for each step (simplified to A and D here)
+                gainNode.gain.setValueAtTime(0, startTime); // Start from 0 volume
+                gainNode.gain.linearRampToValueAtTime(volume, startTime + attack); // Ramp up to 80% volume
+                gainNode.gain.linearRampToValueAtTime(0, startTime + attack + decay); // Ramp down to 0 volume
+
+                oscillator.start(startTime);
+                // Stop the oscillator after its full step duration, allowing the ADSR to complete within it
+                oscillator.stop(startTime + durationPerStep);
+
+                // Clean up nodes after they are no longer needed
+                oscillator.onended = () => {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                };
+            }
+        } catch (error) {
+            console.error("playSplitStepPowerUp: Error playing split-step power-up sound:", error);
+        }
+    }
+
+
+    /**
+     * Speaks the given text using the pattern-specific voice and rate.
+     * Cancels any existing speech before speaking a new message.
+     * @param {string} text - The text to speak.
+     * @returns {Promise<void>} A promise that resolves when speech ends or rejects on error.
+     */
     function speak(text) {
         return new Promise((resolve, reject) => {
             if (!synth) {
@@ -1972,6 +2233,7 @@
 
             if (synth.speaking || synth.pending) {
                 synth.cancel();
+                // Clear related timeouts as new speech will take precedence
                 if (nextSilentUtteranceTimeout) {
                     clearTimeout(nextSilentUtteranceTimeout);
                     nextSilentUtteranceTimeout = null;
@@ -2008,20 +2270,19 @@
             };
             utterance.onerror = (event) => {
                 if (event.error !== 'interrupted') {
-                    console.error(`speak: Audible speech synthesis error: ${event.error}. Full event:`, event); // Log only real errors as error
-                    // If it's not an expected interruption, then potentially re-schedule keep-alive
-                    // Only re-initiate keep-alive if the routine is still running and not paused
+                    console.error(`speak: Audible speech synthesis error: ${event.error}. Full event:`, event);
+                    // Only re-initiate keep-alive if the routine is still running and not paused.
                     if (isRoutineRunning && !isPaused) {
                         startSpeechKeepAlive();
                     }
-                    reject(new Error(event.error || 'Speech synthesis error')); // Reject with a more informative Error object
+                    reject(new Error(event.error || 'Speech synthesis error'));
                 } else {
-                    console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.'); // Log expected interruptions as info
-                    // For 'interrupted', still re-schedule keep-alive if routine is running
+                    console.info('speak: Audible SpeechSynthesisUtterance was interrupted, which is expected behavior.');
+                    // For 'interrupted', still re-schedule keep-alive if routine is running.
                     if (isRoutineRunning && !isPaused) {
                         startSpeechKeepAlive();
                     }
-                    resolve(); // For 'interrupted', just resolve the promise
+                    resolve();
                 }
             };
             try {
@@ -2037,7 +2298,12 @@
         });
     }
 
-    // New: Function to speak with default voice and rate (for countdown/completion)
+    /**
+     * Speaks the given text using the default system voice and rate (for countdown/completion).
+     * Cancels any existing speech before speaking a new message.
+     * @param {string} text - The text to speak.
+     * @returns {Promise<void>} A promise that resolves when speech ends or rejects on error.
+     */
     function speakDefault(text) {
         return new Promise((resolve, reject) => {
             if (!synth) {
@@ -2048,6 +2314,7 @@
 
             if (synth.speaking || synth.pending) {
                 synth.cancel();
+                // Clear related timeouts as new speech will take precedence
                 if (nextSilentUtteranceTimeout) {
                     clearTimeout(nextSilentUtteranceTimeout);
                     nextSilentUtteranceTimeout = null;
@@ -2078,7 +2345,7 @@
                 resolve();
             };
             utterance.onerror = (event) => {
-                // Fix: Only log as error if the error is not 'interrupted'
+                // Only log as error if the error is not 'interrupted'.
                 if (event.error !== 'interrupted') {
                     console.error(`speakDefault: Default speech synthesis error: ${event.error}. Full event:`, event);
                     if (isRoutineRunning && !isPaused) {
@@ -2087,7 +2354,7 @@
                     reject(new Error(event.error || 'Speech synthesis error'));
                 } else {
                     console.info('speakDefault: Default SpeechSynthesisUtterance was interrupted, which is expected behavior.');
-                    // For 'interrupted', still re-schedule keep-alive if routine is running
+                    // For 'interrupted', still re-schedule keep-alive if routine is running.
                     if (isRoutineRunning && !isPaused) {
                         startSpeechKeepAlive();
                     }
@@ -2107,12 +2374,15 @@
         });
     }
 
-
+    /**
+     * Initiates the workout routine.
+     */
     async function startWorkout() {
         if (sequences.length === 0) {
             showAlert('Workout Error', 'Please create at least one workout pattern first!');
             return;
         }
+        // Save any unsaved changes in the editor before starting.
         if (!patternEditorContainer.classList.contains('hidden')) {
             saveCurrentSequenceState();
         }
@@ -2120,14 +2390,14 @@
         initSpeechSynthesis();
         isRoutineRunning = true;
         startSpeechKeepAlive();
-        isFirstShotOfWorkout = true; // Set to true when workout starts
+        isFirstShotOfWorkout = true; // Flag for special timing of the very first shot.
 
-        // Explicitly try to resume the AudioContext right before starting.
-        // This is a key change for iOS reliability.
+        // Explicitly try to resume the AudioContext, crucial for iOS reliability.
         if (audioContext && audioContext.state === 'suspended') {
             await audioContext.resume();
         }
 
+        // Determine workout pattern order (in-order or randomized).
         if (workoutOrderMode === 'randomized') {
             currentWorkoutPatterns = shuffleArray(sequences);
         } else {
@@ -2140,6 +2410,7 @@
         isPaused = false;
         timePassedInMainPhase = 0; // Reset for a fresh start
 
+        // Configure workout control buttons.
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
         stopWorkoutBtn.onclick = stopWorkout;
         stopWorkoutBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-gray-600', 'hover:bg-gray-700');
@@ -2149,16 +2420,20 @@
         pauseResumeWorkoutBtn.onclick = togglePauseResume;
         pauseResumeWorkoutBtn.classList.remove('hidden');
 
+        // Start countdown or directly run patterns.
         if (workoutCountdownTime > 0) {
             startCountdown(workoutCountdownTime);
         } else {
-            // The first shot will always be `currentShotOptions[0]` after processing a pattern.
-            // When starting the workout for the first time, `currentPatternIndex` is 0.
+            // When starting the workout, `currentPatternIndex` is 0.
             // `runCurrentPattern` handles setting `currentShotOptions` and `currentShotIndex`.
             runCurrentPattern();
         }
     }
 
+    /**
+     * Manages the initial workout countdown.
+     * @param {number} timeRemaining - The initial countdown time in seconds.
+     */
     function startCountdown(timeRemaining) {
         let countdown = timeRemaining;
 
@@ -2166,7 +2441,7 @@
             currentShotDisplay.textContent = countdown;
             progressBar.style.width = `${((timeRemaining - countdown) / timeRemaining) * 100}%`;
 
-            // Announce 10 specifically, then every 10th above 10, and all below 10.
+            // Announce specific countdown numbers.
             if (countdown === 10) {
                 speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
             } else if (countdown > 10) {
@@ -2178,7 +2453,7 @@
             }
         };
 
-        // Initial display and announcement
+        // Initial display and announcement.
         updateCountdownDisplay();
 
         countdownTimer = setInterval(() => {
@@ -2190,42 +2465,40 @@
                 countdownTimer = null;
                 currentShotDisplay.textContent = 'Go!';
                 progressBar.style.width = '100%';
-                speakDefault('Go!').catch(e => console.error('Go! speech error:', e)); // Use speakDefault for "Go!"
+                speakDefault('Go!').catch(e => console.error('Go! speech error:', e));
                 setTimeout(runCurrentPattern, 1000); // Start patterns after "Go!"
             }
         }, 1000);
     }
 
+    /**
+     * Stops the current workout, clearing all timers and returning to the main view.
+     */
     function stopWorkout() {
         console.log('stopWorkout: Stopping workout...');
-        if (countdownTimer) {
-            clearInterval(countdownTimer);
-            countdownTimer = null;
-        }
-        if (mainPhaseTimer) {
-            clearInterval(mainPhaseTimer);
-            mainPhaseTimer = null;
-        }
-        if (flashTimer) {
-            clearTimeout(flashTimer);
-            flashTimer = null;
-        }
-        if (nextAnnouncementTimeout) {
-            clearTimeout(nextAnnouncementTimeout);
-            nextAnnouncementTimeout = null;
-        }
+        // Clear all relevant timers and timeouts.
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        if (mainPhaseTimer) { clearInterval(mainPhaseTimer); mainPhaseTimer = null; }
+        if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
+        if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
+        if (splitStepPowerUpTimeout) { clearTimeout(splitStepPowerUpTimeout); splitStepPowerUpTimeout = null; }
 
-        // Revert body background immediately on stop
+        // Revert body background and stop speech synthesis.
         document.body.style.backgroundColor = ''; // Clear inline style
         isRoutineRunning = false;
         stopSpeechKeepAlive();
         if(synth) synth.cancel();
-        showView('main'); // Return to main view
-        calculateTotalWorkoutTime();
+
+        showView('main'); // Return to main view.
+        calculateTotalWorkoutTime(); // Recalculate estimated time for start button.
         console.log('stopWorkout: Workout stopped.');
     }
 
+    /**
+     * Toggles the workout between paused and resumed states.
+     */
     function togglePauseResume() {
+        // Debounce to prevent rapid clicks.
         if (isToggleDebouncing) return;
         isToggleDebouncing = true;
         setTimeout(() => { isToggleDebouncing = false; }, DEBOUNCE_TIME);
@@ -2237,10 +2510,14 @@
         }
     }
 
+    /**
+     * Pauses the ongoing workout, stopping timers and saving state.
+     */
     function pauseWorkout() {
         console.log('pauseWorkout: Pausing workout...');
         isPaused = true;
 
+        // Clear and capture state of active timer.
         if(countdownTimer) {
             clearInterval(countdownTimer);
             countdownTimer = null;
@@ -2251,28 +2528,31 @@
             pausedTimePassedInMainPhase = timePassedInMainPhase; // Capture current time
             pausedEffectiveIntervalDuration = effectiveIntervalDuration; // Capture current interval duration
         }
-        // Always clear other specific timeouts when pausing
+        // Always clear other specific timeouts when pausing.
         if (flashTimer) clearTimeout(flashTimer);
         if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
+        if (splitStepPowerUpTimeout) clearTimeout(splitStepPowerUpTimeout);
 
-        stopSpeechKeepAlive();
-        // Revert body background immediately on pause
+        stopSpeechKeepAlive(); // Stop silent speech loop.
         document.body.style.backgroundColor = ''; // Clear inline style
-        if(synth) synth.cancel();
+        if(synth) synth.cancel(); // Cancel any active speech.
 
-        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon
-        pausedShotDisplayContent = currentShotDisplay.textContent; // Capture whatever was on screen
+        pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PLAY_ICON}</span>`; // Change to Play icon.
+        pausedShotDisplayContent = currentShotDisplay.textContent; // Capture whatever was on screen.
         currentShotDisplay.textContent = 'Paused';
-        // Do not reset progress bar here for better UX when resuming
         console.log('pauseWorkout: Workout paused.');
     }
 
+    /**
+     * Resumes the workout from a paused state.
+     */
     function resumeWorkout() {
         console.log('resumeWorkout: Resuming workout...');
         isPaused = false;
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
-        startSpeechKeepAlive();
+        startSpeechKeepAlive(); // Re-initiate silent speech loop.
 
+        // Resume based on which phase was active when paused.
         if (pausedCountdownTimeRemaining > 0) {
             startCountdown(pausedCountdownTimeRemaining);
             pausedCountdownTimeRemaining = 0; // Reset
@@ -2280,34 +2560,36 @@
             resumeRestInterval(pausedRestTimeRemaining);
             pausedRestTimeRemaining = 0; // Reset
         } else { // If it was paused during a main shot phase
-            const pattern = currentWorkoutPatterns[currentPatternIndex]; // The pattern that was active
+            const pattern = currentWorkoutPatterns[currentPatternIndex]; // The pattern that was active.
             if (pattern) {
-                // When resuming main shot phase, the `shotToAnnounce` should be for the *next* shot.
-                // This is `currentShotOptions[currentShotIndex]` from before the pause.
+                // The `shotToAnnounce` should be for the *next* shot (which was `currentShotOptions[currentShotIndex]` before the pause).
                 const nextShotText = currentShotOptions[currentShotIndex];
 
-                // Use the captured time passed and effective interval
+                // Use the captured time passed and effective interval to resume the phase accurately.
                 startMainShotPhase(pattern, isFirstShotOfWorkout, nextShotText, pausedTimePassedInMainPhase, pausedEffectiveIntervalDuration);
 
-                // Reset relevant paused states
+                // Reset relevant paused states.
                 pausedTimePassedInMainPhase = 0;
                 pausedEffectiveIntervalDuration = 0;
                 pausedShotDisplayContent = '';
             } else {
                 console.error("No active pattern found to resume workout interval from pause.");
-                stopWorkout(); // Fallback to stop if context is lost
+                stopWorkout(); // Fallback to stop if context is lost.
             }
         }
     }
 
-
+    /**
+     * Runs the current pattern in the workout sequence.
+     * Handles pattern progression, shuffling, and global limits.
+     */
     async function runCurrentPattern() {
         if (isPaused) {
             console.log('runCurrentPattern: PAUSED, returning immediately.');
             return;
         }
 
-        // Check if we've gone past the end of the patterns list
+        // Check if all patterns have been processed.
         if (currentPatternIndex >= currentWorkoutPatterns.length) {
             // Check if a global limit is set and not yet reached, requiring a loop.
             const needsToLoop = (globalLimitType === 'shot' && totalWorkoutShots < globalShotLimit) ||
@@ -2315,23 +2597,23 @@
 
             if (needsToLoop) {
                 console.log("Global limit not reached. Looping patterns.");
-                currentPatternIndex = 0; // Reset index to loop from the beginning
+                currentPatternIndex = 0; // Reset index to loop from the beginning.
                 if (workoutOrderMode === 'randomized') {
-                    currentWorkoutPatterns = shuffleArray(sequences); // Re-shuffle for the next loop
+                    currentWorkoutPatterns = shuffleArray(sequences); // Re-shuffle for the next loop.
                     console.log("Re-shuffled patterns for next loop.");
                 }
-                // Fall-through to re-run with index 0
+                // Continue to run with index 0.
             } else {
                 // No more loops needed, workout is complete.
                 console.log('runCurrentPattern: All patterns completed and global limit met (or not set). Ending workout.');
                 await handleWorkoutCompletion();
-                return; // Exit function
+                return; // Exit function.
             }
         }
 
         const pattern = currentWorkoutPatterns[currentPatternIndex];
 
-        // Set global speech properties from the current pattern for workout routines
+        // Set global speech properties from the current pattern for workout routines.
         globalSpeechRate = pattern.speechRate || 1.0;
         const selectedVoiceName = pattern.speechVoice;
         const voices = synth.getVoices();
@@ -2339,25 +2621,25 @@
                             voices.find(voice => voice.name === selectedVoiceName) : null;
 
 
-        // Check if the current pattern is valid and has shots
+        // Check if the current pattern is valid and has shots.
         if (pattern && typeof pattern.shotOptions === 'string') {
             currentShotOptions = pattern.shotOptions.split('\n').filter(option => option.trim() !== '');
             if (currentShotOptions.length > 0) {
                 if (pattern.seriesOrder === 'randomized') {
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
-                currentPatternShotCount = 0; // Reset for each new pattern
-                currentPatternTimeElapsed = 0; // Reset for each new pattern
-                currentShotIndex = 0; // Reset shot index for the new pattern
+                currentPatternShotCount = 0; // Reset for each new pattern.
+                currentPatternTimeElapsed = 0; // Reset for each new pattern.
+                currentShotIndex = 0; // Reset shot index for the new pattern.
 
                 console.log(`runCurrentPattern: Starting pattern ${currentPatternIndex}: "${pattern.patternName}"`);
                 if (pattern.announceShots && pattern.introMessage.trim()) {
-                    currentShotDisplay.textContent = 'Intro'; // Display message during intro
-                    progressBar.style.width = '0%'; // Reset progress bar for next pattern
-                    await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish
+                    currentShotDisplay.textContent = 'Intro'; // Display message during intro.
+                    progressBar.style.width = '0%'; // Reset progress bar for next pattern.
+                    await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish.
                 }
 
-                // Now, start the main shot phase. isFirstShotOfWorkout determines the timing variant.
+                // Start the main shot phase. `isFirstShotOfWorkout` determines the timing variant.
                 // The `shotToAnnounce` for the very first shot of the workout is `currentShotOptions[0]`.
                 startMainShotPhase(pattern, isFirstShotOfWorkout, currentShotOptions[currentShotIndex]);
                 isFirstShotOfWorkout = false; // After the very first shot sequence starts, subsequent will be regular.
@@ -2373,32 +2655,33 @@
 
 
     /**
-     * Manages a single shot interval (e.g., 6 seconds).
-     * Handles progress bar, beep/flash, and next shot announcement based on whether it's
-     * the very first shot of the workout or a regular subsequent shot.
-     * @param {object} pattern The current pattern data.
-     * @param {boolean} isInitialWorkoutShot True if this is the very first shot of the entire workout.
-     * @param {string} shotToAnnounce The shot text to announce *during* this interval (for the *next* shot's preparation).
-     * @param {number} [initialTimePassed=0] Time already passed in this interval (for resuming from pause).
-     * @param {number} [predefinedEffectiveInterval=0] Use a predefined effective interval (for resuming from pause).
+     * Manages a single shot interval.
+     * Handles progress bar, beep/flash, and next shot announcement timing.
+     * @param {object} pattern - The current pattern data.
+     * @param {boolean} isInitialWorkoutShot - True if this is the very first shot of the entire workout.
+     * @param {string} shotToAnnounce - The shot text to announce *during* this interval (for the *next* shot's preparation).
+     * @param {number} [initialTimePassed=0] - Time already passed in this interval (for resuming from pause).
+     * @param {number} [predefinedEffectiveInterval=0] - A predefined effective interval (for resuming from pause).
      */
     function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initialTimePassed = 0, predefinedEffectiveInterval = 0) {
         if (isPaused) return;
 
-        // Clear any previous timers/timeouts
+        // Clear any previous timers/timeouts for this phase.
         if (mainPhaseTimer) clearInterval(mainPhaseTimer);
         if (flashTimer) clearTimeout(flashTimer);
         if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
+        if (splitStepPowerUpTimeout) clearTimeout(splitStepPowerUpTimeout);
 
-        // Calculate effective interval, including random offset
+
+        // Calculate effective interval, including random offset.
         const baseInterval = parseFloat(pattern.shotInterval);
         const randomOffset = parseFloat(pattern.randomOffset);
         effectiveIntervalDuration = (predefinedEffectiveInterval > 0) ? predefinedEffectiveInterval : (baseInterval + (Math.random() * randomOffset));
 
-        timePassedInMainPhase = initialTimePassed; // Reset or continue from paused state
+        timePassedInMainPhase = initialTimePassed; // Reset or continue from paused state.
 
-        // Clear display and reset progress bar at t=0s of this phase
-        currentShotDisplay.textContent = '\u00A0'; // Non-breaking space to retain vertical spacing
+        // Clear display and reset progress bar at t=0s of this phase.
+        currentShotDisplay.textContent = '\u00A0'; // Non-breaking space to retain vertical spacing.
         progressBar.style.width = '0%';
 
         // --- Schedule Events within this `effectiveIntervalDuration` cycle ---
@@ -2414,20 +2697,46 @@
             }, (flashBeepTime - timePassedInMainPhase) * 1000);
         }
 
-        // 2. Next Shot Announcement (timing depends on isInitialWorkoutShot)
+        // 2. Split-step Hint Power-Up Beep
+        if (pattern.splitStepHint !== 'None') {
+            const powerUpDurations = {
+                'Slow': 0.64,
+                'Medium': 0.48,
+                'Fast': 0.32
+            };
+            const powerUpDuration = powerUpDurations[pattern.splitStepHint];
+            // Power-up beep should play `powerUpDuration` seconds before the two-tone beep.
+            const powerUpTime = flashBeepTime - powerUpDuration;
+
+            if (powerUpTime >= timePassedInMainPhase) {
+                splitStepPowerUpTimeout = setTimeout(() => {
+                    if (!isPaused) {
+                        playSplitStepPowerUp(pattern.splitStepHint);
+                    }
+                }, (powerUpTime - timePassedInMainPhase) * 1000);
+            } else {
+                // If power-up time has already passed but two-tone hasn't, play it immediately.
+                // This can happen if resuming from a pause point.
+                if (flashBeepTime >= timePassedInMainPhase && !isPaused) {
+                     playSplitStepPowerUp(pattern.splitStepHint);
+                }
+            }
+        }
+
+
+        // 3. Next Shot Announcement (timing depends on isInitialWorkoutShot).
         if (pattern.announceShots && shotToAnnounce.trim() !== '') {
             let announcementTime;
             if (isInitialWorkoutShot) {
-                // For the very first shot (N=1), announcement is at (interval/2 - announcementTime) from t=0.
-                // Example: 6/2 - 2 = 1s from t=0. This happens in the first half of the the interval before the beep/flash.
+                // For the very first shot (N=1), announcement happens in the first half of the interval before the beep/flash.
                 announcementTime = (baseInterval / 2) - parseFloat(pattern.nextShotAnnouncement);
             } else {
-                // For subsequent shots (N > 1), announcement is at (effectiveIntervalDuration / 2 - nextShotAnnouncement) from t=0 of its interval.
-                // This means the announcement for the *next* shot occurs `nextShotAnnouncement` seconds *before* the beep/flash of the *current* shot.
+                // For subsequent shots (N > 1), announcement for the *next* shot occurs `nextShotAnnouncement` seconds
+                // *before* the beep/flash of the *current* shot's interval.
                 announcementTime = (effectiveIntervalDuration / 2) - parseFloat(pattern.nextShotAnnouncement);
             }
 
-            if (announcementTime >= timePassedInMainPhase) { // Only schedule if event time hasn't passed
+            if (announcementTime >= timePassedInMainPhase) { // Only schedule if event time hasn't passed.
                 nextAnnouncementTimeout = setTimeout(() => {
                     if (!isPaused) {
                         currentShotDisplay.textContent = shotToAnnounce;
@@ -2435,8 +2744,7 @@
                     }
                 }, (announcementTime - timePassedInMainPhase) * 1000);
             } else {
-                // If announcement time has passed (e.g., on resume), or if the calculated time is negative,
-                // display and announce immediately.
+                // If announcement time has passed (e.g., on resume), display and announce immediately.
                 if (!isPaused) {
                     currentShotDisplay.textContent = shotToAnnounce;
                     speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
@@ -2445,8 +2753,8 @@
         }
 
 
-        // Main interval timer for progress bar updates and checking for end of interval
-        const intervalStep = 100; // 0.1 seconds
+        // Main interval timer for progress bar updates and checking for end of interval.
+        const intervalStep = 100; // 0.1 seconds.
         mainPhaseTimer = setInterval(() => {
             if (isPaused) {
                 clearInterval(mainPhaseTimer);
@@ -2456,43 +2764,47 @@
             currentPatternTimeElapsed += (intervalStep / 1000);
             globalWorkoutTimeElapsed += (intervalStep / 1000);
 
-            // Update progress bar
+            // Update progress bar.
             const progress = (timePassedInMainPhase / effectiveIntervalDuration) * 100;
             progressBar.style.width = `${progress}%`;
 
-            // Check global time limit
+            // Check global time limit.
             if (globalLimitType === 'time' && globalWorkoutTimeElapsed >= globalTimeLimit) {
                 clearInterval(mainPhaseTimer);
                 handleWorkoutCompletion();
                 return;
             }
 
-            // Check if this interval has completed
+            // Check if this interval has completed.
             if (timePassedInMainPhase >= effectiveIntervalDuration) {
-                clearInterval(mainPhaseTimer); // Stop this interval timer
+                clearInterval(mainPhaseTimer); // Stop this interval timer.
                 currentPatternShotCount++;
                 totalWorkoutShots++;
 
-                // Check if pattern/workout should end after this completed interval
+                // Check if pattern/workout should end after this completed interval.
                 if (shouldEndPattern(pattern)) {
                     endPattern(pattern);
                     return;
                 }
 
-                // Prepare for the next shot in the sequence
+                // Prepare for the next shot in the sequence.
                 currentShotIndex = (currentShotIndex + 1) % currentShotOptions.length;
                 if (pattern.seriesOrder === 'randomized' && currentShotIndex === 0) {
                     currentShotOptions = shuffleArray(currentShotOptions);
                 }
                 const nextShotInSequence = currentShotOptions[currentShotIndex];
 
-                // Start the next regular shot interval (isInitialWorkoutShot is now false)
+                // Start the next regular shot interval.
                 startMainShotPhase(pattern, false, nextShotInSequence);
             }
         }, intervalStep);
     }
 
-
+    /**
+     * Determines if the current pattern or the entire workout should end based on limits.
+     * @param {object} pattern - The current pattern data.
+     * @returns {boolean} True if the pattern or workout should end, false otherwise.
+     */
     function shouldEndPattern(pattern) {
         if (globalLimitType === 'shot' && totalWorkoutShots >= globalShotLimit) {
             return true;
@@ -2506,19 +2818,23 @@
         return false;
     }
 
-    // New function to handle resuming rest after a pause
+    /**
+     * Handles resuming the rest interval after a pause.
+     * @param {number} timeRemaining - The time remaining in the rest interval.
+     */
     function resumeRestInterval(timeRemaining) {
         currentShotDisplay.textContent = "Rest!";
-        const pattern = currentWorkoutPatterns[currentPatternIndex - 1]; // Previous pattern for total rest duration
-        const originalPostRestTime = pattern ? pattern.postSequenceRest : pausedRestTimeRemaining; // Fallback in case pattern is null or 0
+        // Use the previous pattern's post-rest time for total duration calculation.
+        const pattern = currentWorkoutPatterns[currentPatternIndex - 1];
+        const originalPostRestTime = pattern ? pattern.postSequenceRest : pausedRestTimeRemaining;
 
         let restRemaining = timeRemaining;
-        pausedRestTimeRemaining = restRemaining; // Keep updated for potential re-pause
+        pausedRestTimeRemaining = restRemaining; // Keep updated for potential re-pause.
 
-        // Update progress bar for rest based on initial duration
+        // Update progress bar for rest based on initial duration.
         progressBar.style.width = `${((originalPostRestTime - restRemaining) / originalPostRestTime) * 100}%`;
 
-        mainPhaseTimer = setInterval(() => { // Using mainPhaseTimer for rest countdown
+        mainPhaseTimer = setInterval(() => { // Using mainPhaseTimer for rest countdown.
             if (isPaused) {
                 clearInterval(mainPhaseTimer);
                 return;
@@ -2543,97 +2859,115 @@
             }
             if (restRemaining <= 0) {
                 clearInterval(mainPhaseTimer);
-                mainPhaseTimer = null; // Clear rest timer
+                mainPhaseTimer = null; // Clear rest timer.
                 currentPatternIndex++;
                 runCurrentPattern();
             }
         }, 1000);
     }
 
-
+    /**
+     * Ends the current pattern, handles outro messages and post-pattern rest.
+     * @param {object} pattern - The pattern that just ended.
+     */
     async function endPattern(pattern) {
+        // Clear all timers and timeouts associated with the current pattern.
         if (mainPhaseTimer) { clearInterval(mainPhaseTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
-        document.body.style.backgroundColor = ''; // Clear inline style
+        if (splitStepPowerUpTimeout) { clearTimeout(splitStepPowerUpTimeout); }
+        document.body.style.backgroundColor = ''; // Clear inline style.
         if(synth) synth.cancel();
 
-        // The last beep and flash for the final shot happened in startMainShotPhase at its halfway point.
-        // No extra beep/flash here.
-
-        // Add a small, guaranteed delay after the last shot's interval ends before any outro or rest.
+        // Add a small, guaranteed delay after the last shot's interval ends.
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // Play outro message if configured.
         if (pattern.announceShots && pattern.outroMessage.trim()) {
-            currentShotDisplay.textContent = 'Outro'; // Display message during outro
-            progressBar.style.width = '100%'; // Mark pattern as complete visually
-            await speak(pattern.outroMessage).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish
+            currentShotDisplay.textContent = 'Outro'; // Display message during outro.
+            progressBar.style.width = '100%'; // Mark pattern as complete visually.
+            await speak(pattern.outroMessage).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish.
         }
 
         const postRestTime = parseInt(pattern.postSequenceRest);
         if (postRestTime > 0) {
-            resumeRestInterval(postRestTime); // Start the rest interval
+            resumeRestInterval(postRestTime); // Start the rest interval.
         } else {
             currentPatternIndex++;
             runCurrentPattern();
         }
     }
 
+    /**
+     * Handles the completion of the entire workout routine.
+     */
     async function handleWorkoutCompletion() {
+        // Clear all timers and timeouts.
         if (countdownTimer) { clearInterval(countdownTimer); }
         if (mainPhaseTimer) { clearInterval(mainPhaseTimer); }
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
-        document.body.style.backgroundColor = ''; // Clear inline style
+        if (splitStepPowerUpTimeout) { clearTimeout(splitStepPowerUpTimeout); }
+        document.body.style.backgroundColor = ''; // Clear inline style.
 
         isRoutineRunning = false;
-        stopSpeechKeepAlive();
-        if(synth) synth.cancel();
+        stopSpeechKeepAlive(); // Stop silent speech loop.
+        if(synth) synth.cancel(); // Cancel any active speech.
 
-        await speakDefault('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement
+        await speakDefault('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement.
 
         currentShotDisplay.textContent = 'Done';
         progressBar.style.width = '100%';
 
+        // Configure pause/resume button for replay, and stop button for exit.
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${REPLAY_ICON}</span>`;
-        pauseResumeWorkoutBtn.onclick = null;
+        pauseResumeWorkoutBtn.onclick = null; // Remove previous click handler.
         pauseResumeWorkoutBtn.addEventListener('click', () => {
             currentPatternIndex = 0;
+            // Re-shuffle patterns for replay if randomized mode is active.
             if (workoutOrderMode === 'randomized') {
                 currentWorkoutPatterns = shuffleArray(sequences);
             } else {
                 currentWorkoutPatterns = [...sequences];
             }
-            startWorkout();
-        }, { once: true });
+            startWorkout(); // Restart the workout.
+        }, { once: true }); // Ensure this listener is only active once per completion.
         pauseResumeWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
         pauseResumeWorkoutBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
 
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${EXIT_ICON}</span>`;
-        stopWorkoutBtn.onclick = null;
-        stopWorkoutBtn.addEventListener('click', stopWorkout, { once: true });
+        stopWorkoutBtn.onclick = null; // Remove previous click handler.
+        stopWorkoutBtn.addEventListener('click', stopWorkout, { once: true }); // Stop workout completely and go to main view.
         stopWorkoutBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
         stopWorkoutBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
     }
 
+    /**
+     * Briefly flashes the screen red to provide visual feedback for a shot.
+     */
     function flashScreenRed() {
         if (isPaused) { return; }
 
-        // Apply the flash color directly using the Tailwind red-500 hex value
+        // Apply the flash color directly using the Tailwind red-500 hex value.
         document.body.style.backgroundColor = '#ef4444';
 
-        // Clear any existing flash timer to prevent conflicts
+        // Clear any existing flash timer to prevent conflicts.
         if (flashTimer) clearTimeout(flashTimer);
 
-        // Schedule restoration of the original background after a short flash duration
-        const flashDurationMs = 150; // Keep the visual flash very short
+        // Schedule restoration of the original background after a short flash duration.
+        const flashDurationMs = 150;
         flashTimer = setTimeout(() => {
-            // Clear the inline style to let the original Tailwind classes re-apply
+            // Clear the inline style to let the original Tailwind classes re-apply.
             document.body.style.backgroundColor = '';
             flashTimer = null;
         }, flashDurationMs);
     }
 
+    /**
+     * Shuffles the elements of an array randomly.
+     * @param {Array} array - The array to shuffle.
+     * @returns {Array} A new array with shuffled elements.
+     */
     function shuffleArray(array) {
         const shuffledArray = [...array];
         for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -2644,22 +2978,25 @@
     }
 
       // --- THEME-BASED BANNER FOOTER IMAGE LOGIC ---
+      /**
+       * Updates the source of the banner and footer images based on the current theme (light/dark mode).
+       */
       const updateImages = () => {
           const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches || document.body.classList.contains('dark');
           if (isDarkMode) {
-              appBanner.src = 'banner-black.png';
-              appFooter.src = 'footer-black.png';
+              appBanner.src = 'https://placehold.co/400x100/1f2937/d1d5db?text=Squash+Ghoster'; // Placeholder for dark mode
+              appFooter.src = 'https://placehold.co/400x50/1f2937/d1d5db?text=Squash+Ghoster+Footer'; // Placeholder for dark mode
           } else {
-              appBanner.src = 'banner-white.png';
-              appFooter.src = 'footer-white.png';
+              appBanner.src = 'https://placehold.co/400x100/f3f4f6/4b5563?text=Squash+Ghoster'; // Placeholder for light mode
+              appFooter.src = 'https://placehold.co/400x50/f3f4f6/4b5563?text=Squash+Ghoster+Footer'; // Placeholder for light mode
           }
       };
 
-      // Observe changes to system color scheme and also manual dark mode toggle (if any)
+      // Observe changes to system color scheme.
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
           updateImages();
       });
-      // Also keep the MutationObserver for cases where the 'dark' class is manually toggled on the body
+      // Observe changes to the 'dark' class on the body for manual theme toggling.
       const bodyClassObserver = new MutationObserver((mutationsList) => {
           for (const mutation of mutationsList) {
               if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -2672,13 +3009,16 @@
 
       // --- EVENT LISTENERS ---
 
+      /**
+       * Updates the visibility and values of global workout limit controls based on selected type.
+       */
       const updateGlobalLimitControls = () => {
         globalLimitType = globalLimitTypeSelect.value;
         globalShotLimitControls.classList.toggle('hidden', globalLimitType !== 'shot');
         globalTimeLimitControls.classList.toggle('hidden', globalLimitType !== 'time');
 
         if (globalLimitType === 'shot') {
-            // Recalculate minimum shot limit based on accumulated pattern shots if individual limits are shot-based
+            // Recalculate minimum shot limit based on accumulated pattern shots if individual limits are shot-based.
             const minShots = sequences.reduce((sum, p) => sum + (p.limitType === 'shot' ? p.patternLimit : 0), 0);
             globalShotLimitSlider.min = minShots;
             if (globalShotLimit < minShots) {
@@ -2687,31 +3027,31 @@
             globalShotLimitSlider.value = globalShotLimit;
             globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
         } else if (globalLimitType === 'time') {
-            // Recalculate minimum time limit based on accumulated pattern times if individual limits are time-based
+            // Recalculate minimum time limit based on accumulated pattern times if individual limits are time-based.
             const minTime = sequences.reduce((sum, p) => sum + (p.limitType === 'time' ? p.patternLimit : 0), 0);
-            globalTimeLimitSlider.min = minTime > 0 ? minTime : 60; // Ensure minimum of 60 seconds if no time-based patterns
+            globalTimeLimitSlider.min = minTime > 0 ? minTime : 60; // Ensure minimum of 60 seconds if no time-based patterns.
             if (globalTimeLimit < globalTimeLimitSlider.min) {
-                globalLimit = parseInt(globalTimeLimitSlider.min);
+                globalTimeLimit = parseInt(globalTimeLimitSlider.min);
             }
             globalTimeLimitSlider.value = globalTimeLimit;
-            globalTimeLimitDisplay.textContent = formatTime(globalLimit);
+            globalTimeLimitDisplay.textContent = formatTime(globalTimeLimit);
         }
         calculateTotalWorkoutTime();
       };
 
-      // Countdown slider
+      // Event listener for workout countdown slider.
       workoutCountdownSlider.addEventListener('input', (e) => {
         workoutCountdownTime = parseInt(e.target.value);
         workoutCountdownDisplay.textContent = `${workoutCountdownTime}s`;
         calculateTotalWorkoutTime();
       });
 
-      // Global Limit Controls
+      // Event listeners for global limit controls.
       globalLimitTypeSelect.addEventListener('change', updateGlobalLimitControls);
       globalShotLimitSlider.addEventListener('input', (e) => {
           globalShotLimit = parseInt(e.target.value);
           globalShotLimitDisplay.textContent = `${globalShotLimit} shots`;
-          calculateTotalWorkoutTime(); // Update total time on shot limit change
+          calculateTotalWorkoutTime(); // Update total time on shot limit change.
       });
       globalTimeLimitSlider.addEventListener('input', (e) => {
           globalTimeLimit = parseInt(e.target.value);
@@ -2719,7 +3059,7 @@
           calculateTotalWorkoutTime();
       });
 
-      // Global click listener to turn off modes if an unrelated element is clicked
+      // Global click listener to turn off interaction modes if an unrelated element is clicked.
       document.addEventListener('click', (e) => {
           if (isMoveModeOn || isDeleteModeOn) {
               if (
@@ -2738,7 +3078,7 @@
       });
 
 
-      // Main Action Buttons (New, Move Toggle, Delete Toggle)
+      // Main Action Buttons (New, Move Toggle, Delete Toggle).
       newPatternBtn.addEventListener('click', () => {
         addSequence();
       });
@@ -2752,7 +3092,7 @@
       });
 
 
-      // Event delegation for accordion container clicks (List View)
+      // Event delegation for accordion container clicks (List View).
       patternsAccordionContainer.addEventListener('click', (e) => {
           const accordionItem = e.target.closest('.accordion-item');
           if (!accordionItem) return;
@@ -2774,27 +3114,27 @@
               }
               e.stopPropagation();
           } else {
-              // Normal mode: clicking the header (or pattern name) opens the editor
+              // Normal mode: clicking the header (or pattern name) opens the editor.
               if (e.target.closest('.pattern-name-display') || e.target.closest('.right-chevron')) {
-                  activeSequenceIndex = patternIndex; // Set the active pattern for the editor
-                  showView('editor'); // Navigate to editor view
-                  e.stopPropagation(); // Prevent any other clicks from propagating
+                  activeSequenceIndex = patternIndex; // Set the active pattern for the editor.
+                  showView('editor'); // Navigate to editor view.
+                  e.stopPropagation(); // Prevent any other clicks from propagating.
               }
           }
       });
 
 
-      // Back to List button in editor
+      // Back to List button in editor.
       document.getElementById('back-to-list-btn').addEventListener('click', () => {
-          saveCurrentSequenceState(); // Save changes from editor
-          activeSequenceIndex = -1; // Clear active pattern
-          showView('main'); // Go back to main accordion view
+          saveCurrentSequenceState(); // Save changes from editor.
+          activeSequenceIndex = -1; // Clear active pattern.
+          showView('main'); // Go back to main accordion view.
       });
 
-      // Event listeners for inputs/changes within the currently rendered editor screen (delegated to sequencesContainer)
+      // Event listeners for inputs/changes within the currently rendered editor screen (delegated to sequencesContainer).
       sequencesContainer.addEventListener('input', (e) => {
           if (!patternEditorContainer.classList.contains('hidden') && sequencesContainer.contains(e.target)) {
-              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element
+              const currentEl = sequencesContainer.firstChild; // Get the currently active cloned sequence element.
               if (!currentEl) return;
 
               if (e.target.closest('#limitTypeSelect')) {
@@ -2805,15 +3145,15 @@
 
               if (e.target.closest('#shotOptions')) updateShotOptionsDisplay(currentEl);
               else if (e.target.closest('#introMessage') || e.target.closest('#outroMessage') || e.target.closest('#announceShots')) updateNarrationDisplay(currentEl);
-              else if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement')) {
+              else if (e.target.closest('#shotInterval') || e.target.closest('#randomOffset') || e.target.closest('#nextShotAnnouncement') || e.target.closest('#splitStepHint')) {
                   updateIntervalDisplay(currentEl);
-                  // Recalculate limit if type is time and interval changed
+                  // Recalculate limit if type is time and interval changed.
                   if (sequences[activeSequenceIndex].limitType === 'time') {
-                     handleLimitTypeChange(currentEl); // This will re-evaluate patternLimit based on new interval
+                     handleLimitTypeChange(currentEl); // This will re-evaluate patternLimit based on new interval.
                   }
-                  // Also re-evaluate nextShotAnnouncement max if shotInterval changes
+                  // Also re-evaluate nextShotAnnouncement max if shotInterval changes.
                   if (e.target.closest('#shotInterval')) {
-                    handleAnnounceShotsChange(currentEl); // Update max for nextShotAnnouncement based on new interval
+                    handleAnnounceShotsChange(currentEl); // Update max for nextShotAnnouncement based on new interval.
                   }
               }
               else if (e.target.closest('#patternLimitSlider')) updateLimitsDisplay(currentEl);
@@ -2823,7 +3163,7 @@
                   if (speechRateValueDisplay) {
                       speechRateValueDisplay.textContent = parseFloat(e.target.value).toFixed(1);
                   }
-                  saveCurrentSequenceState(); // Save after updating display
+                  saveCurrentSequenceState(); // Save after updating display.
               }
           }
       });
@@ -2841,19 +3181,23 @@
               if (e.target.name === 'seriesOrder') updateSequencingDisplay(currentEl);
               if (e.target.closest('#announceShots')) handleAnnounceShotsChange(currentEl);
               if (e.target.closest('#speechVoiceSelect')) {
-                  saveCurrentSequenceState(); // Save the selected voice
+                  saveCurrentSequenceState(); // Save the selected voice.
+              }
+              if (e.target.closest('#splitStepHint')) {
+                  saveCurrentSequenceState();
+                  updateIntervalDisplay(currentEl); // Update interval display to show hint.
               }
           }
       });
 
-      // Individual pattern action buttons in the editor
+      // Individual pattern action buttons in the editor.
       document.getElementById('clone-btn').addEventListener('click', cloneSequence);
       document.getElementById('import-btn').addEventListener('click', importPatternConfig);
       document.getElementById('save-btn').addEventListener('click', savePatternConfig);
       document.getElementById('reset-btn').addEventListener('click', resetCurrentSequence);
 
 
-      // Global buttons for all patterns
+      // Global buttons for all patterns.
       document.getElementById('load-all-btn').addEventListener('click', loadWorkout);
       document.getElementById('save-all-btn').addEventListener('click', saveWorkout);
       document.getElementById('reset-all-btn').addEventListener('click', clearAllPatterns);
@@ -2862,7 +3206,7 @@
       startWorkoutButton.addEventListener('click', startWorkout);
       pauseResumeWorkoutBtn.addEventListener('click', togglePauseResume);
 
-      // New: Event listener for global workout order radio buttons
+      // Event listener for global workout order radio buttons.
       globalWorkoutOrderRadios.forEach(radio => {
           radio.addEventListener('change', (e) => {
               workoutOrderMode = e.target.value;
@@ -2872,17 +3216,20 @@
 
 
       // --- INITIALIZATION ---
+      /**
+       * Initializes the application state and UI on DOM content loaded.
+       */
       const initialize = () => {
         if (sequences.length === 0) {
             sequences.push(getNewSequenceData());
             sequences[0].patternName = "Pattern 1";
         }
-        activeSequenceIndex = -1; // Start with no pattern active in editor
-        selectedPatternId = sequences[0].id; // Select the first pattern by default
-        showView('main'); // Start with the main accordion list view
+        activeSequenceIndex = -1; // Start with no pattern active in editor.
+        selectedPatternId = sequences[0].id; // Select the first pattern by default.
+        showView('main'); // Start with the main accordion list view.
         calculateTotalWorkoutTime();
 
-        // Set initial state of global workout order radios
+        // Set initial state of global workout order radios.
         globalWorkoutOrderRadios.forEach(radio => {
             if (radio.value === workoutOrderMode) {
                 radio.checked = true;
@@ -2891,7 +3238,7 @@
 
         initAudioContext();
         initSpeechSynthesis();
-        updateImages(); // Set initial banner and footer image
+        updateImages(); // Set initial banner and footer image.
       };
 
       initialize();
