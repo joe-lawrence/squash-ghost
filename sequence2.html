@@ -141,6 +141,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>
                 </span>
             </button>
+            <!-- Elapsed workout time display -->
+            <span id="workout-elapsed-time-display" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg text-lg font-bold flex items-center justify-center min-w-[120px] dark:bg-gray-700 dark:text-gray-200 shadow-md">
+                00:00
+            </span>
             <button id="stop-workout-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg text-lg font-bold hover:bg-red-700 shadow-md transition-all duration-200 ease-in-out transform hover:scale-105">
                 <span class="flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
@@ -505,6 +509,8 @@
       let globalLimitType = 'all'; // 'all', 'shot', or 'time'
       let globalShotLimit = 0;
       let globalTimeLimit = 60;
+      let workoutElapsedTime = 0; // Tracks elapsed time in current workout
+      let workoutTimerInterval = null; // Interval ID for the workout elapsed time display
 
 
       const mainViewContainer = document.getElementById('main-view-container');
@@ -546,6 +552,7 @@
       const pauseResumeWorkoutBtn = document.getElementById('pause-resume-workout-btn');
       const currentShotDisplay = document.getElementById('current-shot-display');
       const progressBar = document.getElementById('progress-bar');
+      const workoutElapsedTimeDisplay = document.getElementById('workout-elapsed-time-display'); // Elapsed time display
 
       const appBanner = document.getElementById('app-banner'); // Reference to the image banner
       const appFooter = document.getElementById('app-footer'); // Reference to the footer image banner
@@ -579,7 +586,7 @@
        */
       const formatTime = (totalSeconds) => {
         const roundedSeconds = Math.round(totalSeconds);
-        if (roundedSeconds === 0) return 'None';
+        if (roundedSeconds === 0) return '00:00'; // Ensure 0 is formatted as 00:00
         const minutes = Math.floor(roundedSeconds / 60);
         const seconds = roundedSeconds % 60;
         const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
@@ -2407,6 +2414,9 @@
         currentPatternIndex = 0;
         globalWorkoutTimeElapsed = 0;
         totalWorkoutShots = 0;
+        workoutElapsedTime = 0; // Reset elapsed workout time
+        workoutElapsedTimeDisplay.textContent = formatTime(workoutElapsedTime); // Update display
+
         isPaused = false;
         timePassedInMainPhase = 0; // Reset for a fresh start
 
@@ -2419,6 +2429,13 @@
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
         pauseResumeWorkoutBtn.onclick = togglePauseResume;
         pauseResumeWorkoutBtn.classList.remove('hidden');
+
+        // Start the overall workout timer
+        workoutTimerInterval = setInterval(() => {
+            workoutElapsedTime++;
+            workoutElapsedTimeDisplay.textContent = formatTime(workoutElapsedTime);
+        }, 1000);
+
 
         // Start countdown or directly run patterns.
         if (workoutCountdownTime > 0) {
@@ -2482,6 +2499,10 @@
         if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); nextAnnouncementTimeout = null; }
         if (splitStepPowerUpTimeout) { clearTimeout(splitStepPowerUpTimeout); splitStepPowerUpTimeout = null; }
+        // Clear workout elapsed time interval
+        if (workoutTimerInterval) { clearInterval(workoutTimerInterval); workoutTimerInterval = null; }
+        workoutElapsedTime = 0; // Reset elapsed time
+        workoutElapsedTimeDisplay.textContent = formatTime(workoutElapsedTime); // Update display to 00:00
 
         // Revert body background and stop speech synthesis.
         document.body.style.backgroundColor = ''; // Clear inline style
@@ -2532,6 +2553,9 @@
         if (flashTimer) clearTimeout(flashTimer);
         if (nextAnnouncementTimeout) clearTimeout(nextAnnouncementTimeout);
         if (splitStepPowerUpTimeout) clearTimeout(splitStepPowerUpTimeout);
+        // Clear workout elapsed time interval
+        if (workoutTimerInterval) { clearInterval(workoutTimerInterval); workoutTimerInterval = null; }
+
 
         stopSpeechKeepAlive(); // Stop silent speech loop.
         document.body.style.backgroundColor = ''; // Clear inline style
@@ -2551,6 +2575,12 @@
         isPaused = false;
         pauseResumeWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${PAUSE_ICON}</span>`;
         startSpeechKeepAlive(); // Re-initiate silent speech loop.
+
+        // Resume the overall workout timer
+        workoutTimerInterval = setInterval(() => {
+            workoutElapsedTime++;
+            workoutElapsedTimeDisplay.textContent = formatTime(workoutElapsedTime);
+        }, 1000);
 
         // Resume based on which phase was active when paused.
         if (pausedCountdownTimeRemaining > 0) {
@@ -2908,6 +2938,11 @@
         if (flashTimer) { clearTimeout(flashTimer); }
         if (nextAnnouncementTimeout) { clearTimeout(nextAnnouncementTimeout); }
         if (splitStepPowerUpTimeout) { clearTimeout(splitStepPowerUpTimeout); }
+        // Clear workout elapsed time interval and reset display
+        if (workoutTimerInterval) { clearInterval(workoutTimerInterval); workoutTimerInterval = null; }
+        workoutElapsedTime = 0; // Reset elapsed time
+        workoutElapsedTimeDisplay.textContent = formatTime(workoutElapsedTime); // Update display to 00:00
+
         document.body.style.backgroundColor = ''; // Clear inline style.
 
         isRoutineRunning = false;
