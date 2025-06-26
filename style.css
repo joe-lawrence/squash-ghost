@@ -1,0 +1,96 @@
+/* Custom font for a clean look */
+body {
+  font-family: "Inter", sans-serif;
+  /* This ensures direct changes to background-color are instant,
+     overriding any transition-colors from Tailwind for this property. */
+  transition: background-color 0s !important;
+}
+/* Style for range input thumb and track */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4f46e5; /* Indigo-600 */
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3); /* Ring around thumb */
+  transition: background 0.15s ease-in-out;
+  margin-top: -6px; /* Adjust for vertical alignment */
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4f46e5; /* Indigo-600 */
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+  transition: background 0.15s ease-in-out;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb; /* Gray-200 */
+  border-radius: 4px;
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb; /* Gray-200 */
+  border-radius: 4px;
+  cursor: pointer;
+}
+input[type="range"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+input[type="range"]:disabled::-webkit-slider-thumb {
+    background: #9ca3af; /* Gray-400 */
+    box-shadow: none;
+}
+input[type="range"]:disabled::-moz-range-thumb {
+    background: #9ca3af; /* Gray-400 */
+    box-shadow: none;
+}
+
+/* Hide scrollbars for the main container but allow scrolling */
+#sequences-container::-webkit-scrollbar {
+    display: none;
+}
+#sequences-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Fix for "sticky" button effect on iOS Safari */
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom style for selected row - REMOVED LEFT BORDER */
+.selected-row {
+    background-color: #e0e7ff; /* Light indigo for selection */
+}
+.dark .selected-row {
+    background-color: #374151; /* Darker gray for dark mode selection */
+}
+
+/* Style for dropdown arrows */
+select {
+    border: 2px solid #cbd5e0;
+    transition: border-color 0.2s ease-in-out;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%234A5568'%3e%3cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e"); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem; /* Make space for the arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
