@@ -1729,16 +1729,16 @@ function playSplitStepPowerUp(speed, pitch = 'medium') {
     }
 }
 
-
 /**
- * Speaks the given text using the pattern-specific voice and rate.
+ * Speaks the given text.
  * Cancels any existing speech before speaking a new message.
  * @param {string} text - The text to speak.
+ * @param {boolean} [defaultVoice=true] - Use default or pattern-specific voice and rate.
  * @param {boolean} [isResume=false] - True if this call is part of a resume operation.
  * @param {number} [rate=null] - Optional specific speech rate to use. If null, globalSpeechRate is used.
  * @returns {Promise<void>} A promise that resolves when speech ends or rejects on error.
  */
-function speak(text, isResume = false, rate = null) {
+function speak(text, defaultVoice = true, isResume = false, rate = null) {
     return new Promise((resolve, reject) => {
         if (!synth) {
             console.warn('speak: Speech Synthesis API not supported or not initialized.');
@@ -1774,15 +1774,20 @@ function speak(text, isResume = false, rate = null) {
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; // Fallback language
 
-        // Apply voice and rate from the current pattern being executed
-        if (globalSpeechVoice) {
+        if (defaultVoice || !globalSpeechVoice) {
+            // System default voice and rate
+            utterance.lang = 'en-US';
+            utterance.voice = null;
+            utterance.rate = 1.0;
+            utterance.volume = 1;
+        } else {
+            // Apply voice and rate from the current pattern being executed
             utterance.voice = globalSpeechVoice;
-            utterance.lang = globalSpeechVoice.lang; // Use voice's language
+            utterance.lang = globalSpeechVoice.lang;
+            utterance.rate = (rate !== null) ? rate : globalSpeechRate;
+	    utterance.volume = 1;
         }
-        utterance.rate = (rate !== null) ? rate : globalSpeechRate; // Use provided rate or global rate
-        utterance.volume = 1; // Always full volume for audible speech
 
         utterance.onend = () => {
             console.log(`speak: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
@@ -1813,82 +1818,6 @@ function speak(text, isResume = false, rate = null) {
             console.log(`speak: Speaking: "${text}"`);
         } catch (e) {
             console.error("speak: Error speaking audible utterance directly:", e);
-            if (isRoutineRunning && !isPaused) {
-                startSpeechKeepAlive();
-            }
-            reject(e);
-        }
-    });
-}
-
-/**
- * Speaks the given text using the default system voice and rate (for countdown/completion).
- * Cancels any existing speech before speaking a new message.
- * @param {string} text - The text to speak.
- * @returns {Promise<void>} A promise that resolves when speech ends or rejects on error.
- */
-function speakDefault(text) {
-    return new Promise((resolve, reject) => {
-        if (!synth) {
-            console.warn('speakDefault: Speech Synthesis API not supported or not initialized.');
-            reject('Speech Synthesis API not available');
-            return;
-        }
-
-        if (synth.speaking || synth.pending) {
-            synth.cancel();
-            // Clear related timeouts as new speech will take precedence
-            if (nextSilentUtteranceTimeout) {
-                clearTimeout(nextSilentUtteranceTimeout);
-                nextSilentUtteranceTimeout = null;
-            }
-            if (nextAnnouncementTimeout) {
-                clearTimeout(nextAnnouncementTimeout);
-                nextAnnouncementTimeout = null;
-            }
-            console.log("speakDefault: Cancelled existing speech for new default message.");
-        }
-
-        if (text.trim() === '') {
-            resolve(); // Resolve immediately if no text to speak
-            return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; // Explicitly set default language
-        utterance.voice = null; // Explicitly set to default system voice
-        utterance.rate = 1.0;   // Explicitly set to default rate
-        utterance.volume = 1;
-
-        utterance.onend = () => {
-            console.log(`speakDefault: Finished speaking: "${text}". Re-initiating silent keep-alive.`);
-            if (isRoutineRunning && !isPaused) {
-                startSpeechKeepAlive();
-            }
-            resolve();
-        };
-        utterance.onerror = (event) => {
-            // Only log as error if the error is not 'interrupted'.
-            if (event.error !== 'interrupted') {
-                console.error(`speakDefault: Default speech synthesis error: ${event.error}. Full event:`, event);
-                if (isRoutineRunning && !isPaused) {
-                    startSpeechKeepAlive();
-                }
-                reject(new Error(event.error || 'Speech synthesis error'));
-            } else {
-                console.info('speakDefault: Default SpeechSynthesisUtterance was interrupted, which is expected behavior.');
-                // For 'interrupted', still re-schedule keep-alive if routine is running.
-                if (isRoutineRunning && !isPaused) {
-                    startSpeechKeepAlive();
-                }
-                resolve();
-            }
-        };
-        try {
-            synth.speak(utterance);
-            console.log(`speakDefault: Speaking (default): "${text}"`);
-        } catch (e) {
-            console.error("speakDefault: Error speaking default utterance:", e);
             if (isRoutineRunning && !isPaused) {
                 startSpeechKeepAlive();
             }
@@ -1981,13 +1910,13 @@ function startCountdown(timeRemaining) {
 
         // Announce specific countdown numbers.
         if (countdown === 10) {
-            speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+            speak(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
         } else if (countdown > 10) {
             if (countdown % 10 === 0) {
-                speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+                speak(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
             }
         } else { // countdown < 10
-            speakDefault(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
+            speak(countdown.toString()).catch(e => console.error('Countdown speech error:', e));
         }
     };
 
@@ -2003,7 +1932,7 @@ function startCountdown(timeRemaining) {
             countdownTimer = null;
             currentShotDisplay.textContent = 'Go!';
             progressBar.style.width = '100%';
-            speakDefault('Go!').catch(e => console.error('Go! speech error:', e));
+            speak('Go!').catch(e => console.error('Go! speech error:', e));
             setTimeout(() => {
                 currentWorkoutPhase = 'shot'; // Set phase before running patterns
                 runCurrentPattern();
@@ -2210,7 +2139,7 @@ async function runCurrentPattern() {
             if (pattern.announceShots && pattern.introMessage.trim()) {
                 currentShotDisplay.textContent = 'Intro'; // Display message during intro.
                 progressBar.style.width = '0%'; // Reset progress bar for next pattern.
-                await speak(pattern.introMessage).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish.
+                await speak(pattern.introMessage, false).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish.
             }
 
             currentWorkoutPhase = 'shot'; // Set phase to shot before starting.
@@ -2326,13 +2255,13 @@ function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initi
             nextAnnouncementTimeout = setTimeout(() => {
                 if (!isPaused) {
                     currentShotDisplay.textContent = shotToAnnounce;
-                    speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
+                    speak(shotToAnnounce, false).catch(e => console.error('Shot announcement speech error:', e));
                 }
             }, (announcementTime - timePassedInMainPhase) * 1000);
         } else if (shouldAnnounceNow) { // Only announce immediately if conditions met (e.g., resuming past announcement time)
             if (!isPaused) {
                 currentShotDisplay.textContent = shotToAnnounce;
-                speak(shotToAnnounce, isResume).catch(e => console.error('Shot announcement speech error:', e));
+                speak(shotToAnnounce, false, isResume).catch(e => console.error('Shot announcement speech error:', e));
             }
         }
     }
@@ -2427,8 +2356,7 @@ function resumeRestInterval(initialRemainingTime) {
 
     // Announce rest countdown numbers (10 seconds and below)
     if (restRemaining > 0 && restRemaining <= 10) {
-        // Use speak() instead of speakDefault() for rest countdowns
-        speak(restRemaining.toString(), false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
+        speak(restRemaining.toString(), false, false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
     }
 
     mainPhaseTimer = setInterval(() => {
@@ -2451,8 +2379,7 @@ function resumeRestInterval(initialRemainingTime) {
             playTwoToneBeep();
             flashScreenRed();
             // Announce rest countdown numbers (10 seconds and below)
-            // Use speak() instead of speakDefault() for rest countdowns
-            speak(restRemaining.toString(), false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
+            speak(restRemaining.toString(), false, false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
         }
 
 
@@ -2558,7 +2485,7 @@ async function endPattern(pattern) {
     if (pattern.announceShots && pattern.outroMessage.trim()) {
         currentShotDisplay.textContent = 'Outro'; // Display message during outro.
         progressBar.style.width = '100%'; // Mark pattern as complete visually.
-        await speak(pattern.outroMessage).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish.
+        await speak(pattern.outroMessage, false).catch(e => console.error('Outro message speech error:', e)); // Wait for outro message to finish.
     }
 
     const postRestTime = parseInt(pattern.postSequenceRest);
@@ -2583,7 +2510,7 @@ async function endPattern(pattern) {
         currentShotDisplay.textContent = "Rest"; // Display "Rest" initially
 
         // Use speak() to ensure the pattern's voice is used, but force rate 1.0 for rest announcement
-        await speak(restAnnouncementText, false, 1.0).catch(e => console.error('Rest announcement speech error:', e)); // Force rate 1.0
+        await speak(restAnnouncementText, false, false, 1.0).catch(e => console.error('Rest announcement speech error:', e)); // Force rate 1.0
 
 
         // After optional speech, start the actual countdown or immediately proceed if paused during speech
@@ -2626,7 +2553,7 @@ async function handleWorkoutCompletion() {
     currentRestOriginalDuration = 0;
     pausedShotDisplayContent = ''; // Clear paused content
 
-    await speakDefault('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement.
+    await speak('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement.
 
     currentShotDisplay.textContent = 'Done';
     progressBar.style.width = '100%';
