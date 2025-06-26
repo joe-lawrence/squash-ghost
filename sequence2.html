@@ -153,7 +153,7 @@
         </div>
         <!-- Main content area (shot display and progress bar) - this will flex-grow and center -->
         <div class="flex-grow flex flex-col items-center justify-center px-4 pb-4">
-            <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2 mb-10"></p>
+            <p id="current-shot-display" class="text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2 mb-10 text-center"></p>
             <div class="w-full max-w-lg bg-gray-200 rounded-full h-4 dark:bg-gray-700 mb-6">
                 <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-100 ease-linear" style="width: 0%"></div>
             </div>
@@ -322,7 +322,7 @@
                             <div id="accordion-narration-body" class="hidden" aria-labelledby="accordion-heading-narration">
                                 <div class="border-x border-t border-gray-200 p-3 dark:border-gray-700">
                                     <div class="mb-4"><label class="inline-flex items-center"><input type="checkbox" id="announceShots" class="form-checkbox rounded text-blue-600 focus:ring-blue-500"><span class="ml-2 text-gray-700 dark:text-gray-300">Announce shots</span></label></div>
-                                    <p class="mb-2 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
+                                    <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message before pattern starts</p>
                                     <textarea id="introMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
                                     <p class="mb-2 mt-4 text-sm font-normal text-gray-500 dark:text-gray-400">Optional message after pattern ends</p>
                                     <textarea id="outroMessage" rows="2" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"></textarea>
@@ -2233,9 +2233,11 @@
      * Speaks the given text using the pattern-specific voice and rate.
      * Cancels any existing speech before speaking a new message.
      * @param {string} text - The text to speak.
+     * @param {boolean} [isResume=false] - True if this call is part of a resume operation.
+     * @param {number} [rate=null] - Optional specific speech rate to use. If null, globalSpeechRate is used.
      * @returns {Promise<void>} A promise that resolves when speech ends or rejects on error.
      */
-    function speak(text) {
+    function speak(text, isResume = false, rate = null) {
         return new Promise((resolve, reject) => {
             if (!synth) {
                 console.warn('speak: Speech Synthesis API not supported or not initialized.');
@@ -2262,6 +2264,14 @@
                 return;
             }
 
+            // If resuming and the text to speak is the same as what was displayed before pause,
+            // assume it was already announced and skip re-announcement.
+            if (isResume && pausedShotDisplayContent && pausedShotDisplayContent.trim() === text.trim()) {
+                console.log(`speak: Resuming, skipping re-announcement of "${text}" as it was already displayed.`);
+                resolve();
+                return;
+            }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US'; // Fallback language
 
@@ -2270,7 +2280,7 @@
                 utterance.voice = globalSpeechVoice;
                 utterance.lang = globalSpeechVoice.lang; // Use voice's language
             }
-            utterance.rate = globalSpeechRate;
+            utterance.rate = (rate !== null) ? rate : globalSpeechRate; // Use provided rate or global rate
             utterance.volume = 1; // Always full volume for audible speech
 
             utterance.onend = () => {
@@ -2425,6 +2435,7 @@
         isPaused = false;
         timePassedInMainPhase = 0; // Reset for a fresh start
         currentRestOriginalDuration = 0; // Reset rest duration tracker
+        pausedShotDisplayContent = ''; // Reset for a fresh start
 
         // Configure workout control buttons.
         stopWorkoutBtn.innerHTML = `<span class="flex items-center justify-center">${STOP_ICON}</span>`;
@@ -2518,6 +2529,7 @@
 
         // Reset rest flags
         currentRestOriginalDuration = 0;
+        pausedShotDisplayContent = ''; // Clear paused content
 
         // Revert body background and stop speech synthesis.
         document.body.style.backgroundColor = ''; // Clear inline style
@@ -2618,7 +2630,8 @@
                     const nextShotText = currentShotOptions[currentShotIndex];
 
                     // Use the captured time passed and effective interval to resume the phase accurately.
-                    startMainShotPhase(pattern, isFirstShotOfWorkout, nextShotText, pausedTimePassedInMainPhase, pausedEffectiveIntervalDuration);
+                    // Pass `true` for `isResume` to the `speak` function.
+                    startMainShotPhase(pattern, isFirstShotOfWorkout, nextShotText, pausedTimePassedInMainPhase, pausedEffectiveIntervalDuration, true);
 
                     // Reset relevant paused states.
                     pausedTimePassedInMainPhase = 0;
@@ -2723,8 +2736,9 @@
      * @param {string} shotToAnnounce - The shot text to announce *during* this interval (for the *next* shot's preparation).
      * @param {number} [initialTimePassed=0] - Time already passed in this interval (for resuming from pause).
      * @param {number} [predefinedEffectiveInterval=0] - A predefined effective interval (for resuming from pause).
+     * @param {boolean} [isResume=false] - True if this call is part of a resume operation.
      */
-    function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initialTimePassed = 0, predefinedEffectiveInterval = 0) {
+    function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initialTimePassed = 0, predefinedEffectiveInterval = 0, isResume = false) {
         if (isPaused) return;
 
         currentWorkoutPhase = 'shot'; // Ensure phase is set to shot.
@@ -2802,18 +2816,22 @@
                 announcementTime = (effectiveIntervalDuration / 2) - parseFloat(pattern.nextShotAnnouncement);
             }
 
-            if (announcementTime >= timePassedInMainPhase) { // Only schedule if event time hasn't passed.
+            // Only schedule if event time hasn't passed and if it's not a resume where the text was already announced.
+            const shouldAnnounceNow = (announcementTime < timePassedInMainPhase) && !(isResume && pausedShotDisplayContent === shotToAnnounce);
+            const shouldSchedule = (announcementTime >= timePassedInMainPhase);
+
+
+            if (shouldSchedule) {
                 nextAnnouncementTimeout = setTimeout(() => {
                     if (!isPaused) {
                         currentShotDisplay.textContent = shotToAnnounce;
                         speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
                     }
                 }, (announcementTime - timePassedInMainPhase) * 1000);
-            } else {
-                // If announcement time has passed (e.g., on resume), display and announce immediately.
+            } else if (shouldAnnounceNow) { // Only announce immediately if conditions met (e.g., resuming past announcement time)
                 if (!isPaused) {
                     currentShotDisplay.textContent = shotToAnnounce;
-                    speak(shotToAnnounce).catch(e => console.error('Shot announcement speech error:', e));
+                    speak(shotToAnnounce, isResume).catch(e => console.error('Shot announcement speech error:', e));
                 }
             }
         }
@@ -2908,7 +2926,8 @@
 
         // Announce rest countdown numbers (10 seconds and below)
         if (restRemaining > 0 && restRemaining <= 10) {
-            speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
+            // Use speak() instead of speakDefault() for rest countdowns
+            speak(restRemaining.toString(), false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
         }
 
         mainPhaseTimer = setInterval(() => {
@@ -2931,7 +2950,8 @@
                 playTwoToneBeep();
                 flashScreenRed();
                 // Announce rest countdown numbers (10 seconds and below)
-                speakDefault(restRemaining.toString()).catch(e => console.error('Rest countdown speech error:', e));
+                // Use speak() instead of speakDefault() for rest countdowns
+                speak(restRemaining.toString(), false, 1.0).catch(e => console.error('Rest countdown speech error:', e)); // Force rate 1.0
             }
 
 
@@ -3003,6 +3023,8 @@
             if (seconds > 0) {
                 if (seconds === 30) {
                     result += " and a half";
+                } else if (seconds < 10) { // For "a minute, five" instead of "a minute, five seconds"
+                    result += ", " + getNumberWord(seconds, numToWordsSingle, numToWordsTens);
                 } else {
                     result += ", " + getNumberWord(seconds, numToWordsSingle, numToWordsTens) + " seconds";
                 }
@@ -3059,7 +3081,8 @@
             // Instead, `resumeRestInterval` handles the number display.
             currentShotDisplay.textContent = "Rest"; // Display "Rest" initially
 
-            await speakDefault(restAnnouncementText).catch(e => console.error('Rest announcement speech error:', e)); // Wait for "Rest" speech to finish
+            // Use speak() to ensure the pattern's voice is used, but force rate 1.0 for rest announcement
+            await speak(restAnnouncementText, false, 1.0).catch(e => console.error('Rest announcement speech error:', e)); // Force rate 1.0
 
 
             // After optional speech, start the actual countdown or immediately proceed if paused during speech
@@ -3100,6 +3123,7 @@
 
         // Reset rest flags
         currentRestOriginalDuration = 0;
+        pausedShotDisplayContent = ''; // Clear paused content
 
         await speakDefault('Workout complete').catch(e => console.error('Workout complete speech error:', e)); // Wait for workout completion announcement.
 
