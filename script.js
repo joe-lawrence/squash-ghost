@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         typeof data.shotInterval !== 'number' ||
         typeof data.randomOffset !== 'number' ||
         typeof data.nextShotAnnouncement !== 'number' ||
-        !['None', 'Slow', 'Medium', 'Fast'].includes(data.splitStepHint) ||
+        !['None', 'Slow', 'Medium', 'Fast', 'Random'].includes(data.splitStepHint) ||
         !['shot', 'time'].includes(data.limitType) ||
         typeof data.patternLimit !== 'number' ||
         typeof data.postSequenceRest !== 'number' ||
@@ -2212,26 +2212,32 @@ function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initi
 
     // 2. Split-step Hint Power-Up Beep
     if (pattern.splitStepHint !== 'None') {
+        let selectedSpeed = pattern.splitStepHint;
+        if (selectedSpeed === 'Random') {
+            const speeds = ['Slow', 'Medium', 'Fast'];
+            selectedSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+        }
+
         const powerUpDurations = {
             'Slow': 0.50625,
             'Medium': 0.5,
             'Fast': 0.49375
         };
-        const powerUpDuration = powerUpDurations[pattern.splitStepHint];
+        const powerUpDuration = powerUpDurations[selectedSpeed];
         // Power-up beep should play `powerUpDuration` seconds before the two-tone beep.
         const powerUpTime = flashBeepTime - powerUpDuration;
 
         if (powerUpTime >= timePassedInMainPhase) {
             splitStepPowerUpTimeout = setTimeout(() => {
                 if (!isPaused) {
-                    playSplitStepPowerUp(pattern.splitStepHint);
+                    playSplitStepPowerUp(selectedSpeed);
                 }
             }, (powerUpTime - timePassedInMainPhase) * 1000);
         } else {
             // If power-up time has already passed but two-tone hasn't, play it immediately.
             // This can happen if resuming from a pause point.
             if (flashBeepTime >= timePassedInMainPhase && !isPaused) {
-                 playSplitStepPowerUp(pattern.splitStepHint);
+                 playSplitStepPowerUp(selectedSpeed);
             }
         }
     }
