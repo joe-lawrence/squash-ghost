@@ -2140,6 +2140,7 @@ async function runCurrentPattern() {
                 currentShotDisplay.textContent = 'Intro'; // Display message during intro.
                 progressBar.style.width = '0%'; // Reset progress bar for next pattern.
                 await speak(pattern.introMessage, false).catch(e => console.error('Intro message speech error:', e)); // Wait for intro message to finish.
+                if (isPaused) return;
             }
 
             currentWorkoutPhase = 'shot'; // Set phase to shot before starting.
@@ -2154,7 +2155,9 @@ async function runCurrentPattern() {
     // If pattern is invalid or has no shots, skip to the next one.
     console.log(`runCurrentPattern: Skipping pattern ${currentPatternIndex} as it is invalid or has no shots.`);
     currentPatternIndex++;
-    runCurrentPattern(); // Recursively call to process the next index.
+
+    if (isRoutineRunning)
+        runCurrentPattern(); // Recursively call to process the next index.
 }
 
 
@@ -2210,9 +2213,9 @@ function startMainShotPhase(pattern, isInitialWorkoutShot, shotToAnnounce, initi
     // 2. Split-step Hint Power-Up Beep
     if (pattern.splitStepHint !== 'None') {
         const powerUpDurations = {
-            'Slow': 0.64,
-            'Medium': 0.48,
-            'Fast': 0.32
+            'Slow': 0.50625,
+            'Medium': 0.5,
+            'Fast': 0.49375
         };
         const powerUpDuration = powerUpDurations[pattern.splitStepHint];
         // Power-up beep should play `powerUpDuration` seconds before the two-tone beep.
