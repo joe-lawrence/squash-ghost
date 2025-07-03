@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squash Shot Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            min-height: 100vh;
+            padding: 1rem; /* Reduced from 2rem for mobile */
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 2rem;
+            }
+        }
+
+        /* Basic transition for dropdowns */
+        .dropdown-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out; /* Adjusted transition duration */
+            transform-origin: top;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden; /* Keep overflow hidden for vertical collapse */
+            pointer-events: none; /* Prevent interaction when hidden */
+            position: absolute; /* Keep absolute for positioning relative to button */
+            z-index: 10; /* Ensure it's above other content */
+            border-radius: 0.5rem; /* Apply rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Add shadow */
+        }
+
+        .dropdown-content.active {
+            opacity: 1;
+            /* max-height will be set dynamically by JS */
+            overflow: visible; /* Changed to visible to prevent clipping */
+            pointer-events: auto;
+        }
+
+        /* Arrow icon rotation for dropdowns */
+        .arrow-icon {
+            transition: transform 0.2s ease-out;
+        }
+
+        .arrow-icon.rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        /* Custom slider styling (optional, Tailwind handles most) */
+        input[type="range"] {
+            -webkit-appearance: none; /* Hides the slider so you can style it */
+            width: 100%; /* Full-width */
+            height: 8px; /* Specify a height */
+            background: #d1d5db; /* Grey background */
+            outline: none; /* Remove outline */
+            opacity: 0.7; /* Set transparency (for IE) */
+            -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+            transition: opacity .2s;
+            border-radius: 4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; /* Override default look */
+            appearance: none;
+            width: 20px; /* Set a specific slider handle width */
+            height: 20px; /* Slider handle height */
+            background: #2563eb; /* Blue background */
+            cursor: pointer; /* Cursor on hover */
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px; /* Set a specific slider handle width */
+            height: 20px; /* Slider handle height */
+            background: #2563eb; /* Blue background */
+            cursor: pointer; /* Cursor on hover */
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]:disabled::-webkit-slider-thumb {
+            background: #9ca3af; /* Gray for disabled */
+            cursor: not-allowed;
+        }
+        input[type="range"]:disabled::-moz-range-thumb {
+            background: #9ca3af; /* Gray for disabled */
+            cursor: not-allowed;
+        }
+        input[type="range"]:disabled {
+            background: #e5e7eb; /* Lighter gray track for disabled */
+            cursor: not-allowed;
+        }
+
+        /* Submenu content for vertical overlay - NO SLIDING EFFECT */
+        .submenu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: white; /* Ensure background to cover previous content */
+            box-sizing: border-box;
+            /* Removed transform and transition for sliding effect */
+            display: none; /* Hidden by default */
+            pointer-events: none;
+            z-index: 20; /* Ensure it's above the main menu */
+        }
+
+        .submenu-content.active {
+            display: block; /* Instantly visible */
+            pointer-events: auto;
+        }
+
+        /* Main menu content for vertical overlay - NO SLIDING EFFECT */
+        .main-menu-content { /* Changed from ID to class */
+            /* Removed transform and transition for sliding effect */
+            display: block; /* Visible by default when dropdown is open */
+            pointer-events: auto;
+            position: relative; /* Ensure it takes up space for height calculation */
+        }
+
+        .main-menu-content.hidden-left { /* Changed from ID to class */
+            display: none; /* Instantly hidden */
+            pointer-events: none;
+        }
+
+        /* Ensure pattern accordion body hiding takes precedence */
+        .pattern-accordion-body.hidden {
+            display: none !important;
+        }
+
+        /* Ensure shot/message containers are hidden when pattern is collapsed */
+        .pattern-accordion-body.hidden * {
+            display: none !important;
+        }
+        
+        /* Override for the accordion body itself to remain a container */
+        .pattern-accordion-body.hidden {
+            display: none !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Outer container for all accordions (Patterns) -->
+    <div class="flex flex-col space-y-4" id="mainContainer">
+
+        <!-- Template for a new Pattern instance -->
+        <template id="patternInstanceTemplate">
+            <div class="w-full max-w-md mx-auto border border-gray-300 rounded-lg shadow-lg bg-white pattern-instance">
+                <!-- Pattern Accordion Header -->
+                <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center pattern-accordion-header">
+                    <!-- Editable title for Pattern Panel -->
+                    <input type="text" value="Pattern"
+                           class="font-semibold text-gray-700 bg-transparent border-none focus:outline-none w-full pattern-panel-title"
+                           style="box-shadow: none; padding: 0; margin: 0; margin-right: 12px;">
+                    <svg class="w-5 h-5 text-gray-600 transform transition-transform duration-200 pattern-accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <!-- Pattern Accordion Body -->
+                <div class="p-0 pattern-accordion-body">
+                    <div class="relative inline-block text-left w-full">
+                        <!-- Pattern toolbar (simplified) -->
+                        <div class="flex justify-end items-center border-b border-gray-200 bg-gray-100">
+                            <div class="flex items-center space-x-2 p-2 pattern-toolbar">
+                                <button class="p-2 rounded-full hover:bg-gray-100 pattern-delete-btn" title="Delete Pattern">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                </button>
+                                <button class="p-2 rounded-full hover:bg-gray-100 pattern-clone-btn" title="Clone Pattern">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                </button>
+                                <button class="p-2 rounded-full hover:bg-gray-100 pattern-move-up-btn" title="Move Pattern Up">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m5 12 7-7 7 7m-7 7V5"/></svg>
+                                </button>
+                                <button class="p-2 rounded-full hover:bg-gray-100 pattern-move-down-btn" title="Move Pattern Down">
+                                    <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5v14m7-7-7 7-7-7"/></svg>
+                                </button>
+                                <button type="button" class="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 settings-btn" title="Settings">
+                                    <svg class="w-6 h-6 text-gray-600 settings-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pattern content (no more tab wrapper) -->
+                        <div class="p-4 pb-0 relative bg-white pattern-content-wrapper">
+                                <div class="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Repeat: <span class="repeat-value">1x</span></label>
+                                    <input type="range" min="1" max="20" value="1" step="1" class="w-full repeat-slider">
+                                </div>
+
+                                <div class="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                                    <div class="mb-3">
+                                        <select class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm iteration-type-select">
+                                            <option value="in-order" selected>In-order</option>
+                                            <option value="shuffle">Shuffle</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <select class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm limits-type-select">
+                                            <option value="all-shots" selected>All pattern shots</option>
+                                            <option value="shot-limit">Shot limit</option>
+                                            <option value="time-limit">Time limit</option>
+                                        </select>
+                                    </div>
+                                    <div class="hidden shot-limit-container">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Shot limit: <span class="shot-limit-value">1</span></label>
+                                        <input type="range" min="1" max="50" value="1" step="1" class="w-full shot-limit-slider">
+                                    </div>
+                                    <div class="hidden time-limit-container">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Time limit: <span class="time-limit-value">10:00</span></label>
+                                        <input type="range" min="30" max="1800" value="600" step="30" class="w-full time-limit-slider">
+                                    </div>
+                                </div>
+
+                                <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
+                                    <div class="py-1 main-menu-content">
+                                        <div class="group relative w-full">
+                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="shot-interval-bias-submenu">
+                                                Interval
+                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <div class="group relative w-full">
+                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="split-step-submenu">
+                                                Split-step
+                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <div class="group relative w-full">
+                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="voice-submenu">
+                                                Voice
+                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 shot-interval-bias-submenu">
+                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                            </button>
+                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8 text-gray-800">Interval Settings</h3>
+                                        </div>
+                                        <div class="pt-16 pb-4">
+                                            <div class="px-4 py-2 text-sm text-gray-700">
+                                                <label class="block font-medium mb-1">Interval: <span class="shot-interval-value">5.0s</span></label>
+                                                <input type="range" min="3.0" max="8.0" value="5.0" step="0.1" class="w-full shot-interval-slider">
+                                            </div>
+
+                                            <div class="px-4 py-2 text-sm text-gray-700">
+                                                <label class="block font-medium mb-2">Bias</label>
+                                                <div class="flex items-center mb-2">
+                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded bias-enabled">
+                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                </div>
+                                                <div class="border-t border-gray-200 pt-2 mt-2 hidden bias-controls-container">
+                                                    <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm bias-type-select">
+                                                        <option value="fixed" class="bias-fixed-option">Fixed: 0.0s</option>
+                                                        <option value="random" class="bias-random-option">Random range: 0.0s to 0.0s</option>
+                                                    </select>
+
+                                                    <div class="mt-4 bias-fixed-container">
+                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full bias-fixed-slider">
+                                                    </div>
+
+                                                    <div class="mt-4 hidden bias-random-container">
+                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full bias-random-positive-slider">
+                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full mt-2 bias-random-negative-slider">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 split-step-submenu">
+                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                            </button>
+                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8">Split-step Settings</h3>
+                                        </div>
+                                        <div class="pt-16 pb-4">
+                                            <div class="px-4 py-2">
+                                                <div class="flex items-center mb-2">
+                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded split-step-enabled">
+                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                </div>
+                                                <div class="mb-2 hidden split-step-rate-container">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                                                    <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm split-step-speed-select">
+                                                        <option value="auto-scale" selected>Auto-scale</option>
+                                                        <option value="slow">Slow</option>
+                                                        <option value="medium">Medium</option>
+                                                        <option value="fast">Fast</option>
+                                                        <option value="random">Random</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 voice-submenu">
+                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                            </button>
+                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8">Voice Settings</h3>
+                                        </div>
+                                        <div class="pt-16 pb-4">
+                                            <div class="px-4 py-2">
+                                                <div class="flex items-center mb-2">
+                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded voice-enabled" checked>
+                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                </div>
+                                                <div class="voice-options-container">
+                                                    <div class="mb-2">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Voice</label>
+                                                        <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm voice-select">
+                                                            </select>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                                                        <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm voice-rate-select">
+                                                            <option value="auto-scale" selected>Auto-scale</option>
+                                                            <option value="0.5">0.5x</option>
+                                                            <option value="0.75">0.75x</option>
+                                                            <option value="1.0">1.0x</option>
+                                                            <option value="1.25">1.25x</option>
+                                                            <option value="1.5">1.5x</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-2 mt-4">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Narration lead time: <span class="lead-time-value">2.5s</span></label>
+                                                        <input type="range" min="2.5" max="5.0" value="2.5" step="0.1" class="w-full lead-time-slider">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Container for dynamically added Shot/Msg instances within THIS Pattern -->
+                    <div class="flex flex-col space-y-4 px-4 pt-0 pb-4 shot-msg-instances-container">
+                        <!-- Template for a new Shot instance -->
+                        <template class="shot-instance-template">
+                            <div class="w-full border border-gray-300 rounded-lg shadow-lg bg-gray-50 shot-instance shot-msg-instance">
+                                <!-- Header for Shot Instance -->
+                                <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center shot-header">
+                                    <input type="text" value="Shot"
+                                           class="font-semibold text-gray-700 bg-transparent border-none focus:outline-none w-full shot-title"
+                                           style="box-shadow: none; padding: 0; margin: 0; margin-right: 12px;">
+                                    <svg class="w-5 h-5 text-gray-600 transform transition-transform duration-200 shot-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+
+                                <!-- Body of Shot Instance -->
+                                <div class="p-0 shot-body">
+                                    <div class="relative inline-block text-left w-full">
+                                        <!-- Toolbar buttons for THIS instance -->
+                                        <div class="flex justify-end items-center border-b border-gray-200 dark:border-gray-700 bg-gray-100">
+                                            <div class="flex items-center space-x-1 p-2 shot-toolbar">
+                                                <button class="p-1 rounded-full hover:bg-gray-100 delete-btn" title="Delete">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 clone-btn" title="Clone">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 move-up-btn" title="Move Up">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m5 12 7-7 7 7m-7 7V5"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 move-down-btn" title="Move Down">
+                                                    <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5v14m7-7-7 7-7-7"/></svg>
+                                                </button>
+                                                <button type="button" class="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 settings-btn" title="Settings">
+                                                    <svg class="w-6 h-6 text-gray-600 settings-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="px-4 pt-2 pb-4 relative shot-content-wrapper">
+                                            <!-- Shot configuration content -->
+                                            <div class="shot-content-panel">
+                                                <div class="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">Repeat: <span class="repeat-value">1x</span></label>
+                                                    <input type="range" min="1" max="20" value="1" step="1" class="w-full repeat-slider">
+                                                </div>
+
+                                                <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
+                                                    <div class="py-1 main-menu-content">
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="shot-interval-bias-submenu">
+                                                                Interval
+                                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="split-step-submenu">
+                                                                Split-step
+                                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="voice-submenu">
+                                                                Voice
+                                                                <svg class="ml-auto h-5 w-5 text-gray-400 group-hover:text-gray-500 arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 shot-interval-bias-submenu">
+                                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                            </button>
+                                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8">Interval Settings</h3>
+                                                        </div>
+                                                        <div class="pt-16 pb-4">
+                                                            <div class="px-4 py-2 text-sm text-gray-700">
+                                                                <label class="block font-medium mb-1">Interval: <span class="shot-interval-value">5.0s</span></label>
+                                                                <input type="range" min="3.0" max="8.0" value="5.0" step="0.1" class="w-full shot-interval-slider">
+                                                            </div>
+
+                                                            <div class="px-4 py-2 text-sm text-gray-700">
+                                                                <label class="block font-medium mb-2">Bias</label>
+                                                                <div class="flex items-center mb-2">
+                                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded bias-enabled">
+                                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                                </div>
+                                                                <div class="border-t border-gray-200 pt-2 mt-2 hidden bias-controls-container">
+                                                                    <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm bias-type-select">
+                                                                        <option value="fixed" class="bias-fixed-option">Fixed: 0.0s</option>
+                                                                        <option value="random" class="bias-random-option">Random range: 0.0s to 0.0s</option>
+                                                                    </select>
+
+                                                                    <div class="mt-4 bias-fixed-container">
+                                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full bias-fixed-slider">
+                                                                    </div>
+
+                                                                    <div class="mt-4 hidden bias-random-container">
+                                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full bias-random-positive-slider">
+                                                                        <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full mt-2 bias-random-negative-slider">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 split-step-submenu">
+                                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                            </button>
+                                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8">Split-step Settings</h3>
+                                                        </div>
+                                                        <div class="pt-16 pb-4">
+                                                            <div class="px-4 py-2">
+                                                                <div class="flex items-center mb-2">
+                                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded split-step-enabled">
+                                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                                </div>
+                                                                <div class="mb-2 hidden split-step-rate-container">
+                                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                                                                    <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm split-step-speed-select">
+                                                                        <option value="auto-scale" selected>Auto-scale</option>
+                                                                        <option value="slow">Slow</option>
+                                                                        <option value="medium">Medium</option>
+                                                                        <option value="fast">Fast</option>
+                                                                        <option value="random">Random</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="submenu-content hidden bg-white rounded-md border border-gray-200 voice-submenu">
+                                                        <div class="absolute top-0 left-0 right-0 flex items-center p-2 bg-white border-b border-gray-200 h-16">
+                                                            <button class="p-1 rounded-full hover:bg-gray-200 back-btn" data-action="back">
+                                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                            </button>
+                                                            <h3 class="flex-grow text-lg font-semibold text-center mr-8">Voice Settings</h3>
+                                                        </div>
+                                                        <div class="pt-16 pb-4">
+                                                            <div class="px-4 py-2">
+                                                                <div class="flex items-center mb-2">
+                                                                    <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded voice-enabled" checked>
+                                                                    <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                                                                </div>
+                                                                <div class="voice-options-container">
+                                                                    <div class="mb-2">
+                                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Voice</label>
+                                                                        <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm voice-select">
+                                                                            </select>
+                                                                    </div>
+                                                                    <div class="mb-2">
+                                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                                                                        <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm voice-rate-select">
+                                                                            <option value="auto-scale" selected>Auto-scale</option>
+                                                                            <option value="0.5">0.5x</option>
+                                                                            <option value="0.75">0.75x</option>
+                                                                            <option value="1.0">1.0x</option>
+                                                                            <option value="1.25">1.25x</option>
+                                                                            <option value="1.5">1.5x</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="mb-2 mt-4">
+                                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Narration lead time: <span class="lead-time-value">2.5s</span></label>
+                                                                        <input type="range" min="2.5" max="5.0" value="2.5" step="0.1" class="w-full lead-time-slider">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Template for a new Message instance -->
+                        <template class="message-instance-template">
+                            <div class="w-full border border-gray-300 rounded-lg shadow-lg bg-gray-50 message-instance shot-msg-instance">
+                                <!-- Header for Message Instance -->
+                                <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center message-header">
+                                    <input type="text" value="Message"
+                                           class="font-semibold text-gray-700 bg-transparent border-none focus:outline-none w-full message-title"
+                                           style="box-shadow: none; padding: 0; margin: 0; margin-right: 12px;">
+                                    <svg class="w-5 h-5 text-gray-600 transform transition-transform duration-200 message-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+
+                                <!-- Body of Message Instance -->
+                                <div class="p-0 message-body">
+                                    <div class="relative inline-block text-left w-full">
+                                        <!-- Toolbar buttons for THIS instance -->
+                                        <div class="flex justify-end items-center border-b border-gray-200 dark:border-gray-700 bg-gray-100">
+                                            <div class="flex items-center space-x-1 p-2 message-toolbar">
+                                                <button class="p-1 rounded-full hover:bg-gray-100 delete-btn" title="Delete">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 clone-btn" title="Clone">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 move-up-btn" title="Move Up">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m5 12 7-7 7 7m-7 7V5"/></svg>
+                                                </button>
+                                                <button class="p-1 rounded-full hover:bg-gray-100 move-down-btn" title="Move Down">
+                                                    <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5v14m7-7-7 7-7-7"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="px-4 pt-2 pb-4 relative message-content-wrapper">
+                                            <!-- Message configuration content -->
+                                            <div class="message-content-panel">
+                                                <div class="px-4 py-2 text-sm text-gray-700">
+                                                    <label class="block font-medium mb-1">Message:</label>
+                                                    <input type="text" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm message-input" placeholder="Enter announcement message">
+                                                </div>
+                                                <div class="px-4 py-2 text-sm text-gray-700">
+                                                    <label class="block font-medium mb-1">Interval: <span class="message-interval-value">0s</span></label>
+                                                    <input type="range" min="0" max="300" value="0" step="1" class="w-full message-interval-slider">
+                                                </div>
+                                                <div class="px-4 py-2 text-sm text-gray-700">
+                                                    <div class="flex items-center">
+                                                        <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded skip-at-end-of-workout">
+                                                        <label class="ml-2 text-sm text-gray-700">Skip at end of workout</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Add Shot/Msg Buttons for THIS Pattern -->
+                    <div class="flex justify-center space-x-4 mt-4 p-4 add-shot-msg-buttons">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md add-shot-btn">Add Shot</button>
+                        <button class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md add-msg-btn">Add Message</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Add Pattern Button -->
+        <div class="flex justify-center mt-4">
+            <button id="addPatternBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">Add Pattern</button>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Global Elements ---
+            const mainContainer = document.getElementById('mainContainer');
+            const patternInstanceTemplate = document.getElementById('patternInstanceTemplate');
+            const shotInstanceTemplate = patternInstanceTemplate.content.querySelector('.shot-instance-template'); // Get shot template from within pattern template
+            const messageInstanceTemplate = patternInstanceTemplate.content.querySelector('.message-instance-template'); // Get message template from within pattern template
+            const addPatternBtn = document.getElementById('addPatternBtn');
+
+            let globalInstanceCounter = 0; // To ensure unique IDs across all patterns and their children
+
+            // --- Utility Functions (Generic for any accordion/dropdown) ---
+
+            /**
+             * Sets the max-height of a given settings panel based on its currently visible content.
+             * @param {HTMLElement} panelElement The dropdown content panel (e.g., settingsPanel).
+             * @param {HTMLElement} mainMenuElement The main menu content within the panel.
+             */
+            function setPanelHeight(panelElement, mainMenuElement) {
+                let targetHeight = 0;
+                let activeContentElement = null;
+
+                if (mainMenuElement && mainMenuElement.classList.contains('active')) {
+                    activeContentElement = mainMenuElement;
+                } else {
+                    panelElement.querySelectorAll('.submenu-content').forEach(panel => {
+                        if (panel.classList.contains('active')) {
+                            activeContentElement = panel;
+                        }
+                    });
+                }
+
+                if (activeContentElement) {
+                    const originalDisplay = activeContentElement.style.display;
+                    const originalVisibility = activeContentElement.style.visibility;
+                    const originalPosition = activeContentElement.style.position;
+                    const originalLeft = activeContentElement.style.left;
+
+                    activeContentElement.style.display = 'block';
+                    activeContentElement.style.visibility = 'hidden';
+                    activeContentElement.style.position = 'absolute';
+                    activeContentElement.style.left = '-9999px';
+
+                    targetHeight = activeContentElement.offsetHeight;
+
+                    activeContentElement.style.display = originalDisplay;
+                    activeContentElement.style.visibility = originalVisibility;
+                    activeContentElement.style.position = originalPosition;
+                    activeContentElement.style.left = originalLeft;
+                }
+                if (panelElement) {
+                    panelElement.style.maxHeight = targetHeight + 'px';
+                }
+            }
+
+            /**
+             * Toggles a given settings dropdown panel.
+             * @param {HTMLElement} panelElement The dropdown content panel.
+             * @param {HTMLElement} mainMenuElement The main menu content within the panel.
+             */
+            function toggleSettingsDropdown(panelElement, mainMenuElement) {
+                if (!panelElement || !mainMenuElement) {
+                    console.error("Missing panel or main menu element for toggleSettingsDropdown.");
+                    return;
+                }
+                panelElement.classList.toggle('active');
+
+                if (panelElement.classList.contains('active')) {
+                    showSettingsMainMenu(panelElement, mainMenuElement);
+                } else {
+                    panelElement.style.maxHeight = '0px';
+                    mainMenuElement.classList.add('hidden-left');
+                    panelElement.querySelectorAll('.submenu-content').forEach(panel => {
+                        panel.classList.add('hidden');
+                        panel.classList.remove('active');
+                    });
+                }
+            }
+
+            /**
+             * Shows the main menu content for a given settings panel.
+             * @param {HTMLElement} panelElement The dropdown content panel.
+             * @param {HTMLElement} mainMenuElement The main menu content within the panel.
+             */
+            function showSettingsMainMenu(panelElement, mainMenuElement) {
+                if (!panelElement || !mainMenuElement) {
+                    console.error("Missing panel or main menu element for showSettingsMainMenu.");
+                    return;
+                }
+                mainMenuElement.classList.remove('hidden-left');
+                mainMenuElement.classList.add('active');
+
+                panelElement.querySelectorAll('.submenu-content').forEach(panel => {
+                    panel.classList.add('hidden');
+                    panel.classList.remove('active');
+                });
+
+                requestAnimationFrame(() => setPanelHeight(panelElement, mainMenuElement));
+            }
+
+            /**
+             * Shows a specific submenu for a given settings panel.
+             * @param {HTMLElement} panelElement The dropdown content panel.
+             * @param {HTMLElement} mainMenuElement The main menu content within the panel.
+             * @param {string} submenuClass The class name of the target submenu.
+             */
+            function showSettingsSubmenu(panelElement, mainMenuElement, submenuClass) {
+                if (!panelElement || !mainMenuElement) {
+                    console.error("Missing panel or main menu element for showSettingsSubmenu.");
+                    return;
+                }
+                mainMenuElement.classList.remove('active');
+                mainMenuElement.classList.add('hidden-left');
+
+                panelElement.querySelectorAll('.submenu-content').forEach(panel => {
+                    panel.classList.add('hidden');
+                    panel.classList.remove('active');
+                });
+
+                const targetSubmenu = panelElement.querySelector(`.${submenuClass}`);
+                if (targetSubmenu) {
+                    targetSubmenu.classList.remove('hidden');
+                    targetSubmenu.classList.add('active');
+                    requestAnimationFrame(() => setPanelHeight(panelElement, mainMenuElement));
+                } else {
+                    console.error(`Target submenu with class ${submenuClass} not found.`);
+                }
+            }
+
+            /**
+             * Updates the lead time slider based on the interval slider.
+             * @param {HTMLElement} intervalSlider
+             * @param {HTMLElement} leadTimeSlider
+             * @param {HTMLElement} leadTimeValueSpan
+             */
+            function updateLeadTimeSlider(intervalSlider, leadTimeSlider, leadTimeValueSpan) {
+                if (!intervalSlider || !leadTimeSlider || !leadTimeValueSpan) {
+                    console.error("Error in updateLeadTimeSlider: Required elements not found.");
+                    return;
+                }
+                const intervalValue = parseFloat(intervalSlider.value);
+                const minLeadTime = 2.5;
+                const maxLeadTime = intervalValue;
+
+                leadTimeSlider.min = minLeadTime;
+                leadTimeSlider.max = maxLeadTime;
+
+                if (parseFloat(leadTimeSlider.value) < minLeadTime) {
+                    leadTimeSlider.value = minLeadTime;
+                } else if (parseFloat(leadTimeSlider.value) > maxLeadTime) {
+                    leadTimeSlider.value = maxLeadTime;
+                }
+
+                leadTimeValueSpan.textContent = `${parseFloat(leadTimeSlider.value).toFixed(1)}s`;
+            }
+
+            /**
+             * Updates the shot limit slider based on the current number of shots in the pattern.
+             * @param {HTMLElement} patternElement The pattern element containing the shots.
+             */
+            function updateShotLimitSlider(patternElement) {
+                const shotLimitSlider = patternElement.querySelector('.shot-limit-slider');
+                const shotLimitValueSpan = patternElement.querySelector('.shot-limit-value');
+
+                if (!shotLimitSlider || !shotLimitValueSpan) return;
+
+                const currentShotCount = patternElement.querySelectorAll('.shot-instance').length;
+                if (currentShotCount > 0) {
+                    shotLimitSlider.max = Math.max(50, currentShotCount);
+                    // If current value is greater than shot count, reset to shot count
+                    if (parseInt(shotLimitSlider.value) > currentShotCount) {
+                        shotLimitSlider.value = currentShotCount;
+                        shotLimitValueSpan.textContent = currentShotCount;
+                    }
+                }
+            }
+
+            /**
+             * Updates bias controls visibility and text.
+             * @param {HTMLElement} instanceContainer The root element of the instance.
+             * @param {HTMLElement} settingsPanel The settings dropdown panel.
+             * @param {HTMLElement} mainMenuContent The main menu content.
+             * @param {HTMLElement} intervalBiasSubmenu The interval bias submenu.
+             */
+            function updateBiasControls(instanceContainer, settingsPanel, mainMenuContent, intervalBiasSubmenu) {
+                const biasEnabledCheckbox = instanceContainer.querySelector('.bias-enabled');
+                const biasControlsContainer = instanceContainer.querySelector('.bias-controls-container');
+                const biasTypeSelect = instanceContainer.querySelector('.bias-type-select');
+                const biasFixedOption = instanceContainer.querySelector('.bias-fixed-option');
+                const biasRandomOption = instanceContainer.querySelector('.bias-random-option');
+                const biasFixedContainer = instanceContainer.querySelector('.bias-fixed-container');
+                const biasFixedSlider = instanceContainer.querySelector('.bias-fixed-slider');
+                const biasRandomContainer = instanceContainer.querySelector('.bias-random-container');
+                const biasRandomPositiveSlider = instanceContainer.querySelector('.bias-random-positive-slider');
+                const biasRandomNegativeSlider = instanceContainer.querySelector('.bias-random-negative-slider');
+
+                if (!biasEnabledCheckbox || !biasControlsContainer || !biasTypeSelect || !biasFixedOption || !biasRandomOption || !biasFixedContainer || !biasRandomContainer || !biasFixedSlider || !biasRandomPositiveSlider || !biasRandomNegativeSlider) {
+                    console.error("Error in updateBiasControls: Required elements not found in instance.", instanceContainer);
+                    return;
+                }
+
+                const isBiasEnabled = biasEnabledCheckbox.checked;
+                const biasType = biasTypeSelect.value;
+
+                if (isBiasEnabled) {
+                    biasControlsContainer.classList.remove('hidden');
+                    biasTypeSelect.disabled = false;
+
+                    if (biasType === 'fixed') {
+                        biasFixedContainer.classList.remove('hidden');
+                        biasRandomContainer.classList.add('hidden');
+                        biasFixedSlider.disabled = false;
+                        biasRandomPositiveSlider.disabled = true;
+                        biasRandomNegativeSlider.disabled = true;
+
+                        biasFixedOption.textContent = `Fixed: ${parseFloat(biasFixedSlider.value).toFixed(1)}s`;
+                        const val1 = parseFloat(biasRandomPositiveSlider.value).toFixed(1);
+                        const val2 = parseFloat(biasRandomNegativeSlider.value).toFixed(1);
+                        biasRandomOption.textContent = `Random range: ${val1}s to ${val2}s`;
+                    } else { // 'random'
+                        biasFixedContainer.classList.add('hidden');
+                        biasRandomContainer.classList.remove('hidden');
+                        biasFixedSlider.disabled = true;
+                        biasRandomPositiveSlider.disabled = false;
+                        biasRandomNegativeSlider.disabled = false;
+
+                        const val1 = parseFloat(biasRandomPositiveSlider.value).toFixed(1);
+                        const val2 = parseFloat(biasRandomNegativeSlider.value).toFixed(1);
+                        biasRandomOption.textContent = `Random range: ${val1}s to ${val2}s`;
+                        biasFixedOption.textContent = `Fixed: ${parseFloat(biasFixedSlider.value).toFixed(1)}s`;
+                    }
+                } else {
+                    biasControlsContainer.classList.add('hidden');
+                    biasTypeSelect.disabled = true;
+                    biasFixedContainer.classList.add('hidden');
+                    biasRandomContainer.classList.add('hidden');
+                    biasFixedSlider.disabled = true;
+                    biasRandomPositiveSlider.disabled = true;
+                    biasRandomNegativeSlider.disabled = true;
+
+                    biasFixedOption.textContent = `Fixed: 0.0s`;
+                    biasRandomOption.textContent = `Random range: 0.0s to 0.0s`;
+                }
+                if (settingsPanel && mainMenuContent && settingsPanel.classList.contains('active') && intervalBiasSubmenu && intervalBiasSubmenu.classList.contains('active')) {
+                    requestAnimationFrame(() => setPanelHeight(settingsPanel, mainMenuContent));
+                }
+            }
+
+            /**
+             * Populates voice select dropdown for a given instance.
+             * @param {HTMLElement} voiceSelectElement
+             */
+            function populateVoiceSelect(voiceSelectElement) {
+                if (!voiceSelectElement) {
+                    console.error("Error in populateVoiceSelect: Voice select element not found.");
+                    return;
+                }
+                const voices = speechSynthesis.getVoices();
+                voiceSelectElement.innerHTML = '';
+
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const iosVoices = ['Karen', 'Daniel', 'Moira', 'Rishi', 'Samantha'];
+
+                let filteredVoices = [];
+                if (isIOS) {
+                    filteredVoices = voices.filter(voice => iosVoices.includes(voice.name));
+                } else {
+                    const englishVoices = voices.filter(voice => voice.lang.startsWith('en-'));
+                    if (englishVoices.length > 0) {
+                        filteredVoices = englishVoices;
+                    } else {
+                        filteredVoices = voices;
+                    }
+                }
+
+                if (filteredVoices.length === 0 && voices.length > 0) {
+                    filteredVoices = voices;
+                }
+
+                if (filteredVoices.length === 0) {
+                    const option = document.createElement('option');
+                    option.textContent = 'No voices available';
+                    option.value = '';
+                    voiceSelectElement.appendChild(option);
+                    voiceSelectElement.disabled = true;
+                    return;
+                }
+
+                let defaultVoiceFound = false;
+                filteredVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = voice.name;
+                    option.value = voice.name;
+                    if (voice.default) {
+                        option.selected = true;
+                        defaultVoiceFound = true;
+                    }
+                    voiceSelectElement.appendChild(option);
+                });
+
+                if (!defaultVoiceFound && filteredVoices.length > 0) {
+                    voiceSelectElement.options[0].selected = true;
+                }
+            }
+
+            /**
+             * Sets the state of voice options (enabled/disabled).
+             * @param {HTMLElement} instanceContainer The root element of the instance.
+             * @param {HTMLElement} settingsPanel The settings dropdown panel.
+             * @param {HTMLElement} mainMenuContent The main menu content.
+             * @param {HTMLElement} voiceSubmenu The voice submenu.
+             */
+            function setVoiceOptionsState(instanceContainer, settingsPanel, mainMenuContent, voiceSubmenu) {
+                const voiceEnabledCheckbox = instanceContainer.querySelector('.voice-enabled');
+                const voiceOptionsContainer = instanceContainer.querySelector('.voice-options-container');
+                const voiceSelect = instanceContainer.querySelector('.voice-select');
+                const voiceRateSelect = instanceContainer.querySelector('.voice-rate-select');
+                const leadTimeSlider = instanceContainer.querySelector('.lead-time-slider');
+
+                if (!voiceEnabledCheckbox || !voiceOptionsContainer || !voiceSelect || !voiceRateSelect || !leadTimeSlider) {
+                    console.error("Error in setVoiceOptionsState: Required elements not found in instance.", instanceContainer);
+                    return;
+                }
+
+                const isVoiceEnabled = voiceEnabledCheckbox.checked;
+                const hasVoices = voiceSelect.options.length > 0 && voiceSelect.options[0].value !== '';
+
+                if (isVoiceEnabled) {
+                    voiceOptionsContainer.classList.remove('hidden');
+                    voiceSelect.disabled = !hasVoices;
+                    voiceRateSelect.disabled = !hasVoices;
+                    leadTimeSlider.disabled = false;
+                } else {
+                    voiceOptionsContainer.classList.add('hidden');
+                    voiceSelect.disabled = true;
+                    voiceRateSelect.disabled = true;
+                    leadTimeSlider.disabled = true;
+                }
+                if (settingsPanel && mainMenuContent && settingsPanel.classList.contains('active') && voiceSubmenu && voiceSubmenu.classList.contains('active')) {
+                    requestAnimationFrame(() => setPanelHeight(settingsPanel, mainMenuContent));
+                }
+            }
+
+            /**
+             * Switches tabs within a given instance.
+             * @param {HTMLElement} instanceContainer The root element of the instance.
+             * @param {string} tabType 'msg' or 'shot'.
+             */
+
+
+            /**
+             * Initializes event listeners and states for a newly created or cloned Shot/Message instance.
+             * @param {HTMLElement} instanceElement The root element of the Shot/Message instance.
+             * @param {Object} [initialState] Optional state to apply to the instance.
+             */
+            function initializeShotMsgInstance(instanceElement, initialState = {}) {
+                const instanceType = instanceElement.dataset.type;
+
+                // Get elements specific to this instance based on type
+                const headerElement = instanceElement.querySelector(instanceType === 'shot' ? '.shot-header' : '.message-header');
+                const bodyElement = instanceElement.querySelector(instanceType === 'shot' ? '.shot-body' : '.message-body');
+                const arrowElement = instanceElement.querySelector(instanceType === 'shot' ? '.shot-arrow' : '.message-arrow');
+                const titleInput = instanceElement.querySelector(instanceType === 'shot' ? '.shot-title' : '.message-title');
+
+                const repeatSlider = instanceElement.querySelector('.repeat-slider');
+                const repeatValueSpan = instanceElement.querySelector('.repeat-value');
+                const shotIntervalSlider = instanceElement.querySelector('.shot-interval-slider');
+                const shotIntervalValueSpan = instanceElement.querySelector('.shot-interval-value');
+                const leadTimeSlider = instanceElement.querySelector('.lead-time-slider');
+                const leadTimeValueSpan = instanceElement.querySelector('.lead-time-value');
+                const messageIntervalSlider = instanceElement.querySelector('.message-interval-slider');
+                const messageIntervalValueSpan = instanceElement.querySelector('.message-interval-value');
+                const messageInput = instanceElement.querySelector('.message-input');
+                const skipAtEndOfWorkoutCheckbox = instanceElement.querySelector('.skip-at-end-of-workout');
+
+                const settingsBtn = instanceElement.querySelector('.settings-btn');
+                const settingsPanel = instanceElement.querySelector('.settings-panel');
+                const mainMenuContent = instanceElement.querySelector('.main-menu-content');
+                const submenuTriggerButtons = instanceElement.querySelectorAll('.submenu-trigger');
+                const backButtons = instanceElement.querySelectorAll('.back-btn');
+
+                const biasEnabledCheckbox = instanceElement.querySelector('.bias-enabled');
+                const biasTypeSelect = instanceElement.querySelector('.bias-type-select');
+                const biasFixedSlider = instanceElement.querySelector('.bias-fixed-slider');
+                const biasRandomPositiveSlider = instanceElement.querySelector('.bias-random-positive-slider');
+                const biasRandomNegativeSlider = instanceElement.querySelector('.bias-random-negative-slider');
+                const shotIntervalBiasSubmenu = instanceElement.querySelector('.shot-interval-bias-submenu');
+
+                const splitStepEnabledCheckbox = instanceElement.querySelector('.split-step-enabled');
+                const splitStepRateContainer = instanceElement.querySelector('.split-step-rate-container');
+                const splitStepSpeedSelect = instanceElement.querySelector('.split-step-speed-select');
+                const splitStepSubmenu = instanceElement.querySelector('.split-step-submenu');
+
+                const voiceEnabledCheckbox = instanceElement.querySelector('.voice-enabled');
+                const voiceSelect = instanceElement.querySelector('.voice-select');
+                const voiceRateSelect = instanceElement.querySelector('.voice-rate-select');
+                const voiceOptionsContainer = instanceElement.querySelector('.voice-options-container');
+                const voiceSubmenu = instanceElement.querySelector('.voice-submenu');
+
+
+                // Apply initial state if provided (for cloning)
+                if (Object.keys(initialState).length > 0) {
+                    if (initialState.title && titleInput) titleInput.value = initialState.title;
+                    if (initialState.type) instanceElement.dataset.type = initialState.type;
+
+
+
+                    if (repeatSlider) repeatSlider.value = initialState.repeat || repeatSlider.value;
+                    if (shotIntervalSlider) shotIntervalSlider.value = initialState.shotInterval || shotIntervalSlider.value;
+                    if (leadTimeSlider) leadTimeSlider.value = initialState.leadTime || leadTimeSlider.value;
+                    if (messageInput) messageInput.value = initialState.message || messageInput.value;
+                    if (messageIntervalSlider) messageIntervalSlider.value = initialState.messageInterval || messageIntervalSlider.value;
+                    if (skipAtEndOfWorkoutCheckbox) skipAtEndOfWorkoutCheckbox.checked = initialState.skipAtEndOfWorkout !== undefined ? initialState.skipAtEndOfWorkout : skipAtEndOfWorkoutCheckbox.checked;
+
+                    if (initialState.bias) {
+                        if (biasEnabledCheckbox) biasEnabledCheckbox.checked = initialState.bias.enabled;
+                        if (biasTypeSelect) biasTypeSelect.value = initialState.bias.type;
+                        if (biasFixedSlider) biasFixedSlider.value = initialState.bias.fixedValue;
+                        if (biasRandomPositiveSlider) biasRandomPositiveSlider.value = initialState.bias.randomPositive;
+                        if (biasRandomNegativeSlider) biasRandomNegativeSlider.value = initialState.bias.randomNegative;
+                    }
+
+                    if (initialState.splitStep) {
+                        if (splitStepEnabledCheckbox) splitStepEnabledCheckbox.checked = initialState.splitStep.enabled;
+                        if (splitStepSpeedSelect) splitStepSpeedSelect.value = initialState.splitStep.rate;
+                    }
+
+                    if (initialState.voice) {
+                        if (voiceEnabledCheckbox) voiceEnabledCheckbox.checked = initialState.voice.enabled;
+                        if (voiceRateSelect) voiceRateSelect.value = initialState.voice.rate;
+                        // Voice select population happens after DOMContentLoaded, so we might need to set it after voices are loaded
+                        // For now, assume it's set in the populateVoiceSelect callback or later.
+                    }
+                }
+
+                // Initial updates for current instance
+                if (repeatSlider && repeatValueSpan) repeatValueSpan.textContent = `${repeatSlider.value}x`;
+                if (shotIntervalSlider && shotIntervalValueSpan) shotIntervalValueSpan.textContent = `${parseFloat(shotIntervalSlider.value).toFixed(1)}s`;
+                if (messageIntervalSlider && messageIntervalValueSpan) {
+                    const totalSeconds = parseInt(messageIntervalSlider.value);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                    messageIntervalValueSpan.textContent = `${minutes}:${formattedSeconds}`;
+                }
+
+                // Add event listeners specific to this instance
+                if (headerElement) {
+                    headerElement.addEventListener('click', function(event) {
+                        if (event.target !== titleInput && bodyElement && arrowElement) {
+                            bodyElement.classList.toggle('hidden');
+                            arrowElement.classList.toggle('rotate-180');
+                        }
+                    });
+                }
+
+                if (repeatSlider) repeatSlider.addEventListener('input', function() {
+                    if (repeatValueSpan) repeatValueSpan.textContent = `${this.value}x`;
+                });
+
+                if (shotIntervalSlider) shotIntervalSlider.addEventListener('input', function() {
+                    if (shotIntervalValueSpan) shotIntervalValueSpan.textContent = `${parseFloat(this.value).toFixed(1)}s`;
+                    updateLeadTimeSlider(shotIntervalSlider, leadTimeSlider, leadTimeValueSpan);
+                });
+
+                if (messageIntervalSlider) messageIntervalSlider.addEventListener('input', function() {
+                    const totalSeconds = parseInt(this.value);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                    if (messageIntervalValueSpan) messageIntervalValueSpan.textContent = `${minutes}:${formattedSeconds}`;
+                });
+
+                if (leadTimeSlider) leadTimeSlider.addEventListener('input', function() {
+                    updateLeadTimeSlider(shotIntervalSlider, leadTimeSlider, leadTimeValueSpan);
+                });
+
+                // Add toolbar button event listeners
+                const deleteBtn = instanceElement.querySelector('.delete-btn');
+                const cloneBtn = instanceElement.querySelector('.clone-btn');
+                const moveUpBtn = instanceElement.querySelector('.move-up-btn');
+                const moveDownBtn = instanceElement.querySelector('.move-down-btn');
+
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        if (confirm('Are you sure you want to delete this item?')) {
+                            instanceElement.remove();
+                        }
+                    });
+                }
+
+                if (cloneBtn) {
+                    cloneBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        const currentState = getShotMsgInstanceCurrentState(instanceElement);
+                        const parentPattern = instanceElement.closest('.pattern-instance');
+                        if (parentPattern) {
+                            createShotMsgInstance(parentPattern, instanceType, currentState);
+                        }
+                    });
+                }
+
+                if (moveUpBtn) {
+                    moveUpBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        const previousSibling = instanceElement.previousElementSibling;
+                        if (previousSibling) {
+                            instanceElement.parentNode.insertBefore(instanceElement, previousSibling);
+                        }
+                    });
+                }
+
+                if (moveDownBtn) {
+                    moveDownBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        const nextSibling = instanceElement.nextElementSibling;
+                        if (nextSibling) {
+                            instanceElement.parentNode.insertBefore(nextSibling, instanceElement);
+                        }
+                    });
+                }
+
+                // Settings functionality (only for shot instances)
+                if (instanceType === 'shot' && settingsBtn) {
+                    settingsBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        toggleSettingsDropdown(settingsPanel, mainMenuContent);
+                    });
+
+                    // Close dropdown if click outside (only for shot instances)
+                    document.addEventListener('click', function(event) {
+                        if (settingsPanel && !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target) && settingsPanel.classList.contains('active')) {
+                            toggleSettingsDropdown(settingsPanel, mainMenuContent);
+                        }
+                    });
+
+                    submenuTriggerButtons.forEach(button => {
+                        button.addEventListener('click', function(event) {
+                            event.stopPropagation();
+                            const targetSubmenuClass = this.dataset.targetSubmenuClass;
+                            showSettingsSubmenu(settingsPanel, mainMenuContent, targetSubmenuClass);
+                        });
+                    });
+
+                    backButtons.forEach(button => {
+                        button.addEventListener('click', function(event) {
+                            event.stopPropagation();
+                            showSettingsMainMenu(settingsPanel, mainMenuContent);
+                        });
+                    });
+
+                    if (biasEnabledCheckbox) biasEnabledCheckbox.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                    if (biasTypeSelect) biasTypeSelect.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                    if (biasFixedSlider) biasFixedSlider.addEventListener('input', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                    if (biasRandomPositiveSlider) {
+                        biasRandomPositiveSlider.addEventListener('input', function() {
+                            if (biasRandomNegativeSlider && parseFloat(this.value) < parseFloat(biasRandomNegativeSlider.value)) {
+                                this.value = biasRandomNegativeSlider.value;
+                            }
+                            updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                        });
+                    }
+                    if (biasRandomNegativeSlider) {
+                        biasRandomNegativeSlider.addEventListener('input', function() {
+                            if (biasRandomPositiveSlider && parseFloat(this.value) > parseFloat(biasRandomPositiveSlider.value)) {
+                                this.value = biasRandomPositiveSlider.value;
+                            }
+                            updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                        });
+                    }
+
+                    if (splitStepEnabledCheckbox) {
+                        splitStepEnabledCheckbox.addEventListener('change', function() {
+                            if (splitStepRateContainer) {
+                                if (this.checked) {
+                                    splitStepRateContainer.classList.remove('hidden');
+                                } else {
+                                    splitStepRateContainer.classList.add('hidden');
+                                }
+                            }
+                            if (settingsPanel && mainMenuContent && splitStepSubmenu && settingsPanel.classList.contains('active') && splitStepSubmenu.classList.contains('active')) {
+                                requestAnimationFrame(() => setPanelHeight(settingsPanel, mainMenuContent));
+                            }
+                        });
+                    }
+
+                    if (voiceEnabledCheckbox) voiceEnabledCheckbox.addEventListener('change', () => setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu));
+
+                    // Populate voices for this shot instance
+                    populateVoiceSelect(voiceSelect);
+
+                    // Initial state updates for shot instances
+                    updateLeadTimeSlider(shotIntervalSlider, leadTimeSlider, leadTimeValueSpan);
+                    updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                    if (splitStepEnabledCheckbox && splitStepRateContainer) {
+                        if (splitStepEnabledCheckbox.checked) {
+                            splitStepRateContainer.classList.remove('hidden');
+                        } else {
+                            splitStepRateContainer.classList.add('hidden');
+                        }
+                    }
+                    setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
+                }
+            }
+
+
+            /**
+             * Creates a new dynamic shot or message instance.
+             * @param {HTMLElement} parentPatternElement The pattern instance this shot/msg belongs to.
+             * @param {string} type 'shot' or 'msg'.
+             * @param {Object} [initialState] Optional state to apply to the new instance.
+             */
+            function createShotMsgInstance(parentPatternElement, type, initialState = {}) {
+                globalInstanceCounter++;
+
+                // Use the correct template based on type
+                const template = type === 'shot' ? shotInstanceTemplate : messageInstanceTemplate;
+                const newInstance = template.content.firstElementChild.cloneNode(true);
+                newInstance.id = `${type}Instance_${globalInstanceCounter}`;
+                newInstance.dataset.type = type;
+
+                // Update IDs and for/id attributes to be unique within the cloned instance
+                newInstance.querySelectorAll('[id]').forEach(el => {
+                    const oldId = el.id;
+                    const newId = `${oldId}_${globalInstanceCounter}`;
+                    el.id = newId;
+                    if (el.hasAttribute('for')) {
+                        el.setAttribute('for', newId);
+                    }
+                });
+
+                // Set initial title based on type
+                const titleSelector = type === 'shot' ? '.shot-title' : '.message-title';
+                const titleInput = newInstance.querySelector(titleSelector);
+                if (titleInput) {
+                    titleInput.value = type === 'shot' ? `Shot ${globalInstanceCounter}` : `Message ${globalInstanceCounter}`;
+                }
+
+                const shotMsgInstancesContainer = parentPatternElement.querySelector('.shot-msg-instances-container');
+                if (shotMsgInstancesContainer) {
+                    shotMsgInstancesContainer.appendChild(newInstance);
+                    initializeShotMsgInstance(newInstance, initialState);
+
+                    // Update shot limit slider if this is a shot instance
+                    if (type === 'shot') {
+                        updateShotLimitSlider(parentPatternElement);
+                    }
+                } else {
+                    console.error("Shot/Message instances container not found within pattern:", parentPatternElement);
+                }
+            }
+
+            /**
+             * Gets the current state of a Shot/Message instance for cloning.
+             * @param {HTMLElement} instanceElement
+             * @returns {Object} The state object.
+             */
+            function getShotMsgInstanceCurrentState(instanceElement) {
+                const state = {};
+                state.type = instanceElement.dataset.type;
+
+                // Get title based on type
+                const titleSelector = state.type === 'shot' ? '.shot-title' : '.message-title';
+                const titleInput = instanceElement.querySelector(titleSelector);
+                if (titleInput) {
+                    state.title = titleInput.value;
+                }
+
+                if (state.type === 'shot') {
+                    // Shot specific settings
+                    const repeatSlider = instanceElement.querySelector('.repeat-slider');
+                    const shotIntervalSlider = instanceElement.querySelector('.shot-interval-slider');
+                    const leadTimeSlider = instanceElement.querySelector('.lead-time-slider');
+                    if (repeatSlider) state.repeat = repeatSlider.value;
+                    if (shotIntervalSlider) state.shotInterval = shotIntervalSlider.value;
+                    if (leadTimeSlider) state.leadTime = leadTimeSlider.value;
+
+                    const biasEnabledCheckbox = instanceElement.querySelector('.bias-enabled');
+                    const biasTypeSelect = instanceElement.querySelector('.bias-type-select');
+                    const biasFixedSlider = instanceElement.querySelector('.bias-fixed-slider');
+                    const biasRandomPositiveSlider = instanceElement.querySelector('.bias-random-positive-slider');
+                    const biasRandomNegativeSlider = instanceElement.querySelector('.bias-random-negative-slider');
+
+                    state.bias = {
+                        enabled: biasEnabledCheckbox ? biasEnabledCheckbox.checked : false,
+                        type: biasTypeSelect ? biasTypeSelect.value : 'fixed',
+                        fixedValue: biasFixedSlider ? biasFixedSlider.value : '0',
+                        randomPositive: biasRandomPositiveSlider ? biasRandomPositiveSlider.value : '0',
+                        randomNegative: biasRandomNegativeSlider ? biasRandomNegativeSlider.value : '0'
+                    };
+
+                    const splitStepEnabledCheckbox = instanceElement.querySelector('.split-step-enabled');
+                    const splitStepSpeedSelect = instanceElement.querySelector('.split-step-speed-select');
+                    state.splitStep = {
+                        enabled: splitStepEnabledCheckbox ? splitStepEnabledCheckbox.checked : false,
+                        rate: splitStepSpeedSelect ? splitStepSpeedSelect.value : 'auto-scale'
+                    };
+
+                    const voiceEnabledCheckbox = instanceElement.querySelector('.voice-enabled');
+                    const voiceSelect = instanceElement.querySelector('.voice-select');
+                    const voiceRateSelect = instanceElement.querySelector('.voice-rate-select');
+                    state.voice = {
+                        enabled: voiceEnabledCheckbox ? voiceEnabledCheckbox.checked : false,
+                        voiceName: voiceSelect ? voiceSelect.value : '',
+                        rate: voiceRateSelect ? voiceRateSelect.value : '1.0'
+                    };
+                } else if (state.type === 'msg') {
+                    // Message specific settings
+                    const messageInput = instanceElement.querySelector('.message-input');
+                    const messageIntervalSlider = instanceElement.querySelector('.message-interval-slider');
+                    const skipAtEndOfWorkoutCheckbox = instanceElement.querySelector('.skip-at-end-of-workout');
+                    if (messageInput) state.message = messageInput.value;
+                    if (messageIntervalSlider) state.messageInterval = messageIntervalSlider.value;
+                    if (skipAtEndOfWorkoutCheckbox) state.skipAtEndOfWorkout = skipAtEndOfWorkoutCheckbox.checked;
+                }
+
+                return state;
+            }
+
+            /**
+             * Initializes event listeners and states for a newly created or cloned Pattern instance.
+             * @param {HTMLElement} patternElement The root element of the pattern instance.
+             * @param {Object} [initialState] Optional state to apply to the instance.
+             */
+            function initializePatternInstance(patternElement, initialState = {}) {
+                // Get elements specific to this Pattern instance
+                const patternAccordionHeader = patternElement.querySelector('.pattern-accordion-header');
+                const patternAccordionBody = patternElement.querySelector('.pattern-accordion-body');
+                const patternAccordionArrow = patternElement.querySelector('.pattern-accordion-arrow');
+                const patternPanelTitleInput = patternElement.querySelector('.pattern-panel-title');
+
+                const patternRepeatSlider = patternElement.querySelector('.repeat-slider');
+                const patternRepeatValueSpan = patternElement.querySelector('.repeat-value');
+                const patternShotIntervalSlider = patternElement.querySelector('.shot-interval-slider');
+                const patternShotIntervalValueSpan = patternElement.querySelector('.shot-interval-value');
+                const patternLeadTimeSlider = patternElement.querySelector('.lead-time-slider');
+                const patternLeadTimeValueSpan = patternElement.querySelector('.lead-time-value');
+
+                const iterationTypeSelect = patternElement.querySelector('.iteration-type-select');
+                const limitsTypeSelect = patternElement.querySelector('.limits-type-select');
+                const shotLimitContainer = patternElement.querySelector('.shot-limit-container');
+                const shotLimitSlider = patternElement.querySelector('.shot-limit-slider');
+                const shotLimitValueSpan = patternElement.querySelector('.shot-limit-value');
+                const timeLimitContainer = patternElement.querySelector('.time-limit-container');
+                const timeLimitSlider = patternElement.querySelector('.time-limit-slider');
+                const timeLimitValueSpan = patternElement.querySelector('.time-limit-value');
+
+                const patternSettingsBtn = patternElement.querySelector('.settings-btn');
+                const patternSettingsPanel = patternElement.querySelector('.settings-panel');
+                const patternMainMenuContent = patternElement.querySelector('.main-menu-content');
+                const patternSubmenuTriggerButtons = patternElement.querySelectorAll('.submenu-trigger');
+                const patternBackButtons = patternElement.querySelectorAll('.back-btn');
+
+                const patternBiasEnabledCheckbox = patternElement.querySelector('.bias-enabled');
+                const patternBiasTypeSelect = patternElement.querySelector('.bias-type-select');
+                const patternBiasFixedSlider = patternElement.querySelector('.bias-fixed-slider');
+                const patternBiasRandomPositiveSlider = patternElement.querySelector('.bias-random-positive-slider');
+                const patternBiasRandomNegativeSlider = patternElement.querySelector('.bias-random-negative-slider');
+                const patternIntervalBiasSubmenu = patternElement.querySelector('.shot-interval-bias-submenu');
+
+                const patternSplitStepEnabledCheckbox = patternElement.querySelector('.split-step-enabled');
+                const patternSplitStepRateContainer = patternElement.querySelector('.split-step-rate-container');
+                const patternSplitStepSpeedSelect = patternElement.querySelector('.split-step-speed-select');
+                const patternSplitStepSubmenu = patternElement.querySelector('.split-step-submenu');
+
+                const patternVoiceEnabledCheckbox = patternElement.querySelector('.voice-enabled');
+                const patternVoiceSelect = patternElement.querySelector('.voice-select');
+                const patternVoiceRateSelect = patternElement.querySelector('.voice-rate-select');
+                const patternVoiceOptionsContainer = patternElement.querySelector('.voice-options-container');
+                const patternVoiceSubmenu = patternElement.querySelector('.voice-submenu');
+
+                const addShotBtn = patternElement.querySelector('.add-shot-btn');
+                const addMsgBtn = patternElement.querySelector('.add-msg-btn');
+                const shotMsgInstancesContainer = patternElement.querySelector('.shot-msg-instances-container');
+
+
+                // Apply initial state if provided (for cloning)
+                if (Object.keys(initialState).length > 0) {
+                    if (initialState.title) patternPanelTitleInput.value = initialState.title;
+                    if (patternRepeatSlider) patternRepeatSlider.value = initialState.repeat || patternRepeatSlider.value;
+                    if (patternShotIntervalSlider) patternShotIntervalSlider.value = initialState.shotInterval || patternShotIntervalSlider.value;
+                    if (patternLeadTimeSlider) patternLeadTimeSlider.value = initialState.leadTime || patternLeadTimeSlider.value;
+
+                    if (iterationTypeSelect) iterationTypeSelect.value = initialState.iterationType || iterationTypeSelect.value;
+                    if (limitsTypeSelect) limitsTypeSelect.value = initialState.limitsType || limitsTypeSelect.value;
+                    if (shotLimitSlider) shotLimitSlider.value = initialState.shotLimit || shotLimitSlider.value;
+                    if (timeLimitSlider) timeLimitSlider.value = initialState.timeLimit || timeLimitSlider.value;
+
+                    if (initialState.bias) {
+                        if (patternBiasEnabledCheckbox) patternBiasEnabledCheckbox.checked = initialState.bias.enabled;
+                        if (patternBiasTypeSelect) patternBiasTypeSelect.value = initialState.bias.type;
+                        if (patternBiasFixedSlider) patternBiasFixedSlider.value = initialState.bias.fixedValue;
+                        if (patternBiasRandomPositiveSlider) patternBiasRandomPositiveSlider.value = initialState.bias.randomPositive;
+                        if (patternBiasRandomNegativeSlider) patternBiasRandomNegativeSlider.value = initialState.bias.randomNegative;
+                    }
+                    if (initialState.splitStep) {
+                        if (patternSplitStepEnabledCheckbox) patternSplitStepEnabledCheckbox.checked = initialState.splitStep.enabled;
+                        if (patternSplitStepSpeedSelect) patternSplitStepSpeedSelect.value = initialState.splitStep.rate;
+                    }
+                    if (initialState.voice) {
+                        if (patternVoiceEnabledCheckbox) patternVoiceEnabledCheckbox.checked = initialState.voice.enabled;
+                        if (patternVoiceRateSelect) patternVoiceRateSelect.value = initialState.voice.rate;
+                    }
+
+                    // Recreate nested Shot/Message instances
+                    if (initialState.shotsAndMessages && shotMsgInstancesContainer) {
+                        initialState.shotsAndMessages.forEach(shotMsgState => {
+                            createShotMsgInstance(patternElement, shotMsgState.type, shotMsgState);
+                        });
+                    }
+                }
+
+                // Initial updates for current pattern instance
+                if (patternRepeatSlider && patternRepeatValueSpan) patternRepeatValueSpan.textContent = `${patternRepeatSlider.value}x`;
+                if (patternShotIntervalSlider && patternShotIntervalValueSpan) patternShotIntervalValueSpan.textContent = `${parseFloat(patternShotIntervalSlider.value).toFixed(1)}s`;
+
+                // Initialize shot limit default value based on current shots
+                if (shotLimitSlider && shotLimitValueSpan) {
+                    const currentShotCount = patternElement.querySelectorAll('.shot-instance').length;
+                    if (currentShotCount > 0) {
+                        shotLimitSlider.value = currentShotCount;
+                        shotLimitSlider.max = Math.max(50, currentShotCount);
+                    }
+                    shotLimitValueSpan.textContent = shotLimitSlider.value;
+                }
+
+                // Initialize time limit display
+                if (timeLimitSlider && timeLimitValueSpan) {
+                    const totalSeconds = parseInt(timeLimitSlider.value);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                    timeLimitValueSpan.textContent = `${minutes}:${formattedSeconds}`;
+                }
+
+                // Initialize limits container visibility
+                if (limitsTypeSelect && shotLimitContainer && timeLimitContainer) {
+                    const limitsType = limitsTypeSelect.value;
+                    if (limitsType === 'shot-limit') {
+                        shotLimitContainer.classList.remove('hidden');
+                        timeLimitContainer.classList.add('hidden');
+                    } else if (limitsType === 'time-limit') {
+                        timeLimitContainer.classList.remove('hidden');
+                        shotLimitContainer.classList.add('hidden');
+                    } else {
+                        shotLimitContainer.classList.add('hidden');
+                        timeLimitContainer.classList.add('hidden');
+                    }
+                }
+
+                // Add event listeners specific to this pattern instance
+                if (patternAccordionHeader) {
+                    patternAccordionHeader.addEventListener('click', function(event) {
+                        if (event.target !== patternPanelTitleInput && patternAccordionBody && patternAccordionArrow) {
+                            patternAccordionBody.classList.toggle('hidden');
+                            patternAccordionArrow.classList.toggle('rotate-180');
+                        }
+                    });
+                }
+
+                if (patternRepeatSlider) patternRepeatSlider.addEventListener('input', function() {
+                    if (patternRepeatValueSpan) patternRepeatValueSpan.textContent = `${this.value}x`;
+                });
+
+                if (patternShotIntervalSlider) patternShotIntervalSlider.addEventListener('input', function() {
+                    if (patternShotIntervalValueSpan) patternShotIntervalValueSpan.textContent = `${parseFloat(this.value).toFixed(1)}s`;
+                    updateLeadTimeSlider(patternShotIntervalSlider, patternLeadTimeSlider, patternLeadTimeValueSpan);
+                });
+
+                if (patternLeadTimeSlider) patternLeadTimeSlider.addEventListener('input', function() {
+                    updateLeadTimeSlider(patternShotIntervalSlider, patternLeadTimeSlider, patternLeadTimeValueSpan);
+                });
+
+                // Event listeners for new pattern configuration options
+                if (limitsTypeSelect) {
+                    limitsTypeSelect.addEventListener('change', function() {
+                        const limitsType = this.value;
+                        if (limitsType === 'shot-limit') {
+                            if (shotLimitContainer) shotLimitContainer.classList.remove('hidden');
+                            if (timeLimitContainer) timeLimitContainer.classList.add('hidden');
+                        } else if (limitsType === 'time-limit') {
+                            if (timeLimitContainer) timeLimitContainer.classList.remove('hidden');
+                            if (shotLimitContainer) shotLimitContainer.classList.add('hidden');
+                        } else {
+                            if (shotLimitContainer) shotLimitContainer.classList.add('hidden');
+                            if (timeLimitContainer) timeLimitContainer.classList.add('hidden');
+                        }
+                    });
+                }
+
+                if (shotLimitSlider) {
+                    shotLimitSlider.addEventListener('input', function() {
+                        if (shotLimitValueSpan) shotLimitValueSpan.textContent = this.value;
+                    });
+                }
+
+                if (timeLimitSlider) {
+                    timeLimitSlider.addEventListener('input', function() {
+                        const totalSeconds = parseInt(this.value);
+                        const minutes = Math.floor(totalSeconds / 60);
+                        const seconds = totalSeconds % 60;
+                        const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                        if (timeLimitValueSpan) timeLimitValueSpan.textContent = `${minutes}:${formattedSeconds}`;
+                    });
+                }
+
+                if (patternSettingsBtn) {
+                    patternSettingsBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
+                    });
+                }
+
+                // Close dropdown if click outside
+                document.addEventListener('click', function(event) {
+                    if (patternSettingsPanel && !patternSettingsPanel.contains(event.target) && !patternSettingsBtn.contains(event.target) && patternSettingsPanel.classList.contains('active')) {
+                        toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
+                    }
+                });
+
+                patternSubmenuTriggerButtons.forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        const targetSubmenuClass = this.dataset.targetSubmenuClass;
+                        showSettingsSubmenu(patternSettingsPanel, patternMainMenuContent, targetSubmenuClass);
+                    });
+                });
+
+                patternBackButtons.forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        showSettingsMainMenu(patternSettingsPanel, patternMainMenuContent);
+                    });
+                });
+
+                if (patternBiasEnabledCheckbox) patternBiasEnabledCheckbox.addEventListener('change', () => updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu));
+                if (patternBiasTypeSelect) patternBiasTypeSelect.addEventListener('change', () => updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu));
+                if (patternBiasFixedSlider) patternBiasFixedSlider.addEventListener('input', () => updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu));
+                if (patternBiasRandomPositiveSlider) {
+                    patternBiasRandomPositiveSlider.addEventListener('input', function() {
+                        if (patternBiasRandomNegativeSlider && parseFloat(this.value) < parseFloat(patternBiasRandomNegativeSlider.value)) {
+                            this.value = patternBiasRandomNegativeSlider.value;
+                        }
+                        updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu);
+                    });
+                }
+                if (patternBiasRandomNegativeSlider) {
+                    patternBiasRandomNegativeSlider.addEventListener('input', function() {
+                        if (patternBiasRandomPositiveSlider && parseFloat(this.value) > parseFloat(patternBiasRandomPositiveSlider.value)) {
+                            this.value = patternBiasRandomPositiveSlider.value;
+                        }
+                        updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu);
+                    });
+                }
+
+                if (patternSplitStepEnabledCheckbox) {
+                    patternSplitStepEnabledCheckbox.addEventListener('change', function() {
+                        if (patternSplitStepRateContainer) {
+                            if (this.checked) {
+                                patternSplitStepRateContainer.classList.remove('hidden');
+                            } else {
+                                patternSplitStepRateContainer.classList.add('hidden');
+                            }
+                        }
+                        if (patternSettingsPanel && patternMainMenuContent && patternSplitStepSubmenu && patternSettingsPanel.classList.contains('active') && patternSplitStepSubmenu.classList.contains('active')) {
+                            requestAnimationFrame(() => setPanelHeight(patternSettingsPanel, patternMainMenuContent));
+                        }
+                    });
+                }
+
+                if (patternVoiceEnabledCheckbox) patternVoiceEnabledCheckbox.addEventListener('change', () => setVoiceOptionsState(patternElement, patternSettingsPanel, patternMainMenuContent, patternVoiceSubmenu));
+
+                // Populate voices for this pattern's voice select
+                populateVoiceSelect(patternVoiceSelect);
+
+                // Initial state updates for pattern's own settings
+                updateLeadTimeSlider(patternShotIntervalSlider, patternLeadTimeSlider, patternLeadTimeValueSpan);
+                updateBiasControls(patternElement, patternSettingsPanel, patternMainMenuContent, patternIntervalBiasSubmenu);
+                if (patternSplitStepEnabledCheckbox && patternSplitStepRateContainer) {
+                    if (patternSplitStepEnabledCheckbox.checked) {
+                        patternSplitStepRateContainer.classList.remove('hidden');
+                    } else {
+                        patternSplitStepRateContainer.classList.add('hidden');
+                    }
+                }
+                setVoiceOptionsState(patternElement, patternSettingsPanel, patternMainMenuContent, patternVoiceSubmenu);
+
+                // Add Shot/Message buttons for this pattern
+                if (addShotBtn) addShotBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'shot'));
+                if (addMsgBtn) addMsgBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'msg'));
+            }
+
+            /**
+             * Gets the current state of a Pattern instance for cloning.
+             * @param {HTMLElement} patternElement
+             * @returns {Object} The state object.
+             */
+            function getPatternInstanceCurrentState(patternElement) {
+                const state = {};
+                state.type = 'pattern'; // Explicitly set type for pattern
+                state.title = patternElement.querySelector('.pattern-panel-title').value;
+
+                // Pattern specific settings
+                const repeatSlider = patternElement.querySelector('.repeat-slider');
+                const shotIntervalSlider = patternElement.querySelector('.shot-interval-slider');
+                const leadTimeSlider = patternElement.querySelector('.lead-time-slider');
+                const iterationTypeSelect = patternElement.querySelector('.iteration-type-select');
+                const limitsTypeSelect = patternElement.querySelector('.limits-type-select');
+                const shotLimitSlider = patternElement.querySelector('.shot-limit-slider');
+                const timeLimitSlider = patternElement.querySelector('.time-limit-slider');
+
+                if (repeatSlider) state.repeat = repeatSlider.value;
+                if (shotIntervalSlider) state.shotInterval = shotIntervalSlider.value;
+                if (leadTimeSlider) state.leadTime = leadTimeSlider.value;
+                if (iterationTypeSelect) state.iterationType = iterationTypeSelect.value;
+                if (limitsTypeSelect) state.limitsType = limitsTypeSelect.value;
+                if (shotLimitSlider) state.shotLimit = shotLimitSlider.value;
+                if (timeLimitSlider) state.timeLimit = timeLimitSlider.value;
+
+                const biasEnabledCheckbox = patternElement.querySelector('.bias-enabled');
+                const biasTypeSelect = patternElement.querySelector('.bias-type-select');
+                const biasFixedSlider = patternElement.querySelector('.bias-fixed-slider');
+                const biasRandomPositiveSlider = patternElement.querySelector('.bias-random-positive-slider');
+                const biasRandomNegativeSlider = patternElement.querySelector('.bias-random-negative-slider');
+
+                state.bias = {
+                    enabled: biasEnabledCheckbox ? biasEnabledCheckbox.checked : false,
+                    type: biasTypeSelect ? biasTypeSelect.value : 'fixed',
+                    fixedValue: biasFixedSlider ? biasFixedSlider.value : '0',
+                    randomPositive: biasRandomPositiveSlider ? biasRandomPositiveSlider.value : '0',
+                    randomNegative: biasRandomNegativeSlider ? biasRandomNegativeSlider.value : '0'
+                };
+
+                const splitStepEnabledCheckbox = patternElement.querySelector('.split-step-enabled');
+                const splitStepSpeedSelect = patternElement.querySelector('.split-step-speed-select');
+                state.splitStep = {
+                    enabled: splitStepEnabledCheckbox ? splitStepEnabledCheckbox.checked : false,
+                    rate: splitStepSpeedSelect ? splitStepSpeedSelect.value : 'auto-scale'
+                };
+
+                const voiceEnabledCheckbox = patternElement.querySelector('.voice-enabled');
+                const voiceSelect = patternElement.querySelector('.voice-select');
+                const voiceRateSelect = patternElement.querySelector('.voice-rate-select');
+                state.voice = {
+                    enabled: voiceEnabledCheckbox ? voiceEnabledCheckbox.checked : false,
+                    voiceName: voiceSelect ? voiceSelect.value : '',
+                    rate: voiceRateSelect ? voiceRateSelect.value : '1.0'
+                };
+
+                // Get state of all nested Shot/Message instances
+                state.shotsAndMessages = [];
+                patternElement.querySelectorAll('.shot-msg-instance').forEach(shotMsgInstance => {
+                    state.shotsAndMessages.push(getShotMsgInstanceCurrentState(shotMsgInstance));
+                });
+
+                return state;
+            }
+
+            /**
+             * Creates a new dynamic Pattern instance.
+             * @param {Object} [initialState] Optional state to apply to the new instance.
+             */
+            function createPatternInstance(initialState = {}) {
+                globalInstanceCounter++;
+                const newInstance = patternInstanceTemplate.content.firstElementChild.cloneNode(true);
+                newInstance.id = `patternInstance_${globalInstanceCounter}`;
+                newInstance.dataset.type = 'pattern'; // Set data-type for patterns
+
+                // Update IDs and for/id attributes to be unique within the cloned instance
+                newInstance.querySelectorAll('[id]').forEach(el => {
+                    const oldId = el.id;
+                    const newId = `${oldId}_${globalInstanceCounter}`;
+                    el.id = newId;
+                    if (el.hasAttribute('for')) {
+                        el.setAttribute('for', newId);
+                    }
+                });
+
+                // No longer need to update pattern tab buttons since they were removed
+
+                // Set initial title based on type
+                const titleInput = newInstance.querySelector('.pattern-panel-title');
+                titleInput.value = `Pattern ${globalInstanceCounter}`;
+
+                mainContainer.appendChild(newInstance);
+                initializePatternInstance(newInstance, initialState);
+            }
+
+
+            // --- Event Delegation for Dynamic Pattern Instances ---
+            if (mainContainer) {
+                mainContainer.addEventListener('click', function(event) {
+                    const target = event.target;
+                    const patternElement = target.closest('.pattern-instance');
+
+                    if (!patternElement) return; // Not a click within a pattern instance
+
+                    if (target.closest('.pattern-delete-btn')) {
+                        patternElement.remove();
+                    } else if (target.closest('.pattern-clone-btn')) {
+                        const currentState = getPatternInstanceCurrentState(patternElement);
+                        createPatternInstance(currentState);
+                    } else if (target.closest('.pattern-move-up-btn')) {
+                        const previousSibling = patternElement.previousElementSibling;
+                        if (previousSibling && previousSibling.classList.contains('pattern-instance')) {
+                            mainContainer.insertBefore(patternElement, previousSibling);
+                            target.closest('.pattern-move-up-btn').focus(); // Re-focus
+                        }
+                    } else if (target.closest('.pattern-move-down-btn')) {
+                        const nextSibling = patternElement.nextElementSibling;
+                        if (nextSibling && nextSibling.classList.contains('pattern-instance')) {
+                            mainContainer.insertBefore(nextSibling, patternElement);
+                            target.closest('.pattern-move-down-btn').focus(); // Re-focus
+                        }
+                    }
+                });
+            } else { console.error("mainContainer not found."); }
+
+            // --- Event Delegation for Dynamic Shot/Message Instances (within Patterns) ---
+            // This listener must be on mainContainer as well to catch clicks on dynamically added elements
+            if (mainContainer) {
+                mainContainer.addEventListener('click', function(event) {
+                    const target = event.target;
+                    const shotMsgInstanceElement = target.closest('.shot-msg-instance');
+
+                    if (!shotMsgInstanceElement) return; // Not a click within a shot/msg instance
+
+                    const shotMsgInstancesContainer = shotMsgInstanceElement.parentElement;
+
+                    if (target.closest('.delete-btn')) {
+                        const parentPatternElement = shotMsgInstanceElement.closest('.pattern-instance');
+                        const isShot = shotMsgInstanceElement.classList.contains('shot-instance');
+                        shotMsgInstanceElement.remove();
+
+                        // Update shot limit slider if this was a shot instance
+                        if (isShot && parentPatternElement) {
+                            updateShotLimitSlider(parentPatternElement);
+                        }
+                    } else if (target.closest('.clone-btn')) {
+                        const parentPatternElement = shotMsgInstanceElement.closest('.pattern-instance');
+                        const currentState = getShotMsgInstanceCurrentState(shotMsgInstanceElement);
+                        createShotMsgInstance(parentPatternElement, currentState.type, currentState);
+                    } else if (target.closest('.move-up-btn')) {
+                        const previousSibling = shotMsgInstanceElement.previousElementSibling;
+                        if (previousSibling && previousSibling.classList.contains('shot-msg-instance')) {
+                            shotMsgInstancesContainer.insertBefore(shotMsgInstanceElement, previousSibling);
+                            target.closest('.move-up-btn').focus(); // Re-focus
+                        }
+                    } else if (target.closest('.move-down-btn')) {
+                        const nextSibling = shotMsgInstanceElement.nextElementSibling;
+                        if (nextSibling && nextSibling.classList.contains('shot-msg-instance')) {
+                            shotMsgInstancesContainer.insertBefore(nextSibling, shotMsgInstanceElement);
+                            target.closest('.move-down-btn').focus(); // Re-focus
+                        }
+                    }
+                });
+            } else { console.error("mainContainer not found for shot/msg delegation."); }
+
+
+            // --- Add Pattern Button ---
+            if (addPatternBtn) {
+                addPatternBtn.addEventListener('click', () => createPatternInstance());
+            } else { console.error("addPatternBtn not found."); }
+
+
+            // --- Initializations ---
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => {
+                    // Populate voices for all existing and future instances
+                    document.querySelectorAll('.voice-select').forEach(select => populateVoiceSelect(select));
+                };
+            }
+            // Populate voices for initially loaded (static) elements
+            document.querySelectorAll('.voice-select').forEach(select => populateVoiceSelect(select));
+
+
+            try {
+                // Create an initial Pattern instance when the page loads
+                createPatternInstance();
+
+            } catch (e) {
+                console.error("Error during initial updates:", e);
+                if (e instanceof ReferenceError) {
+                    console.error("ReferenceError: Variable might not be declared or is out of scope. Check variable declaration and scope.");
+                } else if (e instanceof TypeError) {
+                    console.error("TypeError: Attempted to access property on null or undefined. Check if DOM element was found.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
