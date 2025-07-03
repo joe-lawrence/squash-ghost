@@ -135,9 +135,13 @@
             display: none !important;
         }
 
-        /* Ensure pattern accordion body hiding takes precedence */
-        .pattern-accordion-body.hidden {
-            display: none !important;
+        /* Global lock styles - ensure settings panels and position lock stay accessible */
+        .global-locked .settings-panel {
+            display: block !important;
+        }
+
+        .global-locked .position-lock-btn {
+            display: flex !important;
         }
 
         /* Toggle switch styling */
@@ -632,6 +636,9 @@
                                                 </button>
                                                 <button class="p-1 rounded-full hover:bg-gray-100 move-down-btn" title="Move Down">
                                                     <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5v14m7-7-7 7-7-7"/></svg>
+                                                </button>
+                                                <button type="button" class="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 position-lock-btn" title="Position Lock">
+                                                    <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6z"/><path d="M11 4a2 2 0 0 1 4 0v4h-4z"/></svg>
                                                 </button>
                                             </div>
                                         </div>
@@ -1823,37 +1830,40 @@
                     }
                 });
 
+                // Ensure settings buttons (ellipse icons) are always enabled and accessible
+                const settingsButtons = element.querySelectorAll('.settings-btn');
+                settingsButtons.forEach(button => {
+                    button.disabled = false;
+                    button.removeAttribute('disabled');
+                    button.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                    button.classList.add('hover:bg-gray-100');
+                    button.style.pointerEvents = 'auto';
+                    button.style.opacity = '1';
+                    button.style.cursor = 'pointer';
+                    // Force override any CSS that might be blocking
+                    button.style.visibility = 'visible';
+                    button.style.display = '';
+                });
+
+                // Ensure position lock buttons are always enabled and accessible
+                const positionLockButtons = element.querySelectorAll('.position-lock-btn');
+                positionLockButtons.forEach(button => {
+                    button.disabled = false;
+                    button.classList.remove('opacity-50', 'cursor-not-allowed');
+                    button.classList.add('hover:bg-gray-100', 'hover:text-gray-900');
+                });
+
                 // Handle content visibility
                 const patternContentWrappers = element.querySelectorAll('.pattern-content-wrapper');
                 const shotContentWrappers = element.querySelectorAll('.shot-content-wrapper');
                 const messageContentWrappers = element.querySelectorAll('.message-content-wrapper');
 
-                // Hide/show pattern content (but keep toolbars visible)
-                patternContentWrappers.forEach(wrapper => {
-                    if (isLocked) {
-                        wrapper.classList.add('hidden');
-                    } else {
-                        wrapper.classList.remove('hidden');
-                    }
-                });
-
-                // Hide/show shot content (but keep toolbars visible)
-                shotContentWrappers.forEach(wrapper => {
-                    if (isLocked) {
-                        wrapper.classList.add('hidden');
-                    } else {
-                        wrapper.classList.remove('hidden');
-                    }
-                });
-
-                // Hide/show message content (but keep toolbars visible)
-                messageContentWrappers.forEach(wrapper => {
-                    if (isLocked) {
-                        wrapper.classList.add('hidden');
-                    } else {
-                        wrapper.classList.remove('hidden');
-                    }
-                });
+                // Use CSS class approach for better control
+                if (isLocked) {
+                    element.classList.add('global-locked');
+                } else {
+                    element.classList.remove('global-locked');
+                }
 
                 // NOTE: Add buttons are NOT hidden when locked - users can still add shots/messages
             }
@@ -3141,10 +3151,14 @@
                         lockConfigsLabel.textContent = isLocked ? 'Global settings only' : 'Local settings allowed';
                     }
 
-                    // Apply lock state to all existing patterns
+                    // Apply lock state to all existing patterns and their nested instances
                     const patternInstances = document.querySelectorAll('.pattern-instance');
                     patternInstances.forEach(pattern => {
                         applyLockStateToElement(pattern);
+                        // Also apply to all shot/message instances within this pattern
+                        pattern.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
+                            applyLockStateToElement(shotMsg);
+                        });
                     });
                 });
             }
@@ -3183,10 +3197,14 @@
                         lockConfigsLabel.textContent = 'Global settings only';
                     }
 
-                    // Apply lock state to all existing patterns
+                    // Apply lock state to all existing patterns and their nested instances
                     const patternInstances = document.querySelectorAll('.pattern-instance');
                     patternInstances.forEach(pattern => {
                         applyLockStateToElement(pattern);
+                        // Also apply to all shot/message instances within this pattern
+                        pattern.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
+                            applyLockStateToElement(shotMsg);
+                        });
                     });
                 });
             }
@@ -3224,15 +3242,6 @@
             updateDefaultBiasControls();
             setDefaultVoiceOptionsState();
 
-            // Initialize lock state (since toggle is ON by default)
-            if (lockConfigsToggle && lockConfigsToggle.checked) {
-                const patternInstances = document.querySelectorAll('.pattern-instance');
-                patternInstances.forEach(pattern => {
-                    applyLockStateToElement(pattern);
-                });
-            }
-
-
             try {
                 // Create an initial Pattern instance when the page loads
                 createPatternInstance();
@@ -3246,6 +3255,29 @@
                 // Initialize all position lock buttons
                 updateAllPositionLockButtons();
                 updateAllMoveButtonStates();
+
+                // Initialize lock state (since toggle is ON by default) - AFTER instances are created
+                if (lockConfigsToggle && lockConfigsToggle.checked) {
+                    const patternInstances = document.querySelectorAll('.pattern-instance');
+                    patternInstances.forEach(pattern => {
+                        applyLockStateToElement(pattern);
+                        // Also apply to all shot/message instances within this pattern
+                        pattern.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
+                            applyLockStateToElement(shotMsg);
+                        });
+                    });
+                }
+
+                // Additional failsafe: Force enable all settings buttons
+                setTimeout(() => {
+                    document.querySelectorAll('.settings-btn').forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.pointerEvents = 'auto';
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                        btn.removeAttribute('disabled');
+                    });
+                }, 100);
 
             } catch (e) {
                 console.error("Error during initial updates:", e);
