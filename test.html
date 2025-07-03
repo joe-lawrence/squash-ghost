@@ -189,7 +189,7 @@
 
         <!-- Template for a new Pattern instance -->
         <template id="patternInstanceTemplate">
-            <div class="w-full max-w-lg mx-auto border border-gray-300 rounded-lg shadow-lg bg-white pattern-instance">
+            <div class="w-full max-w-md mx-auto border border-gray-300 rounded-lg shadow-lg bg-white pattern-instance">
                 <!-- Pattern Accordion Header -->
                 <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center pattern-accordion-header">
                     <!-- Editable title for Pattern Panel -->
@@ -256,6 +256,19 @@
 
                                 <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
                                     <div class="py-1 main-menu-content">
+                                        <div class="group relative w-full">
+                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg position-lock-btn">
+                                                <div class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-2 position-lock-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    <span class="position-lock-text">Lock into position 1</span>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        <div class="border-t border-gray-200 my-1"></div>
+
                                         <div class="group relative w-full">
                                             <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="shot-interval-bias-submenu">
                                                 Interval
@@ -439,6 +452,19 @@
 
                                                 <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
                                                     <div class="py-1 main-menu-content">
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg position-lock-btn">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-4 h-4 mr-2 position-lock-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="position-lock-text">Lock into position 1</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="border-t border-gray-200 my-1"></div>
+
                                                         <div class="group relative w-full">
                                                             <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="shot-interval-bias-submenu">
                                                                 Interval
@@ -651,7 +677,7 @@
         </div>
 
         <!-- Default Config Accordion -->
-        <div class="w-full max-w-lg mx-auto border border-gray-300 rounded-lg shadow-lg bg-white mb-4" id="defaultConfigAccordion">
+        <div class="w-full max-w-md mx-auto border border-gray-300 rounded-lg shadow-lg bg-white mb-4" id="defaultConfigAccordion">
             <!-- Default Config Header -->
             <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center" id="defaultConfigHeader">
                 <span class="font-semibold text-gray-700">Default Config</span>
@@ -1367,6 +1393,403 @@
             }
 
             /**
+             * Calculates the current position of an element within its parent container.
+             * @param {HTMLElement} element The element to get position for.
+             * @returns {number} The 1-based position of the element.
+             */
+            function getElementPosition(element) {
+                if (element.classList.contains('pattern-instance')) {
+                    const patterns = Array.from(mainContainer.querySelectorAll('.pattern-instance'));
+                    return patterns.indexOf(element) + 1;
+                } else if (element.classList.contains('shot-msg-instance')) {
+                    const parent = element.closest('.pattern-instance');
+                    const siblings = Array.from(parent.querySelectorAll('.shot-msg-instance'));
+                    return siblings.indexOf(element) + 1;
+                }
+                return 1;
+            }
+
+            /**
+             * Gets all siblings for an element in the same container.
+             * @param {HTMLElement} element The element to get siblings for.
+             * @returns {Array} Array of sibling elements.
+             */
+            function getSiblings(element) {
+                if (element.classList.contains('pattern-instance')) {
+                    return Array.from(mainContainer.querySelectorAll('.pattern-instance'));
+                } else if (element.classList.contains('shot-msg-instance')) {
+                    const parent = element.closest('.pattern-instance');
+                    return Array.from(parent.querySelectorAll('.shot-msg-instance'));
+                }
+                return [];
+            }
+
+                        /**
+             * Checks if swapping two elements would violate any locked positions.
+             * @param {HTMLElement} element1 First element to swap.
+             * @param {HTMLElement} element2 Second element to swap.
+             * @param {Array} siblings Array of all siblings.
+             * @returns {boolean} True if the swap is valid.
+             */
+            function isSwapValid(element1, element2, siblings) {
+                const index1 = siblings.indexOf(element1);
+                const index2 = siblings.indexOf(element2);
+
+                // Check that all locked items would remain in their correct positions after swap
+                for (let i = 0; i < siblings.length; i++) {
+                    const item = siblings[i];
+                    if (item.dataset.positionLocked === 'true') {
+                        const lockType = item.dataset.positionLockType || 'position';
+
+                        // Calculate where this locked item would end up after the swap
+                        let newIndex = i; // Default: stays in same position
+
+                        if (i === index1) {
+                            // This locked item is element1, it would move to element2's position
+                            newIndex = index2;
+                        } else if (i === index2) {
+                            // This locked item is element2, it would move to element1's position
+                            newIndex = index1;
+                        }
+
+                        if (lockType === 'position') {
+                            // Position-locked item must stay in exact same position
+                            if (newIndex !== i) {
+                                return false; // Swap would violate this position lock
+                            }
+                        } else if (lockType === 'last') {
+                            // Last-locked item must remain at the end
+                            if (newIndex !== siblings.length - 1) {
+                                return false; // Swap would violate this last lock
+                            }
+                        }
+                    }
+                }
+
+                return true; // Swap is valid
+            }
+
+                        /**
+             * Finds a suitable swap target for moving in a given direction.
+             * @param {HTMLElement} element The element to move.
+             * @param {string} direction 'up' or 'down'.
+             * @returns {HTMLElement|null} The element to swap with, or null if no valid swap.
+             */
+            function findSwapTarget(element, direction) {
+                const siblings = getSiblings(element);
+                const currentIndex = siblings.indexOf(element);
+
+                // If the element itself is locked, it cannot move
+                if (element.dataset.positionLocked === 'true') {
+                    return null;
+                }
+
+                // If there are only 2 items total, they can only swap with each other
+                if (siblings.length <= 2) {
+                    const otherElement = siblings.find(s => s !== element);
+                    if (otherElement && canElementMove(otherElement)) {
+                        return isSwapValid(element, otherElement, siblings) ? otherElement : null;
+                    }
+                    return null;
+                }
+
+                if (direction === 'up') {
+                    // Look for the first moveable item to swap with (going up)
+                    for (let i = currentIndex - 1; i >= 0; i--) {
+                        const candidate = siblings[i];
+                        if (canElementMove(candidate)) {
+                            if (isSwapValid(element, candidate, siblings)) {
+                                return candidate;
+                            }
+                        }
+                    }
+                } else if (direction === 'down') {
+                    // Look for the first moveable item to swap with (going down)
+                    for (let i = currentIndex + 1; i < siblings.length; i++) {
+                        const candidate = siblings[i];
+                        if (canElementMove(candidate)) {
+                            if (isSwapValid(element, candidate, siblings)) {
+                                return candidate;
+                            }
+                        }
+                    }
+                }
+
+                return null; // No valid swap target found
+            }
+
+            /**
+             * Checks if an element can be moved (not locked or only locked to last position in a moveable way).
+             * @param {HTMLElement} element The element to check.
+             * @returns {boolean} True if the element can participate in swaps.
+             */
+            function canElementMove(element) {
+                if (element.dataset.positionLocked !== 'true') {
+                    return true; // Not locked, can move
+                }
+
+                const lockType = element.dataset.positionLockType || 'position';
+                if (lockType === 'position') {
+                    return false; // Position-locked elements cannot move
+                } else if (lockType === 'last') {
+                    // Last-locked elements can only move if they remain last
+                    // For now, we'll allow them to participate in swaps and let isSwapValid determine validity
+                    return true;
+                }
+
+                return false;
+            }
+
+            /**
+             * Checks if a position move is valid by finding a swap target.
+             * @param {HTMLElement} element The element to move.
+             * @param {string} direction 'up' or 'down'.
+             * @returns {boolean} True if the move is valid.
+             */
+            function canMoveToPosition(element, direction) {
+                return findSwapTarget(element, direction) !== null;
+            }
+
+            /**
+             * Performs a swap between two elements in the DOM.
+             * @param {HTMLElement} element1 First element to swap.
+             * @param {HTMLElement} element2 Second element to swap.
+             */
+            function swapElements(element1, element2) {
+                // Create a temporary placeholder
+                const placeholder = document.createElement('div');
+
+                // Insert placeholder before element1
+                element1.parentNode.insertBefore(placeholder, element1);
+
+                // Move element1 to where element2 is
+                element2.parentNode.insertBefore(element1, element2);
+
+                // Move element2 to where element1 was (before placeholder)
+                placeholder.parentNode.insertBefore(element2, placeholder);
+
+                // Remove the placeholder
+                placeholder.remove();
+            }
+
+            /**
+             * Finds the swap target when moving up and performs the swap.
+             * @param {HTMLElement} element The element to move.
+             * @returns {boolean} True if swap was performed, false otherwise.
+             */
+            function findNextAvailablePositionUp(element) {
+                const swapTarget = findSwapTarget(element, 'up');
+                if (swapTarget) {
+                    swapElements(element, swapTarget);
+                    return true;
+                }
+                return false;
+            }
+
+            /**
+             * Finds the swap target when moving down and performs the swap.
+             * @param {HTMLElement} element The element to move.
+             * @returns {boolean} True if swap was performed, false otherwise.
+             */
+            function findNextAvailablePositionDown(element) {
+                const swapTarget = findSwapTarget(element, 'down');
+                if (swapTarget) {
+                    swapElements(element, swapTarget);
+                    return true;
+                }
+                return false;
+            }
+
+                        /**
+             * Checks if an element is the last in its container.
+             * @param {HTMLElement} element The element to check.
+             * @returns {boolean} True if element is last in its container.
+             */
+            function isLastElement(element) {
+                const siblings = getSiblings(element);
+                return siblings.indexOf(element) === siblings.length - 1;
+            }
+
+            /**
+             * Updates the position lock button text and state for a given element.
+             * @param {HTMLElement} element The pattern or shot/message element.
+             */
+            function updatePositionLockButton(element) {
+                const positionLockBtn = element.querySelector('.position-lock-btn');
+                const positionLockText = element.querySelector('.position-lock-text');
+                const positionLockCheckmark = element.querySelector('.position-lock-checkmark');
+
+                if (!positionLockBtn || !positionLockText || !positionLockCheckmark) return;
+
+                const currentPosition = getElementPosition(element);
+                const isLocked = element.dataset.positionLocked === 'true';
+                const lockType = element.dataset.positionLockType || 'position';
+                const isLast = isLastElement(element);
+                const cycleState = parseInt(element.dataset.positionCycleState) || 0;
+
+                if (isLocked) {
+                    if (lockType === 'last') {
+                        positionLockText.textContent = 'Unlock from LAST position';
+                    } else {
+                        positionLockText.textContent = `Unlock from position ${currentPosition}`;
+                    }
+                    positionLockCheckmark.classList.remove('hidden');
+                } else {
+                    if (isLast) {
+                        // For last elements, alternate between position and last lock options
+                        if (cycleState === 0 || cycleState === 1) {
+                            positionLockText.textContent = `Lock into position ${currentPosition}`;
+                        } else {
+                            positionLockText.textContent = 'Lock into LAST position';
+                        }
+                    } else {
+                        positionLockText.textContent = `Lock into position ${currentPosition}`;
+                    }
+                    positionLockCheckmark.classList.add('hidden');
+                }
+            }
+
+                        /**
+             * Toggles the position lock state for a given element.
+             * For last elements, cycles through 4 states:
+             * 0: unlocked -> "Lock into position N"
+             * 1: position locked -> "Unlock from position N"
+             * 2: unlocked -> "Lock into LAST position"
+             * 3: last locked -> "Unlock from LAST position" -> back to 0
+             * For other elements: cycles between unlocked and position locked
+             * @param {HTMLElement} element The pattern or shot/message element.
+             */
+            function togglePositionLock(element) {
+                const isCurrentlyLocked = element.dataset.positionLocked === 'true';
+                const currentLockType = element.dataset.positionLockType || 'position';
+                const isLast = isLastElement(element);
+                const cycleState = parseInt(element.dataset.positionCycleState) || 0;
+
+                if (isLast) {
+                    // 4-state cycle for last elements
+                    switch (cycleState) {
+                        case 0: // unlocked -> position locked
+                            element.dataset.positionLocked = 'true';
+                            element.dataset.positionLockType = 'position';
+                            element.dataset.positionCycleState = '1';
+                            break;
+                        case 1: // position locked -> unlocked
+                            element.dataset.positionLocked = 'false';
+                            element.dataset.positionLockType = 'position';
+                            element.dataset.positionCycleState = '2';
+                            break;
+                        case 2: // unlocked -> last locked
+                            element.dataset.positionLocked = 'true';
+                            element.dataset.positionLockType = 'last';
+                            element.dataset.positionCycleState = '3';
+                            break;
+                        case 3: // last locked -> unlocked (back to start)
+                            element.dataset.positionLocked = 'false';
+                            element.dataset.positionLockType = 'position';
+                            element.dataset.positionCycleState = '0';
+                            break;
+                    }
+                } else {
+                    // 2-state cycle for non-last elements
+                    if (!isCurrentlyLocked) {
+                        // unlocked -> position locked
+                        element.dataset.positionLocked = 'true';
+                        element.dataset.positionLockType = 'position';
+                    } else {
+                        // position locked -> unlocked
+                        element.dataset.positionLocked = 'false';
+                        element.dataset.positionLockType = 'position';
+                    }
+                    // Reset cycle state for consistency
+                    element.dataset.positionCycleState = '0';
+                }
+
+                updatePositionLockButton(element);
+                // Update all move button states since locking one element affects others
+                updateAllMoveButtonStates();
+            }
+
+            /**
+             * Updates the state of move up/down buttons based on position lock and available moves.
+             * @param {HTMLElement} element The pattern or shot/message element.
+             */
+            function updateMoveButtonsState(element) {
+                const isLocked = element.dataset.positionLocked === 'true';
+                const moveUpBtn = element.querySelector('.move-up-btn, .pattern-move-up-btn');
+                const moveDownBtn = element.querySelector('.move-down-btn, .pattern-move-down-btn');
+
+                // Check if moves are possible considering locked positions
+                const canMoveUp = !isLocked && findNextAvailablePositionUp(element) !== null;
+                const canMoveDown = !isLocked && findNextAvailablePositionDown(element) !== null;
+
+                if (moveUpBtn) {
+                    moveUpBtn.disabled = !canMoveUp;
+                    if (!canMoveUp) {
+                        moveUpBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        moveUpBtn.classList.remove('hover:bg-gray-100');
+                    } else {
+                        moveUpBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        moveUpBtn.classList.add('hover:bg-gray-100');
+                    }
+                }
+
+                if (moveDownBtn) {
+                    moveDownBtn.disabled = !canMoveDown;
+                    if (!canMoveDown) {
+                        moveDownBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        moveDownBtn.classList.remove('hover:bg-gray-100');
+                    } else {
+                        moveDownBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        moveDownBtn.classList.add('hover:bg-gray-100');
+                    }
+                }
+            }
+
+                        /**
+             * Updates all position lock buttons after elements are moved or added.
+             */
+            function updateAllPositionLockButtons() {
+                // Update all pattern position lock buttons
+                document.querySelectorAll('.pattern-instance').forEach(pattern => {
+                    updatePositionLockButton(pattern);
+                    // If an item is locked to "last" but is no longer last, convert to position lock
+                    if (pattern.dataset.positionLocked === 'true' &&
+                        pattern.dataset.positionLockType === 'last' &&
+                        !isLastElement(pattern)) {
+                        pattern.dataset.positionLockType = 'position';
+                        pattern.dataset.positionCycleState = '1'; // Set to "locked position" state
+                    }
+                });
+
+                // Update all shot/message position lock buttons
+                document.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
+                    updatePositionLockButton(shotMsg);
+                    // If an item is locked to "last" but is no longer last, convert to position lock
+                    if (shotMsg.dataset.positionLocked === 'true' &&
+                        shotMsg.dataset.positionLockType === 'last' &&
+                        !isLastElement(shotMsg)) {
+                        shotMsg.dataset.positionLockType = 'position';
+                        shotMsg.dataset.positionCycleState = '1'; // Set to "locked position" state
+                    }
+                });
+            }
+
+            /**
+             * Updates all move button states after position locks change.
+             */
+            function updateAllMoveButtonStates() {
+                // Update all pattern move button states
+                document.querySelectorAll('.pattern-instance').forEach(pattern => {
+                    updateMoveButtonsState(pattern);
+                });
+
+                // Update all shot/message move button states
+                document.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
+                    updateMoveButtonsState(shotMsg);
+                });
+            }
+
+            /**
              * Applies the lock state to settings buttons and content visibility in a given element.
              * @param {HTMLElement} element The element containing settings buttons and content.
              */
@@ -1374,17 +1797,29 @@
                 if (!lockConfigsToggle) return;
 
                 const isLocked = lockConfigsToggle.checked;
-                const settingsButtons = element.querySelectorAll('.settings-btn');
 
-                // Handle settings buttons
-                settingsButtons.forEach(button => {
-                    button.disabled = isLocked;
-                    if (isLocked) {
-                        button.classList.add('opacity-50', 'cursor-not-allowed');
-                        button.classList.remove('hover:bg-gray-100');
-                    } else {
-                        button.classList.remove('opacity-50', 'cursor-not-allowed');
-                        button.classList.add('hover:bg-gray-100');
+                // Instead of disabling settings buttons, disable specific submenu options
+                const submenuTriggers = element.querySelectorAll('.submenu-trigger');
+
+                submenuTriggers.forEach(trigger => {
+                    const targetSubmenu = trigger.dataset.targetSubmenuClass;
+
+                    // Define which submenus should be disabled when locked
+                    const disallowedSubmenus = [
+                        'shot-interval-bias-submenu',
+                        'split-step-submenu',
+                        'voice-submenu'
+                    ];
+
+                    if (disallowedSubmenus.includes(targetSubmenu)) {
+                        trigger.disabled = isLocked;
+                        if (isLocked) {
+                            trigger.classList.add('opacity-50', 'cursor-not-allowed');
+                            trigger.classList.remove('hover:bg-gray-100', 'hover:text-gray-900');
+                        } else {
+                            trigger.classList.remove('opacity-50', 'cursor-not-allowed');
+                            trigger.classList.add('hover:bg-gray-100', 'hover:text-gray-900');
+                        }
                     }
                 });
 
@@ -1679,6 +2114,17 @@
                         // Voice select population happens after DOMContentLoaded, so we might need to set it after voices are loaded
                         // For now, assume it's set in the populateVoiceSelect callback or later.
                     }
+
+                    // Set position lock state if provided
+                    if (initialState.positionLocked !== undefined) {
+                        instanceElement.dataset.positionLocked = initialState.positionLocked;
+                    }
+                    if (initialState.positionLockType !== undefined) {
+                        instanceElement.dataset.positionLockType = initialState.positionLockType;
+                    }
+                    if (initialState.positionCycleState !== undefined) {
+                        instanceElement.dataset.positionCycleState = initialState.positionCycleState;
+                    }
                 }
 
                 // Initial updates for current instance
@@ -1728,6 +2174,7 @@
                 const cloneBtn = instanceElement.querySelector('.clone-btn');
                 const moveUpBtn = instanceElement.querySelector('.move-up-btn');
                 const moveDownBtn = instanceElement.querySelector('.move-down-btn');
+                const positionLockBtn = instanceElement.querySelector('.position-lock-btn');
 
                 if (deleteBtn) {
                     deleteBtn.addEventListener('click', function(event) {
@@ -1750,6 +2197,10 @@
                             if (isShot && parentPatternElement) {
                                 updateShotLimitSlider(parentPatternElement);
                             }
+
+                            // Update all position lock buttons since an instance was deleted
+                            updateAllPositionLockButtons();
+                            updateAllMoveButtonStates();
                         }
                     });
                 }
@@ -1768,9 +2219,12 @@
                 if (moveUpBtn) {
                     moveUpBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        const previousSibling = instanceElement.previousElementSibling;
-                        if (previousSibling) {
-                            instanceElement.parentNode.insertBefore(instanceElement, previousSibling);
+                        if (!this.disabled) {
+                            const swapSuccessful = findNextAvailablePositionUp(instanceElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                            }
                         }
                     });
                 }
@@ -1778,10 +2232,20 @@
                 if (moveDownBtn) {
                     moveDownBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        const nextSibling = instanceElement.nextElementSibling;
-                        if (nextSibling) {
-                            instanceElement.parentNode.insertBefore(nextSibling, instanceElement);
+                        if (!this.disabled) {
+                            const swapSuccessful = findNextAvailablePositionDown(instanceElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                            }
                         }
+                    });
+                }
+
+                if (positionLockBtn) {
+                    positionLockBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        togglePositionLock(instanceElement);
                     });
                 }
 
@@ -1789,9 +2253,7 @@
                 if (instanceType === 'shot' && settingsBtn) {
                     settingsBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        if (!this.disabled) {
-                            toggleSettingsDropdown(settingsPanel, mainMenuContent);
-                        }
+                        toggleSettingsDropdown(settingsPanel, mainMenuContent);
                     });
 
                     // Close dropdown if click outside (only for shot instances)
@@ -1804,8 +2266,10 @@
                     submenuTriggerButtons.forEach(button => {
                         button.addEventListener('click', function(event) {
                             event.stopPropagation();
-                            const targetSubmenuClass = this.dataset.targetSubmenuClass;
-                            showSettingsSubmenu(settingsPanel, mainMenuContent, targetSubmenuClass);
+                            if (!this.disabled) {
+                                const targetSubmenuClass = this.dataset.targetSubmenuClass;
+                                showSettingsSubmenu(settingsPanel, mainMenuContent, targetSubmenuClass);
+                            }
                         });
                     });
 
@@ -1905,16 +2369,38 @@
 
                 const shotMsgInstancesContainer = parentPatternElement.querySelector('.shot-msg-instances-container');
                 if (shotMsgInstancesContainer) {
-                    shotMsgInstancesContainer.appendChild(newInstance);
+                    // Find if there are any items locked to last position
+                    const existingItems = Array.from(shotMsgInstancesContainer.querySelectorAll('.shot-msg-instance'));
+                    const lastLockedItem = existingItems.find(item =>
+                        item.dataset.positionLocked === 'true' &&
+                        item.dataset.positionLockType === 'last'
+                    );
+
+                    if (lastLockedItem) {
+                        // Insert before the last-locked item
+                        shotMsgInstancesContainer.insertBefore(newInstance, lastLockedItem);
+                    } else {
+                        // No last-locked items, append at the end
+                        shotMsgInstancesContainer.appendChild(newInstance);
+                    }
                     initializeShotMsgInstance(newInstance, initialState);
 
                     // Apply lock state to new shot/message instance
                     applyLockStateToElement(newInstance);
 
+                    // Initialize position lock button
+                    newInstance.dataset.positionCycleState = '0'; // Initialize cycle state
+                    updatePositionLockButton(newInstance);
+                    updateMoveButtonsState(newInstance);
+
                     // Update shot limit slider if this is a shot instance
                     if (type === 'shot') {
                         updateShotLimitSlider(parentPatternElement);
                     }
+
+                    // Update all position lock buttons since a new instance was added
+                    updateAllPositionLockButtons();
+                    updateAllMoveButtonStates();
                 } else {
                     console.error("Shot/Message instances container not found within pattern:", parentPatternElement);
                 }
@@ -1984,6 +2470,11 @@
                     if (skipAtEndOfWorkoutCheckbox) state.skipAtEndOfWorkout = skipAtEndOfWorkoutCheckbox.checked;
                 }
 
+                // Capture position lock state
+                state.positionLocked = instanceElement.dataset.positionLocked === 'true';
+                state.positionLockType = instanceElement.dataset.positionLockType || 'position';
+                state.positionCycleState = parseInt(instanceElement.dataset.positionCycleState) || 0;
+
                 return state;
             }
 
@@ -2042,6 +2533,7 @@
                 const addShotBtn = patternElement.querySelector('.add-shot-btn');
                 const addMsgBtn = patternElement.querySelector('.add-msg-btn');
                 const shotMsgInstancesContainer = patternElement.querySelector('.shot-msg-instances-container');
+                const patternPositionLockBtn = patternElement.querySelector('.position-lock-btn');
 
 
                 // Apply initial state if provided (for cloning)
@@ -2077,6 +2569,17 @@
                         initialState.shotsAndMessages.forEach(shotMsgState => {
                             createShotMsgInstance(patternElement, shotMsgState.type, shotMsgState);
                         });
+                    }
+
+                    // Set position lock state if provided
+                    if (initialState.positionLocked !== undefined) {
+                        patternElement.dataset.positionLocked = initialState.positionLocked;
+                    }
+                    if (initialState.positionLockType !== undefined) {
+                        patternElement.dataset.positionLockType = initialState.positionLockType;
+                    }
+                    if (initialState.positionCycleState !== undefined) {
+                        patternElement.dataset.positionCycleState = initialState.positionCycleState;
                     }
                 }
 
@@ -2177,9 +2680,7 @@
                 if (patternSettingsBtn) {
                     patternSettingsBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        if (!this.disabled) {
-                            toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
-                        }
+                        toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
                     });
                 }
 
@@ -2193,8 +2694,10 @@
                 patternSubmenuTriggerButtons.forEach(button => {
                     button.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        const targetSubmenuClass = this.dataset.targetSubmenuClass;
-                        showSettingsSubmenu(patternSettingsPanel, patternMainMenuContent, targetSubmenuClass);
+                        if (!this.disabled) {
+                            const targetSubmenuClass = this.dataset.targetSubmenuClass;
+                            showSettingsSubmenu(patternSettingsPanel, patternMainMenuContent, targetSubmenuClass);
+                        }
                     });
                 });
 
@@ -2260,6 +2763,14 @@
                 // Add Shot/Message buttons for this pattern
                 if (addShotBtn) addShotBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'shot'));
                 if (addMsgBtn) addMsgBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'msg'));
+
+                // Position lock button for this pattern
+                if (patternPositionLockBtn) {
+                    patternPositionLockBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        togglePositionLock(patternElement);
+                    });
+                }
 
                 // Ensure pattern has at least one shot or message (for cloned patterns with no content)
                 const existingShotsMsgs = patternElement.querySelectorAll('.shot-msg-instance').length;
@@ -2331,6 +2842,11 @@
                     state.shotsAndMessages.push(getShotMsgInstanceCurrentState(shotMsgInstance));
                 });
 
+                // Capture position lock state
+                state.positionLocked = patternElement.dataset.positionLocked === 'true';
+                state.positionLockType = patternElement.dataset.positionLockType || 'position';
+                state.positionCycleState = parseInt(patternElement.dataset.positionCycleState) || 0;
+
                 return state;
             }
 
@@ -2360,11 +2876,33 @@
                 const titleInput = newInstance.querySelector('.pattern-panel-title');
                 titleInput.value = `Pattern ${globalInstanceCounter}`;
 
-                mainContainer.appendChild(newInstance);
+                // Find if there are any patterns locked to last position
+                const existingPatterns = Array.from(mainContainer.querySelectorAll('.pattern-instance'));
+                const lastLockedPattern = existingPatterns.find(pattern =>
+                    pattern.dataset.positionLocked === 'true' &&
+                    pattern.dataset.positionLockType === 'last'
+                );
+
+                if (lastLockedPattern) {
+                    // Insert before the last-locked pattern
+                    mainContainer.insertBefore(newInstance, lastLockedPattern);
+                } else {
+                    // No last-locked patterns, append at the end
+                    mainContainer.appendChild(newInstance);
+                }
                 initializePatternInstance(newInstance, initialState);
 
                 // Apply lock state to new pattern
                 applyLockStateToElement(newInstance);
+
+                // Initialize position lock button
+                newInstance.dataset.positionCycleState = '0'; // Initialize cycle state
+                updatePositionLockButton(newInstance);
+                updateMoveButtonsState(newInstance);
+
+                // Update all position lock buttons since a new pattern was added
+                updateAllPositionLockButtons();
+                updateAllMoveButtonStates();
             }
 
 
@@ -2386,20 +2924,30 @@
                         }
 
                         patternElement.remove();
+                        updateAllPositionLockButtons();
+                        updateAllMoveButtonStates();
                     } else if (target.closest('.pattern-clone-btn')) {
                         const currentState = getPatternInstanceCurrentState(patternElement);
                         createPatternInstance(currentState);
                     } else if (target.closest('.pattern-move-up-btn')) {
-                        const previousSibling = patternElement.previousElementSibling;
-                        if (previousSibling && previousSibling.classList.contains('pattern-instance')) {
-                            mainContainer.insertBefore(patternElement, previousSibling);
-                            target.closest('.pattern-move-up-btn').focus(); // Re-focus
+                        const moveUpBtn = target.closest('.pattern-move-up-btn');
+                        if (!moveUpBtn.disabled) {
+                            const swapSuccessful = findNextAvailablePositionUp(patternElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                                moveUpBtn.focus(); // Re-focus
+                            }
                         }
                     } else if (target.closest('.pattern-move-down-btn')) {
-                        const nextSibling = patternElement.nextElementSibling;
-                        if (nextSibling && nextSibling.classList.contains('pattern-instance')) {
-                            mainContainer.insertBefore(nextSibling, patternElement);
-                            target.closest('.pattern-move-down-btn').focus(); // Re-focus
+                        const moveDownBtn = target.closest('.pattern-move-down-btn');
+                        if (!moveDownBtn.disabled) {
+                            const swapSuccessful = findNextAvailablePositionDown(patternElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                                moveDownBtn.focus(); // Re-focus
+                            }
                         }
                     }
                 });
@@ -2434,21 +2982,33 @@
                         if (isShot && parentPatternElement) {
                             updateShotLimitSlider(parentPatternElement);
                         }
+
+                        // Update all position lock buttons since an instance was deleted
+                        updateAllPositionLockButtons();
+                        updateAllMoveButtonStates();
                     } else if (target.closest('.clone-btn')) {
                         const parentPatternElement = shotMsgInstanceElement.closest('.pattern-instance');
                         const currentState = getShotMsgInstanceCurrentState(shotMsgInstanceElement);
                         createShotMsgInstance(parentPatternElement, currentState.type, currentState);
                     } else if (target.closest('.move-up-btn')) {
-                        const previousSibling = shotMsgInstanceElement.previousElementSibling;
-                        if (previousSibling && previousSibling.classList.contains('shot-msg-instance')) {
-                            shotMsgInstancesContainer.insertBefore(shotMsgInstanceElement, previousSibling);
-                            target.closest('.move-up-btn').focus(); // Re-focus
+                        const moveUpBtn = target.closest('.move-up-btn');
+                        if (!moveUpBtn.disabled) {
+                            const swapSuccessful = findNextAvailablePositionUp(shotMsgInstanceElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                                moveUpBtn.focus(); // Re-focus
+                            }
                         }
                     } else if (target.closest('.move-down-btn')) {
-                        const nextSibling = shotMsgInstanceElement.nextElementSibling;
-                        if (nextSibling && nextSibling.classList.contains('shot-msg-instance')) {
-                            shotMsgInstancesContainer.insertBefore(nextSibling, shotMsgInstanceElement);
-                            target.closest('.move-down-btn').focus(); // Re-focus
+                        const moveDownBtn = target.closest('.move-down-btn');
+                        if (!moveDownBtn.disabled) {
+                            const swapSuccessful = findNextAvailablePositionDown(shotMsgInstanceElement);
+                            if (swapSuccessful) {
+                                updateAllPositionLockButtons();
+                                updateAllMoveButtonStates();
+                                moveDownBtn.focus(); // Re-focus
+                            }
                         }
                     }
                 });
@@ -2682,6 +3242,10 @@
                 if (firstPattern) {
                     createShotMsgInstance(firstPattern, 'shot');
                 }
+
+                // Initialize all position lock buttons
+                updateAllPositionLockButtons();
+                updateAllMoveButtonStates();
 
             } catch (e) {
                 console.error("Error during initial updates:", e);
