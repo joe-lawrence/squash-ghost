@@ -140,6 +140,46 @@
             display: none !important;
         }
 
+        /* Toggle switch styling */
+        .toggle-bg {
+            transition: background-color 0.3s ease;
+        }
+
+        .toggle-dot {
+            transition: transform 0.3s ease;
+        }
+
+        input:checked + .toggle-bg {
+            background-color: #4F46E5; /* Indigo color */
+        }
+
+        input:checked ~ .toggle-dot {
+            transform: translateX(100%);
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
     </style>
 </head>
 <body>
@@ -605,11 +645,163 @@
             </div>
         </template>
 
-        <!-- Add Pattern Button -->
-        <div class="flex justify-center mt-4">
+        <!-- Add Pattern Button (at top) -->
+        <div class="flex justify-center mb-4">
             <button id="addPatternBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">Add Pattern</button>
         </div>
 
+        <!-- Default Config Accordion -->
+        <div class="w-full max-w-md mx-auto border border-gray-300 rounded-lg shadow-lg bg-white mb-4" id="defaultConfigAccordion">
+            <!-- Default Config Header -->
+            <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-t-lg flex justify-between items-center" id="defaultConfigHeader">
+                <span class="font-semibold text-gray-700">Default Config</span>
+                <svg class="w-5 h-5 text-gray-600 transform transition-transform duration-200" id="defaultConfigArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Default Config Body -->
+            <div class="p-4 hidden" id="defaultConfigBody">
+                <!-- Pattern iteration Settings (Inline) -->
+                <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Pattern iteration</h3>
+                    <div class="mb-3">
+                        <select class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" id="defaultIterationTypeSelect">
+                            <option value="in-order" selected>In-order</option>
+                            <option value="shuffle">Shuffle</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <select class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" id="defaultLimitsTypeSelect">
+                            <option value="all-shots" selected>All pattern shots</option>
+                            <option value="shot-limit">Shot limit</option>
+                            <option value="time-limit">Time limit</option>
+                        </select>
+                    </div>
+                    <div class="hidden" id="defaultShotLimitContainer">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Shot limit: <span id="defaultShotLimitValue">1</span></label>
+                        <input type="range" min="1" max="50" value="1" step="1" class="w-full" id="defaultShotLimitSlider">
+                    </div>
+                    <div class="hidden" id="defaultTimeLimitContainer">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Time limit: <span id="defaultTimeLimitValue">10:00</span></label>
+                        <input type="range" min="30" max="1800" value="600" step="30" class="w-full" id="defaultTimeLimitSlider">
+                    </div>
+                </div>
+
+                <!-- Interval Settings (Inline) -->
+                <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Interval Settings</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Interval: <span id="defaultShotIntervalValue">5.0s</span></label>
+                        <input type="range" min="3.0" max="8.0" value="5.0" step="0.1" class="w-full" id="defaultShotIntervalSlider">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bias</label>
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded" id="defaultBiasEnabled">
+                            <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                        </div>
+                        <div class="border-t border-gray-200 pt-2 mt-2 hidden" id="defaultBiasControlsContainer">
+                            <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm mb-4" id="defaultBiasTypeSelect">
+                                <option value="fixed" id="defaultBiasFixedOption">Fixed: 0.0s</option>
+                                <option value="random" id="defaultBiasRandomOption">Random range: 0.0s to 0.0s</option>
+                            </select>
+
+                            <div id="defaultBiasFixedContainer">
+                                <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full" id="defaultBiasFixedSlider">
+                            </div>
+
+                            <div class="hidden" id="defaultBiasRandomContainer">
+                                <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full mb-2" id="defaultBiasRandomPositiveSlider">
+                                <input type="range" min="-2" max="2" value="0" step="0.1" class="w-full" id="defaultBiasRandomNegativeSlider">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split-step Settings (Inline) -->
+                <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Split-step Settings</h3>
+                    <div class="mb-4">
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded" id="defaultSplitStepEnabled">
+                            <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                        </div>
+                        <div class="hidden" id="defaultSplitStepRateContainer">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                            <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" id="defaultSplitStepSpeedSelect">
+                                <option value="auto-scale" selected>Auto-scale</option>
+                                <option value="slow">Slow</option>
+                                <option value="medium">Medium</option>
+                                <option value="fast">Fast</option>
+                                <option value="random">Random</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voice Settings (Inline) -->
+                <div class="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Voice Settings</h3>
+                    <div class="mb-4">
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded" id="defaultVoiceEnabled" checked>
+                            <label class="ml-2 text-sm text-gray-700">Enabled</label>
+                        </div>
+                        <div id="defaultVoiceOptionsContainer">
+                            <div class="mb-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Voice</label>
+                                <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" id="defaultVoiceSelect">
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                                <select class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" id="defaultVoiceRateSelect">
+                                    <option value="auto-scale" selected>Auto-scale</option>
+                                    <option value="0.5">0.5x</option>
+                                    <option value="0.75">0.75x</option>
+                                    <option value="1.0">1.0x</option>
+                                    <option value="1.25">1.25x</option>
+                                    <option value="1.5">1.5x</option>
+                                </select>
+                            </div>
+                            <div class="mb-2 mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Narration lead time: <span id="defaultLeadTimeValue">2.5s</span></label>
+                                <input type="range" min="2.5" max="5.0" value="2.5" step="0.1" class="w-full" id="defaultLeadTimeSlider">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lock Configs Toggle -->
+                <div class="flex items-center justify-start p-4">
+                    <label class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" class="sr-only" id="lockConfigsToggle" checked>
+                            <div class="w-10 h-6 bg-gray-400 rounded-full shadow-inner toggle-bg"></div>
+                            <div class="absolute w-4 h-4 bg-white rounded-full shadow toggle-dot top-1 left-1 transition"></div>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-700" id="lockConfigsLabel">Global settings only</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="resetConfigModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Reset Local Configurations</h3>
+            <p class="text-sm text-gray-600 mb-6">This will reset all local pattern, shot, and message configurations to their global default values. This action cannot be undone.</p>
+            <div class="flex justify-end space-x-3">
+                <button id="modalCancelBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
+                    Cancel
+                </button>
+                <button id="modalOkBtn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
+                    Reset Configs
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -620,6 +812,45 @@
             const shotInstanceTemplate = patternInstanceTemplate.content.querySelector('.shot-instance-template'); // Get shot template from within pattern template
             const messageInstanceTemplate = patternInstanceTemplate.content.querySelector('.message-instance-template'); // Get message template from within pattern template
             const addPatternBtn = document.getElementById('addPatternBtn');
+
+            // --- Default Config Elements ---
+            const defaultConfigHeader = document.getElementById('defaultConfigHeader');
+            const defaultConfigBody = document.getElementById('defaultConfigBody');
+            const defaultConfigArrow = document.getElementById('defaultConfigArrow');
+            const defaultIterationTypeSelect = document.getElementById('defaultIterationTypeSelect');
+            const defaultLimitsTypeSelect = document.getElementById('defaultLimitsTypeSelect');
+            const defaultShotLimitContainer = document.getElementById('defaultShotLimitContainer');
+            const defaultShotLimitSlider = document.getElementById('defaultShotLimitSlider');
+            const defaultShotLimitValue = document.getElementById('defaultShotLimitValue');
+            const defaultTimeLimitContainer = document.getElementById('defaultTimeLimitContainer');
+            const defaultTimeLimitSlider = document.getElementById('defaultTimeLimitSlider');
+            const defaultTimeLimitValue = document.getElementById('defaultTimeLimitValue');
+            const defaultShotIntervalSlider = document.getElementById('defaultShotIntervalSlider');
+            const defaultShotIntervalValue = document.getElementById('defaultShotIntervalValue');
+            const defaultLeadTimeSlider = document.getElementById('defaultLeadTimeSlider');
+            const defaultLeadTimeValue = document.getElementById('defaultLeadTimeValue');
+            const defaultBiasEnabled = document.getElementById('defaultBiasEnabled');
+            const defaultBiasControlsContainer = document.getElementById('defaultBiasControlsContainer');
+            const defaultBiasTypeSelect = document.getElementById('defaultBiasTypeSelect');
+            const defaultBiasFixedOption = document.getElementById('defaultBiasFixedOption');
+            const defaultBiasRandomOption = document.getElementById('defaultBiasRandomOption');
+            const defaultBiasFixedContainer = document.getElementById('defaultBiasFixedContainer');
+            const defaultBiasRandomContainer = document.getElementById('defaultBiasRandomContainer');
+            const defaultBiasFixedSlider = document.getElementById('defaultBiasFixedSlider');
+            const defaultBiasRandomPositiveSlider = document.getElementById('defaultBiasRandomPositiveSlider');
+            const defaultBiasRandomNegativeSlider = document.getElementById('defaultBiasRandomNegativeSlider');
+            const defaultSplitStepEnabled = document.getElementById('defaultSplitStepEnabled');
+            const defaultSplitStepRateContainer = document.getElementById('defaultSplitStepRateContainer');
+            const defaultSplitStepSpeedSelect = document.getElementById('defaultSplitStepSpeedSelect');
+            const defaultVoiceEnabled = document.getElementById('defaultVoiceEnabled');
+            const defaultVoiceOptionsContainer = document.getElementById('defaultVoiceOptionsContainer');
+            const defaultVoiceSelect = document.getElementById('defaultVoiceSelect');
+            const defaultVoiceRateSelect = document.getElementById('defaultVoiceRateSelect');
+            const lockConfigsToggle = document.getElementById('lockConfigsToggle');
+            const lockConfigsLabel = document.getElementById('lockConfigsLabel');
+            const resetConfigModal = document.getElementById('resetConfigModal');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            const modalOkBtn = document.getElementById('modalOkBtn');
 
             let globalInstanceCounter = 0; // To ensure unique IDs across all patterns and their children
 
@@ -768,7 +999,7 @@
                 leadTimeValueSpan.textContent = `${parseFloat(leadTimeSlider.value).toFixed(1)}s`;
             }
 
-            /**
+                        /**
              * Updates the shot limit slider based on the current number of shots in the pattern.
              * @param {HTMLElement} patternElement The pattern element containing the shots.
              */
@@ -787,6 +1018,409 @@
                         shotLimitValueSpan.textContent = currentShotCount;
                     }
                 }
+            }
+
+            /**
+             * Updates the default bias controls visibility and text.
+             */
+            function updateDefaultBiasControls() {
+                if (!defaultBiasEnabled || !defaultBiasControlsContainer || !defaultBiasTypeSelect ||
+                    !defaultBiasFixedOption || !defaultBiasRandomOption || !defaultBiasFixedContainer ||
+                    !defaultBiasRandomContainer || !defaultBiasFixedSlider || !defaultBiasRandomPositiveSlider ||
+                    !defaultBiasRandomNegativeSlider) {
+                    console.error("Error in updateDefaultBiasControls: Required elements not found.");
+                    return;
+                }
+
+                const isBiasEnabled = defaultBiasEnabled.checked;
+                const biasType = defaultBiasTypeSelect.value;
+
+                if (isBiasEnabled) {
+                    defaultBiasControlsContainer.classList.remove('hidden');
+                    defaultBiasTypeSelect.disabled = false;
+
+                    if (biasType === 'fixed') {
+                        defaultBiasFixedContainer.classList.remove('hidden');
+                        defaultBiasRandomContainer.classList.add('hidden');
+                        defaultBiasFixedSlider.disabled = false;
+                        defaultBiasRandomPositiveSlider.disabled = true;
+                        defaultBiasRandomNegativeSlider.disabled = true;
+
+                        defaultBiasFixedOption.textContent = `Fixed: ${parseFloat(defaultBiasFixedSlider.value).toFixed(1)}s`;
+                        const val1 = parseFloat(defaultBiasRandomPositiveSlider.value).toFixed(1);
+                        const val2 = parseFloat(defaultBiasRandomNegativeSlider.value).toFixed(1);
+                        defaultBiasRandomOption.textContent = `Random range: ${val1}s to ${val2}s`;
+                    } else { // 'random'
+                        defaultBiasFixedContainer.classList.add('hidden');
+                        defaultBiasRandomContainer.classList.remove('hidden');
+                        defaultBiasFixedSlider.disabled = true;
+                        defaultBiasRandomPositiveSlider.disabled = false;
+                        defaultBiasRandomNegativeSlider.disabled = false;
+
+                        const val1 = parseFloat(defaultBiasRandomPositiveSlider.value).toFixed(1);
+                        const val2 = parseFloat(defaultBiasRandomNegativeSlider.value).toFixed(1);
+                        defaultBiasRandomOption.textContent = `Random range: ${val1}s to ${val2}s`;
+                        defaultBiasFixedOption.textContent = `Fixed: ${parseFloat(defaultBiasFixedSlider.value).toFixed(1)}s`;
+                    }
+                } else {
+                    defaultBiasControlsContainer.classList.add('hidden');
+                    defaultBiasTypeSelect.disabled = true;
+                    defaultBiasFixedContainer.classList.add('hidden');
+                    defaultBiasRandomContainer.classList.add('hidden');
+                    defaultBiasFixedSlider.disabled = true;
+                    defaultBiasRandomPositiveSlider.disabled = true;
+                    defaultBiasRandomNegativeSlider.disabled = true;
+
+                    defaultBiasFixedOption.textContent = `Fixed: 0.0s`;
+                    defaultBiasRandomOption.textContent = `Random range: 0.0s to 0.0s`;
+                }
+            }
+
+            /**
+             * Sets the state of default voice options (enabled/disabled).
+             */
+            function setDefaultVoiceOptionsState() {
+                if (!defaultVoiceEnabled || !defaultVoiceOptionsContainer || !defaultVoiceSelect ||
+                    !defaultVoiceRateSelect || !defaultLeadTimeSlider) {
+                    console.error("Error in setDefaultVoiceOptionsState: Required elements not found.");
+                    return;
+                }
+
+                const isVoiceEnabled = defaultVoiceEnabled.checked;
+                const hasVoices = defaultVoiceSelect.options.length > 0 && defaultVoiceSelect.options[0].value !== '';
+
+                if (isVoiceEnabled) {
+                    defaultVoiceOptionsContainer.classList.remove('hidden');
+                    defaultVoiceSelect.disabled = !hasVoices;
+                    defaultVoiceRateSelect.disabled = !hasVoices;
+                    defaultLeadTimeSlider.disabled = false;
+                } else {
+                    defaultVoiceOptionsContainer.classList.add('hidden');
+                    defaultVoiceSelect.disabled = true;
+                    defaultVoiceRateSelect.disabled = true;
+                    defaultLeadTimeSlider.disabled = true;
+                }
+            }
+
+            /**
+             * Gets the default configuration values from the global config.
+             * @returns {Object} Default configuration object.
+             */
+            function getDefaultConfigValues() {
+                return {
+                    repeat: '1',
+                    shotInterval: defaultShotIntervalSlider ? defaultShotIntervalSlider.value : '5.0',
+                    leadTime: defaultLeadTimeSlider ? defaultLeadTimeSlider.value : '2.5',
+                    iterationType: defaultIterationTypeSelect ? defaultIterationTypeSelect.value : 'in-order',
+                    limitsType: defaultLimitsTypeSelect ? defaultLimitsTypeSelect.value : 'all-shots',
+                    shotLimit: defaultShotLimitSlider ? defaultShotLimitSlider.value : '1',
+                    timeLimit: defaultTimeLimitSlider ? defaultTimeLimitSlider.value : '600',
+                    bias: {
+                        enabled: defaultBiasEnabled ? defaultBiasEnabled.checked : false,
+                        type: defaultBiasTypeSelect ? defaultBiasTypeSelect.value : 'fixed',
+                        fixedValue: defaultBiasFixedSlider ? defaultBiasFixedSlider.value : '0',
+                        randomPositive: defaultBiasRandomPositiveSlider ? defaultBiasRandomPositiveSlider.value : '0',
+                        randomNegative: defaultBiasRandomNegativeSlider ? defaultBiasRandomNegativeSlider.value : '0'
+                    },
+                    splitStep: {
+                        enabled: defaultSplitStepEnabled ? defaultSplitStepEnabled.checked : false,
+                        rate: defaultSplitStepSpeedSelect ? defaultSplitStepSpeedSelect.value : 'auto-scale'
+                    },
+                    voice: {
+                        enabled: defaultVoiceEnabled ? defaultVoiceEnabled.checked : true,
+                        voiceName: defaultVoiceSelect ? defaultVoiceSelect.value : '',
+                        rate: defaultVoiceRateSelect ? defaultVoiceRateSelect.value : 'auto-scale'
+                    },
+                    message: {
+                        text: '',
+                        interval: '0',
+                        skipAtEnd: false
+                    }
+                };
+            }
+
+            /**
+             * Checks if any local configurations are different from default values.
+             * @returns {boolean} True if any non-default configs exist.
+             */
+            function hasNonDefaultConfigs() {
+                const defaults = getDefaultConfigValues();
+                const patternInstances = document.querySelectorAll('.pattern-instance');
+
+                for (const pattern of patternInstances) {
+                    // Check pattern-level configs
+                    const patternRepeat = pattern.querySelector('.repeat-slider')?.value;
+                    const patternShotInterval = pattern.querySelector('.shot-interval-slider')?.value;
+                    const patternLeadTime = pattern.querySelector('.lead-time-slider')?.value;
+                    const patternIterationType = pattern.querySelector('.iteration-type-select')?.value;
+                    const patternLimitsType = pattern.querySelector('.limits-type-select')?.value;
+                    const patternShotLimit = pattern.querySelector('.shot-limit-slider')?.value;
+                    const patternTimeLimit = pattern.querySelector('.time-limit-slider')?.value;
+
+                    if (patternRepeat !== defaults.repeat ||
+                        patternShotInterval !== defaults.shotInterval ||
+                        patternLeadTime !== defaults.leadTime ||
+                        patternIterationType !== defaults.iterationType ||
+                        patternLimitsType !== defaults.limitsType ||
+                        patternShotLimit !== defaults.shotLimit ||
+                        patternTimeLimit !== defaults.timeLimit) {
+                        return true;
+                    }
+
+                    // Check pattern bias, split-step, voice settings
+                    const patternBiasEnabled = pattern.querySelector('.bias-enabled')?.checked;
+                    const patternBiasType = pattern.querySelector('.bias-type-select')?.value;
+                    const patternBiasFixed = pattern.querySelector('.bias-fixed-slider')?.value;
+                    const patternBiasPos = pattern.querySelector('.bias-random-positive-slider')?.value;
+                    const patternBiasNeg = pattern.querySelector('.bias-random-negative-slider')?.value;
+
+                    if (patternBiasEnabled !== defaults.bias.enabled ||
+                        patternBiasType !== defaults.bias.type ||
+                        patternBiasFixed !== defaults.bias.fixedValue ||
+                        patternBiasPos !== defaults.bias.randomPositive ||
+                        patternBiasNeg !== defaults.bias.randomNegative) {
+                        return true;
+                    }
+
+                    // Check shots and messages
+                    const shotMsgInstances = pattern.querySelectorAll('.shot-msg-instance');
+                    for (const instance of shotMsgInstances) {
+                        const isShot = instance.classList.contains('shot-instance');
+                        const instanceRepeat = instance.querySelector('.repeat-slider')?.value;
+
+                        if (instanceRepeat !== defaults.repeat) {
+                            return true;
+                        }
+
+                        if (isShot) {
+                            const shotInterval = instance.querySelector('.shot-interval-slider')?.value;
+                            const leadTime = instance.querySelector('.lead-time-slider')?.value;
+
+                            if (shotInterval !== defaults.shotInterval ||
+                                leadTime !== defaults.leadTime) {
+                                return true;
+                            }
+
+                            // Check shot-specific bias, split-step, voice settings
+                            const biasEnabled = instance.querySelector('.bias-enabled')?.checked;
+                            const biasType = instance.querySelector('.bias-type-select')?.value;
+                            const biasFixed = instance.querySelector('.bias-fixed-slider')?.value;
+                            const biasPos = instance.querySelector('.bias-random-positive-slider')?.value;
+                            const biasNeg = instance.querySelector('.bias-random-negative-slider')?.value;
+
+                            if (biasEnabled !== defaults.bias.enabled ||
+                                biasType !== defaults.bias.type ||
+                                biasFixed !== defaults.bias.fixedValue ||
+                                biasPos !== defaults.bias.randomPositive ||
+                                biasNeg !== defaults.bias.randomNegative) {
+                                return true;
+                            }
+                        } else {
+                            // Check message-specific settings
+                            const messageText = instance.querySelector('.message-input')?.value;
+                            const messageInterval = instance.querySelector('.message-interval-slider')?.value;
+                            const skipAtEnd = instance.querySelector('.skip-at-end-of-workout')?.checked;
+
+                            if (messageText !== defaults.message.text ||
+                                messageInterval !== defaults.message.interval ||
+                                skipAtEnd !== defaults.message.skipAtEnd) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            /**
+             * Resets all local configurations to their default values.
+             */
+            function resetAllConfigsToDefaults() {
+                const defaults = getDefaultConfigValues();
+                const patternInstances = document.querySelectorAll('.pattern-instance');
+
+                patternInstances.forEach(pattern => {
+                    // Reset pattern-level configs
+                    const patternRepeat = pattern.querySelector('.repeat-slider');
+                    const patternRepeatValue = pattern.querySelector('.repeat-value');
+                    const patternShotInterval = pattern.querySelector('.shot-interval-slider');
+                    const patternShotIntervalValue = pattern.querySelector('.shot-interval-value');
+                    const patternLeadTime = pattern.querySelector('.lead-time-slider');
+                    const patternLeadTimeValue = pattern.querySelector('.lead-time-value');
+                    const patternIterationType = pattern.querySelector('.iteration-type-select');
+                    const patternLimitsType = pattern.querySelector('.limits-type-select');
+                    const patternShotLimit = pattern.querySelector('.shot-limit-slider');
+                    const patternShotLimitValue = pattern.querySelector('.shot-limit-value');
+                    const patternTimeLimit = pattern.querySelector('.time-limit-slider');
+                    const patternTimeLimitValue = pattern.querySelector('.time-limit-value');
+
+                    if (patternRepeat) {
+                        patternRepeat.value = defaults.repeat;
+                        if (patternRepeatValue) patternRepeatValue.textContent = `${defaults.repeat}x`;
+                    }
+                    if (patternShotInterval) {
+                        patternShotInterval.value = defaults.shotInterval;
+                        if (patternShotIntervalValue) patternShotIntervalValue.textContent = `${parseFloat(defaults.shotInterval).toFixed(1)}s`;
+                    }
+                    if (patternLeadTime) {
+                        patternLeadTime.value = defaults.leadTime;
+                        if (patternLeadTimeValue) patternLeadTimeValue.textContent = `${parseFloat(defaults.leadTime).toFixed(1)}s`;
+                    }
+                    if (patternIterationType) patternIterationType.value = defaults.iterationType;
+                    if (patternLimitsType) patternLimitsType.value = defaults.limitsType;
+                    if (patternShotLimit) {
+                        patternShotLimit.value = defaults.shotLimit;
+                        if (patternShotLimitValue) patternShotLimitValue.textContent = defaults.shotLimit;
+                    }
+                    if (patternTimeLimit) {
+                        patternTimeLimit.value = defaults.timeLimit;
+                        if (patternTimeLimitValue) {
+                            const totalSeconds = parseInt(defaults.timeLimit);
+                            const minutes = Math.floor(totalSeconds / 60);
+                            const seconds = totalSeconds % 60;
+                            const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                            patternTimeLimitValue.textContent = `${minutes}:${formattedSeconds}`;
+                        }
+                    }
+
+                    // Reset pattern bias, split-step, voice settings
+                    const patternBiasEnabled = pattern.querySelector('.bias-enabled');
+                    const patternBiasType = pattern.querySelector('.bias-type-select');
+                    const patternBiasFixed = pattern.querySelector('.bias-fixed-slider');
+                    const patternBiasPos = pattern.querySelector('.bias-random-positive-slider');
+                    const patternBiasNeg = pattern.querySelector('.bias-random-negative-slider');
+
+                    if (patternBiasEnabled) patternBiasEnabled.checked = defaults.bias.enabled;
+                    if (patternBiasType) patternBiasType.value = defaults.bias.type;
+                    if (patternBiasFixed) patternBiasFixed.value = defaults.bias.fixedValue;
+                    if (patternBiasPos) patternBiasPos.value = defaults.bias.randomPositive;
+                    if (patternBiasNeg) patternBiasNeg.value = defaults.bias.randomNegative;
+
+                    // Reset shots and messages
+                    const shotMsgInstances = pattern.querySelectorAll('.shot-msg-instance');
+                    shotMsgInstances.forEach(instance => {
+                        const isShot = instance.classList.contains('shot-instance');
+                        const instanceRepeat = instance.querySelector('.repeat-slider');
+                        const instanceRepeatValue = instance.querySelector('.repeat-value');
+
+                        if (instanceRepeat) {
+                            instanceRepeat.value = defaults.repeat;
+                            if (instanceRepeatValue) instanceRepeatValue.textContent = `${defaults.repeat}x`;
+                        }
+
+                        if (isShot) {
+                            const shotInterval = instance.querySelector('.shot-interval-slider');
+                            const shotIntervalValue = instance.querySelector('.shot-interval-value');
+                            const leadTime = instance.querySelector('.lead-time-slider');
+                            const leadTimeValue = instance.querySelector('.lead-time-value');
+
+                            if (shotInterval) {
+                                shotInterval.value = defaults.shotInterval;
+                                if (shotIntervalValue) shotIntervalValue.textContent = `${parseFloat(defaults.shotInterval).toFixed(1)}s`;
+                            }
+                            if (leadTime) {
+                                leadTime.value = defaults.leadTime;
+                                if (leadTimeValue) leadTimeValue.textContent = `${parseFloat(defaults.leadTime).toFixed(1)}s`;
+                            }
+
+                            // Reset shot-specific settings
+                            const biasEnabled = instance.querySelector('.bias-enabled');
+                            const biasType = instance.querySelector('.bias-type-select');
+                            const biasFixed = instance.querySelector('.bias-fixed-slider');
+                            const biasPos = instance.querySelector('.bias-random-positive-slider');
+                            const biasNeg = instance.querySelector('.bias-random-negative-slider');
+
+                            if (biasEnabled) biasEnabled.checked = defaults.bias.enabled;
+                            if (biasType) biasType.value = defaults.bias.type;
+                            if (biasFixed) biasFixed.value = defaults.bias.fixedValue;
+                            if (biasPos) biasPos.value = defaults.bias.randomPositive;
+                            if (biasNeg) biasNeg.value = defaults.bias.randomNegative;
+
+                            // Update bias controls visibility
+                            updateBiasControls(instance, null, null, null);
+                        } else {
+                            // Reset message-specific settings
+                            const messageInput = instance.querySelector('.message-input');
+                            const messageInterval = instance.querySelector('.message-interval-slider');
+                            const messageIntervalValue = instance.querySelector('.message-interval-value');
+                            const skipAtEnd = instance.querySelector('.skip-at-end-of-workout');
+
+                            if (messageInput) messageInput.value = defaults.message.text;
+                            if (messageInterval) {
+                                messageInterval.value = defaults.message.interval;
+                                if (messageIntervalValue) {
+                                    const totalSeconds = parseInt(defaults.message.interval);
+                                    const minutes = Math.floor(totalSeconds / 60);
+                                    const seconds = totalSeconds % 60;
+                                    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                                    messageIntervalValue.textContent = `${minutes}:${formattedSeconds}`;
+                                }
+                            }
+                            if (skipAtEnd) skipAtEnd.checked = defaults.message.skipAtEnd;
+                        }
+                    });
+
+                    // Update pattern bias controls visibility
+                    updateBiasControls(pattern, null, null, null);
+                });
+            }
+
+            /**
+             * Applies the lock state to settings buttons and content visibility in a given element.
+             * @param {HTMLElement} element The element containing settings buttons and content.
+             */
+            function applyLockStateToElement(element) {
+                if (!lockConfigsToggle) return;
+
+                const isLocked = lockConfigsToggle.checked;
+                const settingsButtons = element.querySelectorAll('.settings-btn');
+
+                // Handle settings buttons
+                settingsButtons.forEach(button => {
+                    button.disabled = isLocked;
+                    if (isLocked) {
+                        button.classList.add('opacity-50', 'cursor-not-allowed');
+                        button.classList.remove('hover:bg-gray-100');
+                    } else {
+                        button.classList.remove('opacity-50', 'cursor-not-allowed');
+                        button.classList.add('hover:bg-gray-100');
+                    }
+                });
+
+                // Handle content visibility
+                const patternContentWrappers = element.querySelectorAll('.pattern-content-wrapper');
+                const shotContentWrappers = element.querySelectorAll('.shot-content-wrapper');
+                const messageContentWrappers = element.querySelectorAll('.message-content-wrapper');
+
+                // Hide/show pattern content (but keep toolbars visible)
+                patternContentWrappers.forEach(wrapper => {
+                    if (isLocked) {
+                        wrapper.classList.add('hidden');
+                    } else {
+                        wrapper.classList.remove('hidden');
+                    }
+                });
+
+                // Hide/show shot content (but keep toolbars visible)
+                shotContentWrappers.forEach(wrapper => {
+                    if (isLocked) {
+                        wrapper.classList.add('hidden');
+                    } else {
+                        wrapper.classList.remove('hidden');
+                    }
+                });
+
+                // Hide/show message content (but keep toolbars visible)
+                messageContentWrappers.forEach(wrapper => {
+                    if (isLocked) {
+                        wrapper.classList.add('hidden');
+                    } else {
+                        wrapper.classList.remove('hidden');
+                    }
+                });
+
+                // NOTE: Add buttons are NOT hidden when locked - users can still add shots/messages
             }
 
             /**
@@ -1099,7 +1733,23 @@
                     deleteBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
                         if (confirm('Are you sure you want to delete this item?')) {
+                            const parentPatternElement = instanceElement.closest('.pattern-instance');
+                            const isShot = instanceElement.classList.contains('shot-instance');
+
+                            // Check if this is the last shot or message in the pattern
+                            const totalShotsMsgs = parentPatternElement.querySelectorAll('.shot-msg-instance').length;
+
+                            if (totalShotsMsgs <= 1) {
+                                // If this is the last shot/message, create a new default shot first
+                                createShotMsgInstance(parentPatternElement, 'shot');
+                            }
+
                             instanceElement.remove();
+
+                            // Update shot limit slider if this was a shot instance
+                            if (isShot && parentPatternElement) {
+                                updateShotLimitSlider(parentPatternElement);
+                            }
                         }
                     });
                 }
@@ -1139,7 +1789,9 @@
                 if (instanceType === 'shot' && settingsBtn) {
                     settingsBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        toggleSettingsDropdown(settingsPanel, mainMenuContent);
+                        if (!this.disabled) {
+                            toggleSettingsDropdown(settingsPanel, mainMenuContent);
+                        }
                     });
 
                     // Close dropdown if click outside (only for shot instances)
@@ -1255,6 +1907,9 @@
                 if (shotMsgInstancesContainer) {
                     shotMsgInstancesContainer.appendChild(newInstance);
                     initializeShotMsgInstance(newInstance, initialState);
+
+                    // Apply lock state to new shot/message instance
+                    applyLockStateToElement(newInstance);
 
                     // Update shot limit slider if this is a shot instance
                     if (type === 'shot') {
@@ -1522,7 +2177,9 @@
                 if (patternSettingsBtn) {
                     patternSettingsBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
-                        toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
+                        if (!this.disabled) {
+                            toggleSettingsDropdown(patternSettingsPanel, patternMainMenuContent);
+                        }
                     });
                 }
 
@@ -1603,6 +2260,12 @@
                 // Add Shot/Message buttons for this pattern
                 if (addShotBtn) addShotBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'shot'));
                 if (addMsgBtn) addMsgBtn.addEventListener('click', () => createShotMsgInstance(patternElement, 'msg'));
+
+                // Ensure pattern has at least one shot or message (for cloned patterns with no content)
+                const existingShotsMsgs = patternElement.querySelectorAll('.shot-msg-instance').length;
+                if (existingShotsMsgs === 0) {
+                    createShotMsgInstance(patternElement, 'shot');
+                }
             }
 
             /**
@@ -1699,6 +2362,9 @@
 
                 mainContainer.appendChild(newInstance);
                 initializePatternInstance(newInstance, initialState);
+
+                // Apply lock state to new pattern
+                applyLockStateToElement(newInstance);
             }
 
 
@@ -1711,6 +2377,14 @@
                     if (!patternElement) return; // Not a click within a pattern instance
 
                     if (target.closest('.pattern-delete-btn')) {
+                        // Check if this is the last pattern
+                        const totalPatterns = mainContainer.querySelectorAll('.pattern-instance').length;
+
+                        if (totalPatterns <= 1) {
+                            // If this is the last pattern, create a new default pattern first
+                            createPatternInstance();
+                        }
+
                         patternElement.remove();
                     } else if (target.closest('.pattern-clone-btn')) {
                         const currentState = getPatternInstanceCurrentState(patternElement);
@@ -1745,6 +2419,15 @@
                     if (target.closest('.delete-btn')) {
                         const parentPatternElement = shotMsgInstanceElement.closest('.pattern-instance');
                         const isShot = shotMsgInstanceElement.classList.contains('shot-instance');
+
+                        // Check if this is the last shot or message in the pattern
+                        const totalShotsMsgs = parentPatternElement.querySelectorAll('.shot-msg-instance').length;
+
+                        if (totalShotsMsgs <= 1) {
+                            // If this is the last shot/message, create a new default shot first
+                            createShotMsgInstance(parentPatternElement, 'shot');
+                        }
+
                         shotMsgInstanceElement.remove();
 
                         // Update shot limit slider if this was a shot instance
@@ -1778,20 +2461,227 @@
             } else { console.error("addPatternBtn not found."); }
 
 
+            // --- Default Config Event Listeners ---
+            if (defaultConfigHeader) {
+                defaultConfigHeader.addEventListener('click', function() {
+                    if (defaultConfigBody && defaultConfigArrow) {
+                        defaultConfigBody.classList.toggle('hidden');
+                        defaultConfigArrow.classList.toggle('rotate-180');
+                    }
+                });
+            }
+
+            if (defaultLimitsTypeSelect && defaultShotLimitContainer && defaultTimeLimitContainer) {
+                defaultLimitsTypeSelect.addEventListener('change', function() {
+                    const limitsType = this.value;
+                    if (limitsType === 'shot-limit') {
+                        defaultShotLimitContainer.classList.remove('hidden');
+                        defaultTimeLimitContainer.classList.add('hidden');
+                    } else if (limitsType === 'time-limit') {
+                        defaultTimeLimitContainer.classList.remove('hidden');
+                        defaultShotLimitContainer.classList.add('hidden');
+                    } else {
+                        defaultShotLimitContainer.classList.add('hidden');
+                        defaultTimeLimitContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (defaultShotLimitSlider && defaultShotLimitValue) {
+                defaultShotLimitSlider.addEventListener('input', function() {
+                    defaultShotLimitValue.textContent = this.value;
+                });
+            }
+
+            if (defaultTimeLimitSlider && defaultTimeLimitValue) {
+                defaultTimeLimitSlider.addEventListener('input', function() {
+                    const totalSeconds = parseInt(this.value);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                    defaultTimeLimitValue.textContent = `${minutes}:${formattedSeconds}`;
+                });
+            }
+
+            if (defaultShotIntervalSlider && defaultShotIntervalValue) {
+                defaultShotIntervalSlider.addEventListener('input', function() {
+                    defaultShotIntervalValue.textContent = `${parseFloat(this.value).toFixed(1)}s`;
+                    updateLeadTimeSlider(defaultShotIntervalSlider, defaultLeadTimeSlider, defaultLeadTimeValue);
+                });
+            }
+
+            if (defaultLeadTimeSlider) {
+                defaultLeadTimeSlider.addEventListener('input', function() {
+                    updateLeadTimeSlider(defaultShotIntervalSlider, defaultLeadTimeSlider, defaultLeadTimeValue);
+                });
+            }
+
+            if (defaultBiasEnabled) {
+                defaultBiasEnabled.addEventListener('change', updateDefaultBiasControls);
+            }
+
+            if (defaultBiasTypeSelect) {
+                defaultBiasTypeSelect.addEventListener('change', updateDefaultBiasControls);
+            }
+
+            if (defaultBiasFixedSlider) {
+                defaultBiasFixedSlider.addEventListener('input', updateDefaultBiasControls);
+            }
+
+            if (defaultBiasRandomPositiveSlider) {
+                defaultBiasRandomPositiveSlider.addEventListener('input', function() {
+                    if (defaultBiasRandomNegativeSlider && parseFloat(this.value) < parseFloat(defaultBiasRandomNegativeSlider.value)) {
+                        this.value = defaultBiasRandomNegativeSlider.value;
+                    }
+                    updateDefaultBiasControls();
+                });
+            }
+
+            if (defaultBiasRandomNegativeSlider) {
+                defaultBiasRandomNegativeSlider.addEventListener('input', function() {
+                    if (defaultBiasRandomPositiveSlider && parseFloat(this.value) > parseFloat(defaultBiasRandomPositiveSlider.value)) {
+                        this.value = defaultBiasRandomPositiveSlider.value;
+                    }
+                    updateDefaultBiasControls();
+                });
+            }
+
+            if (defaultSplitStepEnabled && defaultSplitStepRateContainer) {
+                defaultSplitStepEnabled.addEventListener('change', function() {
+                    if (this.checked) {
+                        defaultSplitStepRateContainer.classList.remove('hidden');
+                    } else {
+                        defaultSplitStepRateContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (defaultVoiceEnabled) {
+                defaultVoiceEnabled.addEventListener('change', setDefaultVoiceOptionsState);
+            }
+
+            if (lockConfigsToggle) {
+                lockConfigsToggle.addEventListener('change', function() {
+                    const isLocked = this.checked;
+                    console.log('Lock configs toggled:', isLocked ? 'ON' : 'OFF');
+
+                    if (isLocked) {
+                        // Check if there are non-default configs
+                        if (hasNonDefaultConfigs()) {
+                            // Show confirmation modal
+                            if (resetConfigModal) {
+                                resetConfigModal.classList.remove('hidden');
+                            }
+                            return; // Don't proceed until user confirms
+                        }
+                    }
+
+                    // Update the label text based on toggle state
+                    if (lockConfigsLabel) {
+                        lockConfigsLabel.textContent = isLocked ? 'Global settings only' : 'Local settings allowed';
+                    }
+
+                    // Apply lock state to all existing patterns
+                    const patternInstances = document.querySelectorAll('.pattern-instance');
+                    patternInstances.forEach(pattern => {
+                        applyLockStateToElement(pattern);
+                    });
+                });
+            }
+
+            // Modal event handlers
+            if (modalCancelBtn) {
+                modalCancelBtn.addEventListener('click', function() {
+                    // Hide modal and revert toggle
+                    if (resetConfigModal) {
+                        resetConfigModal.classList.add('hidden');
+                    }
+                    if (lockConfigsToggle) {
+                        lockConfigsToggle.checked = false;
+                    }
+                    if (lockConfigsLabel) {
+                        lockConfigsLabel.textContent = 'Local settings allowed';
+                    }
+                });
+            }
+
+            if (modalOkBtn) {
+                modalOkBtn.addEventListener('click', function() {
+                    // Hide modal
+                    if (resetConfigModal) {
+                        resetConfigModal.classList.add('hidden');
+                    }
+
+                    // Reset all configs to defaults
+                    resetAllConfigsToDefaults();
+
+                    // Update toggle state and apply lock
+                    if (lockConfigsToggle) {
+                        lockConfigsToggle.checked = true;
+                    }
+                    if (lockConfigsLabel) {
+                        lockConfigsLabel.textContent = 'Global settings only';
+                    }
+
+                    // Apply lock state to all existing patterns
+                    const patternInstances = document.querySelectorAll('.pattern-instance');
+                    patternInstances.forEach(pattern => {
+                        applyLockStateToElement(pattern);
+                    });
+                });
+            }
+
             // --- Initializations ---
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = () => {
                     // Populate voices for all existing and future instances
                     document.querySelectorAll('.voice-select').forEach(select => populateVoiceSelect(select));
+                    // Also populate default config voice select
+                    if (defaultVoiceSelect) {
+                        populateVoiceSelect(defaultVoiceSelect);
+                        setDefaultVoiceOptionsState();
+                    }
                 };
             }
             // Populate voices for initially loaded (static) elements
             document.querySelectorAll('.voice-select').forEach(select => populateVoiceSelect(select));
 
+            // Initialize default config
+            if (defaultVoiceSelect) {
+                populateVoiceSelect(defaultVoiceSelect);
+            }
+
+            // Initialize default time limit display
+            if (defaultTimeLimitSlider && defaultTimeLimitValue) {
+                const totalSeconds = parseInt(defaultTimeLimitSlider.value);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                defaultTimeLimitValue.textContent = `${minutes}:${formattedSeconds}`;
+            }
+
+            updateLeadTimeSlider(defaultShotIntervalSlider, defaultLeadTimeSlider, defaultLeadTimeValue);
+            updateDefaultBiasControls();
+            setDefaultVoiceOptionsState();
+
+            // Initialize lock state (since toggle is ON by default)
+            if (lockConfigsToggle && lockConfigsToggle.checked) {
+                const patternInstances = document.querySelectorAll('.pattern-instance');
+                patternInstances.forEach(pattern => {
+                    applyLockStateToElement(pattern);
+                });
+            }
+
 
             try {
                 // Create an initial Pattern instance when the page loads
                 createPatternInstance();
+
+                // Ensure the first pattern has at least one shot
+                const firstPattern = mainContainer.querySelector('.pattern-instance');
+                if (firstPattern) {
+                    createShotMsgInstance(firstPattern, 'shot');
+                }
 
             } catch (e) {
                 console.error("Error during initial updates:", e);
