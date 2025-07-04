@@ -682,8 +682,8 @@
                                                 <button class="p-1 rounded-full hover:bg-gray-100 move-down-btn" title="Move Down">
                                                     <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5v14m7-7-7 7-7-7"/></svg>
                                                 </button>
-                                                <button type="button" class="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 position-lock-btn" title="Position Lock">
-                                                    <svg class="w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6z"/><path d="M11 4a2 2 0 0 1 4 0v4h-4z"/></svg>
+                                                <button type="button" class="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 settings-btn" title="Settings">
+                                                    <svg class="w-6 h-6 text-gray-600 settings-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                                                 </button>
                                             </div>
                                         </div>
@@ -709,6 +709,21 @@
                                                             </div>
                                                             <span class="ml-3 text-sm font-medium text-gray-700 skip-toggle-label">Always play message</span>
                                                         </label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
+                                                    <div class="py-1 main-menu-content">
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg position-lock-btn">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-4 h-4 mr-2 position-lock-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="position-lock-text">Lock into position 1</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2340,13 +2355,6 @@
                     });
                 }
 
-                if (positionLockBtn) {
-                    positionLockBtn.addEventListener('click', function(event) {
-                        event.stopPropagation();
-                        togglePositionLock(instanceElement);
-                    });
-                }
-
                 // Skip at end of workout toggle (only for message instances)
                 if (instanceType === 'msg' && skipAtEndOfWorkoutCheckbox) {
                     skipAtEndOfWorkoutCheckbox.addEventListener('change', function() {
@@ -2357,19 +2365,28 @@
                     });
                 }
 
-                // Settings functionality (only for shot instances)
-                if (instanceType === 'shot' && settingsBtn) {
+                // Settings functionality (for shot and message instances)
+                if (settingsBtn) {
                     settingsBtn.addEventListener('click', function(event) {
                         event.stopPropagation();
                         toggleSettingsDropdown(settingsPanel, mainMenuContent);
                     });
 
-                    // Close dropdown if click outside (only for shot instances)
+                    // Close dropdown if click outside
                     document.addEventListener('click', function(event) {
                         if (settingsPanel && !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target) && settingsPanel.classList.contains('active')) {
                             toggleSettingsDropdown(settingsPanel, mainMenuContent);
                         }
                     });
+
+                    // Position lock button (for all instances with settings)
+                    const positionLockBtn = instanceElement.querySelector('.position-lock-btn');
+                    if (positionLockBtn) {
+                        positionLockBtn.addEventListener('click', function(event) {
+                            event.stopPropagation();
+                            togglePositionLock(instanceElement);
+                        });
+                    }
 
                     submenuTriggerButtons.forEach(button => {
                         button.addEventListener('click', function(event) {
@@ -2388,69 +2405,72 @@
                         });
                     });
 
-                    if (biasEnabledCheckbox) biasEnabledCheckbox.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
-                    if (biasTypeSelect) biasTypeSelect.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
-                    if (biasFixedSlider) biasFixedSlider.addEventListener('input', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
-                    if (biasRandomPositiveSlider) {
-                        biasRandomPositiveSlider.addEventListener('input', function() {
-                            if (biasRandomNegativeSlider && parseFloat(this.value) < parseFloat(biasRandomNegativeSlider.value)) {
-                                this.value = biasRandomNegativeSlider.value;
-                            }
-                            updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
-                        });
-                    }
-                    if (biasRandomNegativeSlider) {
-                        biasRandomNegativeSlider.addEventListener('input', function() {
-                            if (biasRandomPositiveSlider && parseFloat(this.value) > parseFloat(biasRandomPositiveSlider.value)) {
-                                this.value = biasRandomPositiveSlider.value;
-                            }
-                            updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
-                        });
-                    }
-
-                    if (splitStepEnabledCheckbox) {
-                        splitStepEnabledCheckbox.addEventListener('change', function() {
-                            const splitStepToggleLabel = instanceElement.querySelector('.split-step-toggle-label');
-                            if (splitStepToggleLabel) {
-                                splitStepToggleLabel.textContent = this.checked ? 'Enabled' : 'Disabled';
-                            }
-                            if (splitStepRateContainer) {
-                                if (this.checked) {
-                                    splitStepRateContainer.classList.remove('hidden');
-                                } else {
-                                    splitStepRateContainer.classList.add('hidden');
+                    // Shot-specific functionality
+                    if (instanceType === 'shot') {
+                        if (biasEnabledCheckbox) biasEnabledCheckbox.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                        if (biasTypeSelect) biasTypeSelect.addEventListener('change', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                        if (biasFixedSlider) biasFixedSlider.addEventListener('input', () => updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu));
+                        if (biasRandomPositiveSlider) {
+                            biasRandomPositiveSlider.addEventListener('input', function() {
+                                if (biasRandomNegativeSlider && parseFloat(this.value) < parseFloat(biasRandomNegativeSlider.value)) {
+                                    this.value = biasRandomNegativeSlider.value;
                                 }
-                            }
-                            if (settingsPanel && mainMenuContent && splitStepSubmenu && settingsPanel.classList.contains('active') && splitStepSubmenu.classList.contains('active')) {
-                                requestAnimationFrame(() => setPanelHeight(settingsPanel, mainMenuContent));
-                            }
-                        });
-                    }
-
-                    if (voiceEnabledCheckbox) {
-                        voiceEnabledCheckbox.addEventListener('change', function() {
-                            const voiceToggleLabel = instanceElement.querySelector('.voice-toggle-label');
-                            if (voiceToggleLabel) {
-                                voiceToggleLabel.textContent = this.checked ? 'Enabled' : 'Disabled';
-                            }
-                            setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
-                        });
-                    }
-
-                    // Populate voices for this shot instance
-                    populateVoiceSelect(voiceSelect);
-
-                    // Initial state updates for shot instances
-                    updateLeadTimeSlider(shotIntervalSlider, leadTimeSlider, leadTimeValueSpan);
-                    updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
-                    if (splitStepEnabledCheckbox && splitStepRateContainer) {
-                        if (splitStepEnabledCheckbox.checked) {
-                            splitStepRateContainer.classList.remove('hidden');
-                        } else {
-                            splitStepRateContainer.classList.add('hidden');
+                                updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                            });
                         }
+                        if (biasRandomNegativeSlider) {
+                            biasRandomNegativeSlider.addEventListener('input', function() {
+                                if (biasRandomPositiveSlider && parseFloat(this.value) > parseFloat(biasRandomPositiveSlider.value)) {
+                                    this.value = biasRandomPositiveSlider.value;
+                                }
+                                updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                            });
+                        }
+
+                        if (splitStepEnabledCheckbox) {
+                            splitStepEnabledCheckbox.addEventListener('change', function() {
+                                const splitStepToggleLabel = instanceElement.querySelector('.split-step-toggle-label');
+                                if (splitStepToggleLabel) {
+                                    splitStepToggleLabel.textContent = this.checked ? 'Enabled' : 'Disabled';
+                                }
+                                if (splitStepRateContainer) {
+                                    if (this.checked) {
+                                        splitStepRateContainer.classList.remove('hidden');
+                                    } else {
+                                        splitStepRateContainer.classList.add('hidden');
+                                    }
+                                }
+                                if (settingsPanel && mainMenuContent && splitStepSubmenu && settingsPanel.classList.contains('active') && splitStepSubmenu.classList.contains('active')) {
+                                    requestAnimationFrame(() => setPanelHeight(settingsPanel, mainMenuContent));
+                                }
+                            });
+                        }
+
+                        if (voiceEnabledCheckbox) {
+                            voiceEnabledCheckbox.addEventListener('change', function() {
+                                const voiceToggleLabel = instanceElement.querySelector('.voice-toggle-label');
+                                if (voiceToggleLabel) {
+                                    voiceToggleLabel.textContent = this.checked ? 'Enabled' : 'Disabled';
+                                }
+                                setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
+                            });
+                        }
+
+                        // Populate voices for this shot instance
+                        populateVoiceSelect(voiceSelect);
+
+                        // Initial state updates for shot instances
+                        updateLeadTimeSlider(shotIntervalSlider, leadTimeSlider, leadTimeValueSpan);
+                        updateBiasControls(instanceElement, settingsPanel, mainMenuContent, shotIntervalBiasSubmenu);
+                        if (splitStepEnabledCheckbox && splitStepRateContainer) {
+                            if (splitStepEnabledCheckbox.checked) {
+                                splitStepRateContainer.classList.remove('hidden');
+                            } else {
+                                splitStepRateContainer.classList.add('hidden');
+                            }
+                        }
+                        setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
                     }
-                    setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
                 }
             }
 
