@@ -172,6 +172,11 @@
             box-shadow: 0 0 0 1px #c4b5fd !important; /* Light purple shadow for visibility */
         }
 
+        /* Linked with previous entry styling */
+        .linked-with-previous {
+            margin-top: 0.25rem !important; /* Reduced top margin */
+        }
+
         /* Modal styling */
         .modal-overlay {
             position: fixed;
@@ -270,19 +275,30 @@
                                 </div>
 
                                 <div class="dropdown-content origin-top-right absolute right-0 top-0 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none settings-panel">
-                                    <div class="py-1 main-menu-content">
-                                        <div class="group relative w-full">
-                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg position-lock-btn">
-                                                <div class="flex items-center">
-                                                    <svg class="w-4 h-4 mr-2 position-lock-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    <span class="position-lock-text">Lock into position 1</span>
-                                                </div>
-                                            </button>
-                                        </div>
+                                                                                        <div class="py-1 main-menu-content">
+                                                        <div class="group relative w-full">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg position-lock-btn">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-4 h-4 mr-2 position-lock-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="position-lock-text">Lock into position 1</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
 
-                                        <div class="border-t border-gray-200 my-1"></div>
+                                                        <div class="group relative w-full link-with-previous-container hidden">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg link-with-previous-btn">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-4 h-4 mr-2 link-with-previous-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="link-with-previous-text">Link with previous</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="border-t border-gray-200 my-1"></div>
 
                                         <div class="group relative w-full">
                                             <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg submenu-trigger" data-target-submenu-class="shot-interval-bias-submenu">
@@ -491,6 +507,17 @@
                                                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                                                     </svg>
                                                                     <span class="position-lock-text">Lock into position 1</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="group relative w-full link-with-previous-container hidden">
+                                                            <button type="button" class="flex justify-between items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg link-with-previous-btn">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-4 h-4 mr-2 link-with-previous-checkmark hidden" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="link-with-previous-text">Link with previous</span>
                                                                 </div>
                                                             </button>
                                                         </div>
@@ -1521,6 +1548,97 @@
                 return [];
             }
 
+            /**
+             * Finds the linked group that contains a specific element.
+             * @param {HTMLElement} element The element to find the group for.
+             * @returns {Array} Array of elements in the linked group (including the element itself).
+             */
+            function getLinkedGroup(element) {
+                const siblings = getSiblings(element);
+                const elementIndex = siblings.indexOf(element);
+                const group = [element];
+
+                // Find linked elements before this one
+                for (let i = elementIndex - 1; i >= 0; i--) {
+                    if (siblings[i + 1].dataset.linkedWithPrevious === 'true') {
+                        group.unshift(siblings[i]);
+                    } else {
+                        break;
+                    }
+                }
+
+                // Find linked elements after this one
+                for (let i = elementIndex + 1; i < siblings.length; i++) {
+                    if (siblings[i].dataset.linkedWithPrevious === 'true') {
+                        group.push(siblings[i]);
+                    } else {
+                        break;
+                    }
+                }
+
+                return group;
+            }
+
+            /**
+             * Checks if any element in a group is position-locked.
+             * @param {Array} group Array of elements in the group.
+             * @returns {boolean} True if any element in the group is locked.
+             */
+            function isGroupLocked(group) {
+                return group.some(element => element.dataset.positionLocked === 'true');
+            }
+
+            /**
+             * Gets the lock type of a group (position or last) if any member is locked.
+             * @param {Array} group Array of elements in the group.
+             * @returns {string|null} Lock type ('position' or 'last') or null if not locked.
+             */
+            function getGroupLockType(group) {
+                const lockedElement = group.find(element => element.dataset.positionLocked === 'true');
+                return lockedElement ? (lockedElement.dataset.positionLockType || 'position') : null;
+            }
+
+            /**
+             * Updates the visual styling for all elements in a linked group based on lock state.
+             * @param {HTMLElement} element Any element from the group to update.
+             */
+            function updateGroupLockStyling(element) {
+                const group = getLinkedGroup(element);
+                const groupLocked = isGroupLocked(group);
+                const groupLockType = getGroupLockType(group);
+
+                // Apply or remove lock styling to all members of the group
+                group.forEach(member => {
+                    if (groupLocked) {
+                        if (groupLockType === 'last') {
+                            member.classList.add('position-locked-last');
+                            member.classList.remove('position-locked');
+                        } else {
+                            member.classList.add('position-locked');
+                            member.classList.remove('position-locked-last');
+                        }
+                    } else {
+                        member.classList.remove('position-locked', 'position-locked-last');
+                    }
+                });
+            }
+
+            /**
+             * Checks if an element can be moved (considering group constraints).
+             * @param {HTMLElement} element The element to check.
+             * @returns {boolean} True if the element can be moved.
+             */
+            function canElementMoveInGroup(element) {
+                const group = getLinkedGroup(element);
+                
+                // If any element in the group is locked, the whole group can't move
+                if (isGroupLocked(group)) {
+                    return false;
+                }
+
+                return true;
+            }
+
                         /**
              * Checks if swapping two elements would violate any locked positions.
              * @param {HTMLElement} element1 First element to swap.
@@ -1670,30 +1788,112 @@
             }
 
             /**
-             * Finds the swap target when moving up and performs the swap.
-             * @param {HTMLElement} element The element to move.
-             * @returns {boolean} True if swap was performed, false otherwise.
+             * Moves a group of linked elements to a new position.
+             * @param {Array} group Array of elements in the linked group.
+             * @param {HTMLElement} targetElement The element to move the group before/after.
+             * @param {string} direction 'up' or 'down'.
+             */
+            function moveGroup(group, targetElement, direction) {
+                const siblings = getSiblings(group[0]);
+                const targetIndex = siblings.indexOf(targetElement);
+                
+                // Remove group elements from their current positions
+                group.forEach(element => element.remove());
+                
+                // Determine insertion point
+                let insertionPoint;
+                if (direction === 'up') {
+                    insertionPoint = targetElement;
+                } else {
+                    insertionPoint = targetElement.nextElementSibling;
+                }
+                
+                // Insert group elements at the new position
+                const container = targetElement.parentElement;
+                group.forEach((element, index) => {
+                    if (insertionPoint) {
+                        container.insertBefore(element, insertionPoint);
+                    } else {
+                        container.appendChild(element);
+                    }
+                });
+                
+                // Update group styling for all affected elements after move
+                const allElementsAfterMove = Array.from(container.children);
+                allElementsAfterMove.forEach(element => {
+                    updateGroupLockStyling(element);
+                });
+            }
+
+            /**
+             * Finds the next available position for a group when moving up.
+             * @param {HTMLElement} element The element from the group to move.
+             * @returns {boolean} True if move was performed, false otherwise.
              */
             function findNextAvailablePositionUp(element) {
-                const swapTarget = findSwapTarget(element, 'up');
-                if (swapTarget) {
-                    swapElements(element, swapTarget);
-                    return true;
+                // Check if the element can move considering group constraints
+                if (!canElementMoveInGroup(element)) {
+                    return false;
                 }
+
+                const group = getLinkedGroup(element);
+                const siblings = getSiblings(element);
+                const firstGroupElementIndex = siblings.indexOf(group[0]);
+
+                // If this is an internal group move (trying to move one element within its own group), prevent it
+                if (group.length > 1 && group.includes(element) && element !== group[0]) {
+                    return false; // Can't break group integrity
+                }
+
+                // Find the first moveable element/group before this group
+                for (let i = firstGroupElementIndex - 1; i >= 0; i--) {
+                    const candidate = siblings[i];
+                    const candidateGroup = getLinkedGroup(candidate);
+                    
+                    // Check if we can move our group before this candidate's group
+                    if (canElementMoveInGroup(candidate)) {
+                        // Move our group before the candidate's group
+                        moveGroup(group, candidateGroup[0], 'up');
+                        return true;
+                    }
+                }
+
                 return false;
             }
 
             /**
-             * Finds the swap target when moving down and performs the swap.
-             * @param {HTMLElement} element The element to move.
-             * @returns {boolean} True if swap was performed, false otherwise.
+             * Finds the next available position for a group when moving down.
+             * @param {HTMLElement} element The element from the group to move.
+             * @returns {boolean} True if move was performed, false otherwise.
              */
             function findNextAvailablePositionDown(element) {
-                const swapTarget = findSwapTarget(element, 'down');
-                if (swapTarget) {
-                    swapElements(element, swapTarget);
-                    return true;
+                // Check if the element can move considering group constraints
+                if (!canElementMoveInGroup(element)) {
+                    return false;
                 }
+
+                const group = getLinkedGroup(element);
+                const siblings = getSiblings(element);
+                const lastGroupElementIndex = siblings.indexOf(group[group.length - 1]);
+
+                // If this is an internal group move (trying to move one element within its own group), prevent it
+                if (group.length > 1 && group.includes(element) && element !== group[0]) {
+                    return false; // Can't break group integrity
+                }
+
+                // Find the first moveable element/group after this group
+                for (let i = lastGroupElementIndex + 1; i < siblings.length; i++) {
+                    const candidate = siblings[i];
+                    const candidateGroup = getLinkedGroup(candidate);
+                    
+                    // Check if we can move our group after this candidate's group
+                    if (canElementMoveInGroup(candidate)) {
+                        // Move our group after the candidate's group
+                        moveGroup(group, candidateGroup[candidateGroup.length - 1], 'down');
+                        return true;
+                    }
+                }
+
                 return false;
             }
 
@@ -1706,6 +1906,62 @@
                 const siblings = getSiblings(element);
                 return siblings.indexOf(element) === siblings.length - 1;
             }
+
+            /**
+             * Updates the "Link with previous" button visibility and text for a given element.
+             * @param {HTMLElement} element The shot or message element.
+             */
+            function updateLinkWithPreviousButton(element) {
+                const linkWithPreviousContainer = element.querySelector('.link-with-previous-container');
+                const linkWithPreviousBtn = element.querySelector('.link-with-previous-btn');
+                const linkWithPreviousText = element.querySelector('.link-with-previous-text');
+                const linkWithPreviousCheckmark = element.querySelector('.link-with-previous-checkmark');
+
+                if (!linkWithPreviousContainer || !linkWithPreviousBtn || !linkWithPreviousText || !linkWithPreviousCheckmark) return;
+
+                const currentPosition = getElementPosition(element);
+                const isLinked = element.dataset.linkedWithPrevious === 'true';
+
+                // Show only for positions greater than 1
+                if (currentPosition > 1) {
+                    linkWithPreviousContainer.classList.remove('hidden');
+                    
+                    if (isLinked) {
+                        linkWithPreviousText.textContent = 'Unlink from previous';
+                        linkWithPreviousCheckmark.classList.remove('hidden');
+                        element.classList.add('linked-with-previous');
+                    } else {
+                        linkWithPreviousText.textContent = 'Link with previous';
+                        linkWithPreviousCheckmark.classList.add('hidden');
+                        element.classList.remove('linked-with-previous');
+                    }
+                } else {
+                    linkWithPreviousContainer.classList.add('hidden');
+                    element.classList.remove('linked-with-previous');
+                }
+            }
+
+            /**
+             * Toggles the "Link with previous" state for a given element.
+             * @param {HTMLElement} element The shot or message element.
+             */
+            function toggleLinkWithPrevious(element) {
+                const isCurrentlyLinked = element.dataset.linkedWithPrevious === 'true';
+                element.dataset.linkedWithPrevious = isCurrentlyLinked ? 'false' : 'true';
+                updateLinkWithPreviousButton(element);
+                
+                // Update group styling since the group membership has changed
+                updateGroupLockStyling(element);
+                
+                // Also update styling for the previous element if it exists
+                const siblings = getSiblings(element);
+                const currentIndex = siblings.indexOf(element);
+                if (currentIndex > 0) {
+                    updateGroupLockStyling(siblings[currentIndex - 1]);
+                }
+            }
+
+
 
             /**
              * Updates the position lock button text and state for a given element.
@@ -1724,21 +1980,15 @@
                 const isLast = isLastElement(element);
                 const cycleState = parseInt(element.dataset.positionCycleState) || 0;
 
-                // Update border styling based on lock state
+                // Update button text and checkmark based on individual lock state
                 if (isLocked) {
                     if (lockType === 'last') {
-                        element.classList.add('position-locked-last');
-                        element.classList.remove('position-locked');
                         positionLockText.textContent = 'Unlock from LAST position';
                     } else {
-                        element.classList.add('position-locked');
-                        element.classList.remove('position-locked-last');
                         positionLockText.textContent = `Unlock from position ${currentPosition}`;
                     }
                     positionLockCheckmark.classList.remove('hidden');
                 } else {
-                    // Remove all lock styling classes
-                    element.classList.remove('position-locked', 'position-locked-last');
                     if (isLast) {
                         // For last elements, alternate between position and last lock options
                         if (cycleState === 0 || cycleState === 1) {
@@ -1751,6 +2001,9 @@
                     }
                     positionLockCheckmark.classList.add('hidden');
                 }
+
+                // Update visual styling for the entire linked group
+                updateGroupLockStyling(element);
             }
 
                         /**
@@ -1809,22 +2062,75 @@
                 }
 
                 updatePositionLockButton(element);
+                
+                // Update group styling for all linked elements since lock state affects the whole group
+                const group = getLinkedGroup(element);
+                group.forEach(member => {
+                    if (member !== element) {
+                        updateGroupLockStyling(member);
+                    }
+                });
+                
                 // Update all move button states since locking one element affects others
                 updateAllMoveButtonStates();
             }
 
             /**
-             * Updates the state of move up/down buttons based on position lock and available moves.
+             * Checks if a group can move in a specific direction.
+             * @param {HTMLElement} element The element from the group to check.
+             * @param {string} direction 'up' or 'down'.
+             * @returns {boolean} True if the group can move in that direction.
+             */
+            function canGroupMoveInDirection(element, direction) {
+                // Check if the element can move considering group constraints
+                if (!canElementMoveInGroup(element)) {
+                    return false;
+                }
+
+                const group = getLinkedGroup(element);
+                const siblings = getSiblings(element);
+
+                // If this is trying to move within a group (not the group leader), prevent it
+                if (group.length > 1 && group.includes(element) && element !== group[0]) {
+                    return false; // Can't break group integrity
+                }
+
+                if (direction === 'up') {
+                    const firstGroupElementIndex = siblings.indexOf(group[0]);
+                    
+                    // Find the first moveable element/group before this group
+                    for (let i = firstGroupElementIndex - 1; i >= 0; i--) {
+                        const candidate = siblings[i];
+                        if (canElementMoveInGroup(candidate)) {
+                            return true;
+                        }
+                    }
+                } else if (direction === 'down') {
+                    const lastGroupElementIndex = siblings.indexOf(group[group.length - 1]);
+                    
+                    // Find the first moveable element/group after this group
+                    for (let i = lastGroupElementIndex + 1; i < siblings.length; i++) {
+                        const candidate = siblings[i];
+                        if (canElementMoveInGroup(candidate)) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            /**
+             * Updates the state of move up/down buttons based on group constraints and available moves.
              * @param {HTMLElement} element The pattern or shot/message element.
              */
             function updateMoveButtonsState(element) {
-                const isLocked = element.dataset.positionLocked === 'true';
                 const moveUpBtn = element.querySelector('.move-up-btn, .pattern-move-up-btn');
                 const moveDownBtn = element.querySelector('.move-down-btn, .pattern-move-down-btn');
 
-                // Check if moves are possible considering locked positions
-                const canMoveUp = !isLocked && findNextAvailablePositionUp(element) !== null;
-                const canMoveDown = !isLocked && findNextAvailablePositionDown(element) !== null;
+                // Check if moves are possible considering group constraints
+                const canMoveUp = canGroupMoveInDirection(element, 'up');
+                const canMoveDown = canGroupMoveInDirection(element, 'down');
 
                 if (moveUpBtn) {
                     moveUpBtn.disabled = !canMoveUp;
@@ -1853,9 +2159,10 @@
              * Updates all position lock buttons after elements are moved or added.
              */
             function updateAllPositionLockButtons() {
-                // Update all pattern position lock buttons
+                // Update all pattern position lock buttons and link with previous buttons
                 document.querySelectorAll('.pattern-instance').forEach(pattern => {
                     updatePositionLockButton(pattern);
+                    updateLinkWithPreviousButton(pattern);
                     // If an item is locked to "last" but is no longer last, convert to position lock
                     if (pattern.dataset.positionLocked === 'true' &&
                         pattern.dataset.positionLockType === 'last' &&
@@ -1865,9 +2172,10 @@
                     }
                 });
 
-                // Update all shot/message position lock buttons
+                // Update all shot/message position lock buttons and link with previous buttons
                 document.querySelectorAll('.shot-msg-instance').forEach(shotMsg => {
                     updatePositionLockButton(shotMsg);
+                    updateLinkWithPreviousButton(shotMsg);
                     // If an item is locked to "last" but is no longer last, convert to position lock
                     if (shotMsg.dataset.positionLocked === 'true' &&
                         shotMsg.dataset.positionLockType === 'last' &&
@@ -2238,6 +2546,11 @@
                     if (initialState.positionCycleState !== undefined) {
                         instanceElement.dataset.positionCycleState = initialState.positionCycleState;
                     }
+                    
+                    // Set link with previous state if provided
+                    if (initialState.linkedWithPrevious !== undefined) {
+                        instanceElement.dataset.linkedWithPrevious = initialState.linkedWithPrevious;
+                    }
                 }
 
                 // Initial updates for current instance
@@ -2388,6 +2701,15 @@
                         });
                     }
 
+                    // Link with previous button (for shot and message instances only)
+                    const linkWithPreviousBtn = instanceElement.querySelector('.link-with-previous-btn');
+                    if (linkWithPreviousBtn) {
+                        linkWithPreviousBtn.addEventListener('click', function(event) {
+                            event.stopPropagation();
+                            toggleLinkWithPrevious(instanceElement);
+                        });
+                    }
+
                     submenuTriggerButtons.forEach(button => {
                         button.addEventListener('click', function(event) {
                             event.stopPropagation();
@@ -2472,6 +2794,12 @@
                         setVoiceOptionsState(instanceElement, settingsPanel, mainMenuContent, voiceSubmenu);
                     }
                 }
+
+                // Initialize link with previous button for all shot and message instances
+                if (!instanceElement.dataset.linkedWithPrevious) {
+                    instanceElement.dataset.linkedWithPrevious = 'false';
+                }
+                updateLinkWithPreviousButton(instanceElement);
             }
 
 
@@ -2528,10 +2856,12 @@
                     // Apply lock state to new shot/message instance
                     applyLockStateToElement(newInstance);
 
-                    // Initialize position lock button
-                    newInstance.dataset.positionCycleState = '0'; // Initialize cycle state
-                    updatePositionLockButton(newInstance);
-                    updateMoveButtonsState(newInstance);
+                                    // Initialize position lock button and link with previous button
+                newInstance.dataset.positionCycleState = '0'; // Initialize cycle state
+                newInstance.dataset.linkedWithPrevious = 'false'; // Initialize link state
+                updatePositionLockButton(newInstance);
+                updateLinkWithPreviousButton(newInstance);
+                updateMoveButtonsState(newInstance);
 
                     // Update shot limit slider if this is a shot instance
                     if (type === 'shot') {
@@ -2614,6 +2944,9 @@
                 state.positionLocked = instanceElement.dataset.positionLocked === 'true';
                 state.positionLockType = instanceElement.dataset.positionLockType || 'position';
                 state.positionCycleState = parseInt(instanceElement.dataset.positionCycleState) || 0;
+                
+                // Capture link with previous state
+                state.linkedWithPrevious = instanceElement.dataset.linkedWithPrevious === 'true';
 
                 return state;
             }
@@ -2720,6 +3053,11 @@
                     }
                     if (initialState.positionCycleState !== undefined) {
                         patternElement.dataset.positionCycleState = initialState.positionCycleState;
+                    }
+                    
+                    // Set link with previous state if provided
+                    if (initialState.linkedWithPrevious !== undefined) {
+                        patternElement.dataset.linkedWithPrevious = initialState.linkedWithPrevious;
                     }
                 }
 
@@ -2924,6 +3262,21 @@
                     });
                 }
 
+                // Link with previous button for this pattern
+                const patternLinkWithPreviousBtn = patternElement.querySelector('.link-with-previous-btn');
+                if (patternLinkWithPreviousBtn) {
+                    patternLinkWithPreviousBtn.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        toggleLinkWithPrevious(patternElement);
+                    });
+                }
+
+                // Initialize link with previous state for patterns
+                if (!patternElement.dataset.linkedWithPrevious) {
+                    patternElement.dataset.linkedWithPrevious = 'false';
+                }
+                updateLinkWithPreviousButton(patternElement);
+
                 // Ensure pattern has at least one shot or message (for cloned patterns with no content)
                 const existingShotsMsgs = patternElement.querySelectorAll('.shot-msg-instance').length;
                 if (existingShotsMsgs === 0) {
@@ -2998,6 +3351,9 @@
                 state.positionLocked = patternElement.dataset.positionLocked === 'true';
                 state.positionLockType = patternElement.dataset.positionLockType || 'position';
                 state.positionCycleState = parseInt(patternElement.dataset.positionCycleState) || 0;
+                
+                // Capture link with previous state
+                state.linkedWithPrevious = patternElement.dataset.linkedWithPrevious === 'true';
 
                 return state;
             }
@@ -3047,9 +3403,11 @@
                 // Apply lock state to new pattern
                 applyLockStateToElement(newInstance);
 
-                // Initialize position lock button
+                // Initialize position lock button and link with previous button
                 newInstance.dataset.positionCycleState = '0'; // Initialize cycle state
+                newInstance.dataset.linkedWithPrevious = 'false'; // Initialize link state
                 updatePositionLockButton(newInstance);
+                updateLinkWithPreviousButton(newInstance);
                 updateMoveButtonsState(newInstance);
 
                 // Update all position lock buttons since a new pattern was added
