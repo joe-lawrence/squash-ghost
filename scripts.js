@@ -72,7 +72,6 @@
                 const isPositionLocked = element.dataset.positionLocked === 'true';
                 const isLinkedWithPrevious = element.dataset.linkedWithPrevious === 'true';
                 const lockType = element.dataset.positionLockType;
-                const cycleState = parseInt(element.dataset.positionCycleState) || 0;
 
                 if (isLinkedWithPrevious) {
                     return 'linked'; // Must follow previous
@@ -81,8 +80,8 @@
                     if (lockType === 'last') {
                         return 'last'; // Locked to last position
                     } else {
-                        // For position locks, return the position number (1, 2, 3, etc.)
-                        return (cycleState + 1).toString();
+                        // For position locks, return the actual current position within the pattern
+                        return getElementPosition(element).toString();
                     }
                 }
                 return 'normal'; // Default in-order execution
@@ -4372,18 +4371,25 @@
                 }
 
                 workoutData.patterns.forEach(pattern => {
-                    if (pattern.entries && pattern.entries.length > 0) {
-                        pattern.entries.forEach(entry => {
-                            if (entry.type === 'Shot') {
-                                totalShots += entry.config.repeatCount || 1;
-                                totalTime += entry.config.interval || 5;
-                            } else if (entry.type === 'Message') {
-                                // Convert MM:SS to seconds
-                                const timeParts = entry.config.interval.split(':');
-                                const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-                                totalTime += intervalSeconds;
-                            }
-                        });
+                    const patternRepeatCount = pattern.config.repeatCount || 1;
+
+                    for (let patternRepeat = 0; patternRepeat < patternRepeatCount; patternRepeat++) {
+                        if (pattern.entries && pattern.entries.length > 0) {
+                            pattern.entries.forEach(entry => {
+                                const entryRepeatCount = entry.config.repeatCount || 1;
+
+                                if (entry.type === 'Shot') {
+                                    totalShots += entryRepeatCount;
+                                    const interval = entry.config.interval || 5;
+                                    totalTime += interval * entryRepeatCount;
+                                } else if (entry.type === 'Message') {
+                                    // Convert MM:SS to seconds
+                                    const timeParts = entry.config.interval.split(':');
+                                    const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                                    totalTime += intervalSeconds * entryRepeatCount;
+                                }
+                            });
+                        }
                     }
                 });
 
