@@ -1,0 +1,247 @@
+body {
+    font-family: "Inter", sans-serif;
+    background-color: #f3f4f6; /* Light gray background */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top */
+    min-height: 100vh;
+    padding: 1rem; /* Reduced from 2rem for mobile */
+}
+
+@media (min-width: 768px) {
+    body {
+        padding: 2rem;
+    }
+}
+
+/* Basic transition for dropdowns */
+.dropdown-content {
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out; /* Adjusted transition duration */
+    transform-origin: top;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden; /* Keep overflow hidden for vertical collapse */
+    pointer-events: none; /* Prevent interaction when hidden */
+    position: absolute; /* Keep absolute for positioning relative to button */
+    z-index: 10; /* Ensure it's above other content */
+    border-radius: 0.5rem; /* Apply rounded corners */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Add shadow */
+}
+
+.dropdown-content.active {
+    opacity: 1;
+    /* max-height will be set dynamically by JS */
+    overflow: visible; /* Changed to visible to prevent clipping */
+    pointer-events: auto;
+}
+
+/* Arrow icon rotation for dropdowns */
+.arrow-icon {
+    transition: transform 0.2s ease-out;
+}
+
+.arrow-icon.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Custom slider styling (optional, Tailwind handles most) */
+input[type="range"] {
+    -webkit-appearance: none; /* Hides the slider so you can style it */
+    width: 100%; /* Full-width */
+    height: 8px; /* Specify a height */
+    background: #d1d5db; /* Grey background */
+    outline: none; /* Remove outline */
+    opacity: 0.7; /* Set transparency (for IE) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+    border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px; /* Slider handle height */
+    background: #2563eb; /* Blue background */
+    cursor: pointer; /* Cursor on hover */
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px; /* Slider handle height */
+    background: #2563eb; /* Blue background */
+    cursor: pointer; /* Cursor on hover */
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+    background: #9ca3af; /* Gray for disabled */
+    cursor: not-allowed;
+}
+input[type="range"]:disabled::-moz-range-thumb {
+    background: #9ca3af; /* Gray for disabled */
+    cursor: not-allowed;
+}
+input[type="range"]:disabled {
+    background: #e5e7eb; /* Lighter gray track for disabled */
+    cursor: not-allowed;
+}
+
+/* Submenu content for vertical overlay - NO SLIDING EFFECT */
+.submenu-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: white; /* Ensure background to cover previous content */
+    box-sizing: border-box;
+    /* Removed transform and transition for sliding effect */
+    display: none; /* Hidden by default */
+    pointer-events: none;
+    z-index: 20; /* Ensure it's above the main menu */
+}
+
+.submenu-content.active {
+    display: block; /* Instantly visible */
+    pointer-events: auto;
+}
+
+/* Main menu content for vertical overlay - NO SLIDING EFFECT */
+.main-menu-content { /* Changed from ID to class */
+    /* Removed transform and transition for sliding effect */
+    display: block; /* Visible by default when dropdown is open */
+    pointer-events: auto;
+    position: relative; /* Ensure it takes up space for height calculation */
+}
+
+.main-menu-content.hidden-left { /* Changed from ID to class */
+    display: none; /* Instantly hidden */
+    pointer-events: none;
+}
+
+/* Ensure pattern accordion body hiding takes precedence */
+.pattern-accordion-body.hidden {
+    display: none !important;
+}
+
+/* Global lock styles - ensure settings panels and position lock stay accessible */
+.global-locked .settings-panel {
+    display: block !important;
+}
+
+.global-locked .position-lock-btn {
+    display: flex !important;
+}
+
+/* Toggle switch styling */
+.toggle-bg {
+    transition: background-color 0.3s ease;
+}
+
+.toggle-dot {
+    transition: transform 0.3s ease;
+}
+
+input:checked + .toggle-bg {
+    background-color: #4F46E5; /* Indigo color */
+}
+
+input:checked ~ .toggle-dot {
+    transform: translateX(100%);
+}
+
+/* Position locked entry styling */
+.position-locked {
+    border: 2px solid #6b7280 !important; /* Subtle gray border for locked entries */
+    box-shadow: 0 0 0 1px #9ca3af !important; /* Light gray shadow for visibility */
+}
+
+.position-locked-last {
+    border: 2px solid #8b5cf6 !important; /* Subtle purple border for last-locked entries */
+    box-shadow: 0 0 0 1px #c4b5fd !important; /* Light purple shadow for visibility */
+}
+
+/* Linked with previous entry styling */
+.linked-with-previous {
+    margin-top: 0.25rem !important; /* Reduced top margin */
+}
+
+/* Modal styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Timeline specific styles */
+#timeline {
+    position: relative;
+}
+
+#timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #e5e7eb, #d1d5db);
+}
+
+.pattern-item:last-child .pattern-line {
+    display: none;
+}
+
+.pattern-marker {
+    z-index: 10;
+    position: relative;
+}
+
+.shot-marker, .message-marker {
+    z-index: 5;
+    position: relative;
+}
+
+.pattern-content {
+    position: relative;
+    z-index: 1;
+}
+
+.shot-content, .message-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .pattern-content {
+        margin-left: 1rem;
+    }
+    
+    .shot-content, .message-content {
+        margin-left: 1rem;
+    }
+    
+    .pattern-item, .shot-item, .message-item {
+        padding-left: 1.5rem;
+    }
+}
