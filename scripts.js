@@ -4192,16 +4192,19 @@
                     let currentTime = 0;
 
                     workoutData.patterns.forEach((pattern, patternIndex) => {
-                        const patternHtml = generatePatternPreviewHtml(pattern, patternIndex, currentTime);
-                        html += patternHtml.html;
-                        currentTime = patternHtml.endTime;
+                        const repeatCount = pattern.config.repeatCount || 1;
+                        for (let i = repeatCount; i > 0; i--) {
+                            const patternHtml = generatePatternPreviewHtml(pattern, patternIndex, currentTime, i);
+                            html += patternHtml.html;
+                            currentTime = patternHtml.endTime;
+                        }
                     });
 
                     // Add stats at the bottom
                     html += `<div class="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div class="flex items-center gap-4 text-sm text-gray-600">
-                            <div><span class="font-medium">Total Duration:</span> <span>${formatTime(stats.totalTime)}</span></div>
-                            <div><span class="font-medium">Total Shots:</span> <span>${stats.totalShots}</span></div>
+                        <div class="flex items-center gap-4 text-base font-semibold text-gray-800">
+                            <div>Total Duration: ${formatTime(stats.totalTime)}</div>
+                            <div>Total Shots: ${stats.totalShots}</div>
                         </div>
                     </div>`;
                 }
@@ -4216,7 +4219,7 @@
              * @param {number} startTime - The start time in seconds
              * @returns {Object} Object with html and endTime properties
              */
-            function generatePatternPreviewHtml(pattern, patternIndex, startTime) {
+            function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCount = 1) {
                 let html = '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">';
 
                 // Pattern header without icons
@@ -4228,7 +4231,16 @@
 
                 // Add pattern badges
                 if (pattern.config.iteration === 'shuffle') {
-                    html += '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">Shuffled</span>';
+                    html += '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">🎲 Shuffled</span>';
+                }
+
+                // Show repeat count for all iterations if original repeatCount > 1
+                if (pattern.config.repeatCount > 1) {
+                    html += `<span class="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium flex items-center">
+                        <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6m17 9-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/>
+                        </svg><span>${repeatCount}</span>
+                    </span>`;
                 }
 
                 if (pattern.positionType === 'last') {
@@ -4280,70 +4292,70 @@
             function generateEntryPreviewHtml(entry, startTime) {
                 const isShot = entry.type === 'Shot';
                 const timeColor = isShot ? 'text-green-600 bg-green-50' : 'text-purple-600 bg-purple-50';
+                const repeatCount = entry.config.repeatCount || 1;
+                let currentTime = startTime;
+                let html = '';
 
-                let html = '<div class="flex items-center gap-2 py-1">';
-
-                // Timestamp badge
-                const timeStr = formatTime(startTime);
-                html += `<span class="text-xs font-medium ${timeColor} px-1.5 py-0.5 rounded">${timeStr}</span>`;
-
-                // Entry name
-                html += `<h4 class="text-sm font-medium text-gray-800">${entry.name}</h4>`;
-
-                // Badges for various states
-                const badges = [];
-
-                // Repeat badge
-                if (entry.config.repeatCount > 1) {
-                    badges.push(`<span class="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium flex items-center">
-                        <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6m17 9-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/>
-                        </svg><span>${entry.config.repeatCount}</span>
-                    </span>`);
-                }
-
-                // Position lock badge
-                if (entry.positionType === 'last') {
-                    badges.push(`<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium flex items-center">
-                        <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg><span>Last</span>
-                    </span>`);
-                } else if (entry.positionType !== 'normal' && entry.positionType !== 'linked' && entry.positionType) {
-                    badges.push(`<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium flex items-center">
-                        <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg><span>${entry.positionType}</span>
-                    </span>`);
-                }
-
-                // Link badge
-                if (entry.positionType === 'linked') {
-                    badges.push(`<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex items-center">
-                        <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/>
-                        </svg><span>Linked</span>
-                    </span>`);
-                }
-
-                if (badges.length > 0) {
-                    html += `<div class="flex items-center gap-1">${badges.join('')}</div>`;
-                }
-
-                html += '</div>';
-
-                // Calculate end time based on entry type
-                let endTime = startTime;
-                if (entry.type === 'Shot') {
-                    endTime = startTime + entry.config.interval;
-                } else if (entry.type === 'Message') {
-                    // Convert MM:SS to seconds
+                // Calculate interval
+                const interval = isShot ? (entry.config.interval || 5) : (() => {
                     const timeParts = entry.config.interval.split(':');
-                    const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-                    endTime = startTime + intervalSeconds;
+                    return parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                })();
+
+                // Generate HTML for each repeat
+                for (let i = repeatCount; i > 0; i--) {
+                    html += '<div class="flex items-center gap-2 py-1">';
+
+                    // Timestamp badge
+                    const timeStr = formatTime(currentTime);
+                    html += `<span class="text-xs font-medium ${timeColor} px-1.5 py-0.5 rounded">${timeStr}</span>`;
+
+                    // Entry name
+                    html += `<h4 class="text-sm font-medium text-gray-800">${entry.name}</h4>`;
+
+                    // Badges container
+                    html += '<div class="flex items-center gap-1">';
+
+                    // Show repeat count for all iterations if original repeatCount > 1
+                    if (entry.config.repeatCount > 1) {
+                        html += `<span class="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium flex items-center">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6m17 9-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/>
+                            </svg><span>${i}</span>
+                        </span>`;
+                    }
+
+                    // Position lock badge
+                    if (entry.positionType === 'last') {
+                        html += `<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium flex items-center">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg><span>Last</span>
+                        </span>`;
+                    } else if (entry.positionType !== 'normal' && entry.positionType !== 'linked' && entry.positionType) {
+                        html += `<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium flex items-center">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg><span>${entry.positionType}</span>
+                        </span>`;
+                    }
+
+                    // Link badge
+                    if (entry.positionType === 'linked') {
+                        html += `<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex items-center">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/>
+                            </svg><span>Linked</span>
+                        </span>`;
+                    }
+
+                    html += '</div></div>';
+
+                    // Update time for next iteration
+                    currentTime += interval;
                 }
 
-                return { html, endTime };
+                return { html, endTime: currentTime };
             }
 
             /**
