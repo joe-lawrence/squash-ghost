@@ -2,8 +2,8 @@
             // --- Global Elements ---
             const mainContainer = document.getElementById('mainContainer');
             const patternInstanceTemplate = document.getElementById('patternInstanceTemplate');
-            const shotInstanceTemplate = patternInstanceTemplate.content.querySelector('.shot-instance-template'); // Get shot template from within pattern template
-            const messageInstanceTemplate = patternInstanceTemplate.content.querySelector('.message-instance-template'); // Get message template from within pattern template
+            const shotInstanceTemplate = patternInstanceTemplate.content.querySelector('.shot-instance-template');
+            const messageInstanceTemplate = patternInstanceTemplate.content.querySelector('.message-instance-template');
             const addPatternBtn = document.getElementById('addPatternBtn');
             const saveWorkoutBtn = document.getElementById('saveWorkoutBtn');
             const loadWorkoutBtn = document.getElementById('loadWorkoutBtn');
@@ -3087,7 +3087,6 @@
             function createShotMsgInstance(parentPatternElement, type, initialState = {}) {
                 globalInstanceCounter++;
 
-                // Use the correct template based on type
                 const template = type === 'shot' ? shotInstanceTemplate : messageInstanceTemplate;
                 const newInstance = template.content.firstElementChild.cloneNode(true);
                 newInstance.id = `${type}Instance_${globalInstanceCounter}`;
@@ -4168,13 +4167,12 @@
                 previewModal.classList.remove('hidden');
             }
 
-                        /**
+            /**
              * Generates the HTML for the workout preview
              * @param {Object} workoutData - The workout JSON data
              * @returns {string} HTML string for the preview
              */
             function generatePreviewHtml(workoutData) {
-                // Calculate totals
                 const stats = calculateWorkoutStats(workoutData);
 
                 // Update workout name in header
@@ -4189,48 +4187,112 @@
                     html = '<div class="text-gray-500 text-sm">No patterns configured</div>';
                 } else {
                     let currentTime = 0;
+                    let currentTimeWithoutPadding = 0;
+                    let totalShotsExecuted = 0;
+                    const workoutLimits = workoutData.config.limits;
+                    const isConfigLocked = getIsConfigLocked();
+                    const workoutDefaultInterval = getWorkoutDefaultInterval();
+                    let skipReasons = [];
 
-                    workoutData.patterns.forEach((pattern, patternIndex) => {
+                    let patternsToProcess = [...workoutData.patterns];
+                    if (workoutData.config.iteration === 'shuffle') {
+                        patternsToProcess = shuffleArrayRespectingLinks(patternsToProcess);
+                    }
+
+                    patternsToProcess.forEach((pattern, patternIndex) => {
                         const repeatCount = pattern.config.repeatCount || 1;
+
                         for (let i = repeatCount; i > 0; i--) {
-                            const patternHtml = generatePatternPreviewHtml(pattern, patternIndex, currentTime, i);
+                            // Check if this pattern should be skipped due to workout limits
+                            let patternSkipped = false;
+                            let skipReason = '';
+
+                            if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                                patternSkipped = true;
+                                skipReason = 'Skipped';
+                                if (!skipReasons.includes('workout shot limit')) {
+                                    skipReasons.push('workout shot limit');
+                                }
+                            } else if (workoutLimits.type === 'time-limit') {
+                                const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                                if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                    patternSkipped = true;
+                                    skipReason = 'Skipped';
+                                    if (!skipReasons.includes('workout time limit')) {
+                                        skipReasons.push('workout time limit');
+                                    }
+                                }
+                            }
+
+                            const patternHtml = generatePatternPreviewHtml(
+                                pattern,
+                                patternIndex,
+                                currentTime,
+                                i,
+                                patternSkipped,
+                                skipReason,
+                                isConfigLocked,
+                                workoutDefaultInterval,
+                                workoutLimits,
+                                totalShotsExecuted,
+                                currentTimeWithoutPadding,
+                                skipReasons
+                            );
+
                             html += patternHtml.html;
                             currentTime = patternHtml.endTime;
+                            currentTimeWithoutPadding = patternHtml.endTimeWithoutPadding;
+                            totalShotsExecuted = patternHtml.totalShotsExecuted;
                         }
                     });
 
-                    // Add stats at the bottom
+
                     html += `<div class="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div class="flex items-center gap-4 text-base font-semibold text-gray-800">
+                        <div class="flex items-center gap-4 text-base font-semibold text-gray-800 mb-2">
                             <div>Total Duration: ${formatTime(stats.totalTime)}</div>
                             <div>Total Shots: ${stats.totalShots}</div>
-                        </div>
-                    </div>`;
+                        </div>`;
+
+                    if (skipReasons.length > 0) {
+                        html += `<div class="text-sm text-gray-600">
+                            <span class="font-medium">Skip reasons:</span> ${skipReasons.join(', ')}
+                        </div>`;
+                    }
+
+                    html += `</div>`;
                 }
 
                 return html;
             }
 
-                        /**
+            /**
              * Generates the HTML for a single pattern preview
              * @param {Object} pattern - The pattern data
              * @param {number} patternIndex - The index of the pattern
              * @param {number} startTime - The start time in seconds
-             * @returns {Object} Object with html and endTime properties
+             * @param {number} repeatCount - Current repeat iteration
+             * @param {boolean} patternSkipped - Whether this pattern is skipped
+             * @param {string} skipReason - Reason for skipping
+             * @param {boolean} isConfigLocked - Whether config is locked
+             * @param {number} workoutDefaultInterval - Workout default interval
+             * @param {Object} workoutLimits - Workout limits
+             * @param {number} totalShotsExecuted - Total shots executed so far
+             * @returns {Object} Object with html, endTime, and totalShotsExecuted properties
              */
-            function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCount = 1) {
-                let html = '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">';
+                         function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCount = 1, patternSkipped = false, skipReason = '', isConfigLocked = false, workoutDefaultInterval = 5.0, workoutLimits = {}, totalShotsExecuted = 0, startTimeWithoutPadding = 0, skipReasons = []) {
+                const patternClass = patternSkipped ? 'bg-gray-100 opacity-60' : 'bg-white';
+                let html = `<div class="${patternClass} rounded-lg shadow-sm border border-gray-200 p-3 mb-4">`;
 
-                // Pattern header without icons
+                // Pattern header
                 html += `<div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
-                        <h3 class="text-base font-semibold text-gray-800">${pattern.name}</h3>
+                        <h3 class="text-base font-semibold ${patternSkipped ? 'text-gray-500' : 'text-gray-800'}">${pattern.name}</h3>
                     </div>
                     <div class="flex items-center gap-1">`;
 
                 // Add pattern badges
                 if (pattern.config.iteration === 'shuffle') {
-                    html += '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">🎲 Shuffled</span>';
+                    html += `<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">🎲 Shuffled</span>`;
                 }
 
                 // Show repeat count for all iterations if original repeatCount > 1
@@ -4242,6 +4304,7 @@
                     </span>`;
                 }
 
+                // Position badges
                 if (pattern.positionType === 'last') {
                     html += `<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium flex items-center">
                         <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
@@ -4264,33 +4327,115 @@
                     </span>`;
                 }
 
+                // Skip reason badge
+                if (patternSkipped && skipReason) {
+                    html += `<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">${skipReason}</span>`;
+                }
+
                 html += '</div></div>';
+
+                // Determine applicable default interval
+                const applicableInterval = getApplicableInterval(pattern, isConfigLocked, workoutDefaultInterval);
+
+                // Add initial padding
+                let currentTime = startTime + applicableInterval;
+                let currentTimeWithoutPadding = startTimeWithoutPadding;
+                let patternShotsExecuted = 0;
 
                 // Process entries
                 if (pattern.entries && pattern.entries.length > 0) {
                     html += '<div class="space-y-1">';
-                    pattern.entries.forEach(entry => {
-                        const entryHtml = generateEntryPreviewHtml(entry, startTime);
+
+                    let entriesToProcess = [...pattern.entries];
+                    if (pattern.config.iteration === 'shuffle') {
+                        entriesToProcess = shuffleArrayRespectingLinks(entriesToProcess);
+                    }
+
+                    entriesToProcess.forEach(entry => {
+                        // Check if this entry should be skipped
+                        let entrySkipped = patternSkipped;
+                        let entrySkipReason = skipReason;
+
+                        if (!patternSkipped) {
+                            // Check pattern-level limits
+                            if (pattern.config.limits.type === 'shot-limit' && patternShotsExecuted >= pattern.config.limits.value) {
+                                entrySkipped = true;
+                                entrySkipReason = 'Skipped';
+                                if (!skipReasons.includes('pattern shot limit')) {
+                                    skipReasons.push('pattern shot limit');
+                                }
+                            } else if (pattern.config.limits.type === 'time-limit') {
+                                const timeLimitSeconds = parseTimeLimit(pattern.config.limits.value);
+                                if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                    entrySkipped = true;
+                                    entrySkipReason = 'Skipped';
+                                    if (!skipReasons.includes('pattern time limit')) {
+                                        skipReasons.push('pattern time limit');
+                                    }
+                                }
+                            }
+
+                            // Check workout-level limits
+                            if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                                entrySkipped = true;
+                                entrySkipReason = 'Skipped';
+                                if (!skipReasons.includes('workout shot limit')) {
+                                    skipReasons.push('workout shot limit');
+                                }
+                            } else if (workoutLimits.type === 'time-limit') {
+                                const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                                if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                    entrySkipped = true;
+                                    entrySkipReason = 'Skipped';
+                                    if (!skipReasons.includes('workout time limit')) {
+                                        skipReasons.push('workout time limit');
+                                    }
+                                }
+                            }
+                        }
+
+                        const entryHtml = generateEntryPreviewHtml(entry, currentTime, entrySkipped, entrySkipReason);
                         html += entryHtml.html;
-                        startTime = entryHtml.endTime;
+                        currentTime = entryHtml.endTime;
+
+                        const isShot = entry.type === 'Shot';
+                        const interval = isShot ? (entry.config.interval || 5) : (() => {
+                            const timeParts = entry.config.interval.split(':');
+                            return parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                        })();
+                        const entryRepeatCount = entry.config.repeatCount || 1;
+                        currentTimeWithoutPadding += interval * entryRepeatCount;
+
+                        if (entry.type === 'Shot' && !entrySkipped) {
+                            const shotCount = entry.config.repeatCount || 1;
+                            patternShotsExecuted += shotCount;
+                            totalShotsExecuted += shotCount;
+                        }
                     });
                     html += '</div>';
                 }
 
+                // Add final padding
+                currentTime += applicableInterval;
+
                 html += '</div>';
 
-                return { html, endTime: startTime };
+                return { html, endTime: currentTime, endTimeWithoutPadding: currentTimeWithoutPadding, totalShotsExecuted };
             }
 
             /**
              * Generates the HTML for a single entry (shot or message) preview
              * @param {Object} entry - The entry data
              * @param {number} startTime - The start time in seconds
+             * @param {boolean} entrySkipped - Whether this entry is skipped
+             * @param {string} skipReason - Reason for skipping
              * @returns {Object} Object with html and endTime properties
              */
-            function generateEntryPreviewHtml(entry, startTime) {
+            function generateEntryPreviewHtml(entry, startTime, entrySkipped = false, skipReason = '') {
                 const isShot = entry.type === 'Shot';
-                const timeColor = isShot ? 'text-green-600 bg-green-50' : 'text-purple-600 bg-purple-50';
+                const baseTimeColor = isShot ? 'text-green-600 bg-green-50' : 'text-purple-600 bg-purple-50';
+                const timeColor = entrySkipped ? 'text-gray-500 bg-gray-200' : baseTimeColor;
+                const textColor = entrySkipped ? 'text-gray-500' : 'text-gray-800';
                 const repeatCount = entry.config.repeatCount || 1;
                 let currentTime = startTime;
                 let html = '';
@@ -4310,7 +4455,7 @@
                     html += `<span class="text-xs font-medium ${timeColor} px-1.5 py-0.5 rounded">${timeStr}</span>`;
 
                     // Entry name
-                    html += `<h4 class="text-sm font-medium text-gray-800">${entry.name}</h4>`;
+                    html += `<h4 class="text-sm font-medium ${textColor}">${entry.name}</h4>`;
 
                     // Badges container
                     html += '<div class="flex items-center gap-1">';
@@ -4348,6 +4493,11 @@
                         </span>`;
                     }
 
+                    // Skip reason badge
+                    if (entrySkipped && skipReason) {
+                        html += `<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">${skipReason}</span>`;
+                    }
+
                     html += '</div></div>';
 
                     // Update time for next iteration
@@ -4358,42 +4508,149 @@
             }
 
             /**
-             * Calculates workout statistics
+             * Calculates workout statistics with proper rule implementation
              * @param {Object} workoutData - The workout JSON data
-             * @returns {Object} Stats object with totalTime and totalShots
+             * @returns {Object} Stats object with totalTime, totalShots, and executedShots
              */
             function calculateWorkoutStats(workoutData) {
                 let totalTime = 0;
                 let totalShots = 0;
+                let currentTimeWithoutPadding = 0;
+                let totalShotsExecuted = 0;
 
                 if (!workoutData.patterns || workoutData.patterns.length === 0) {
                     return { totalTime: 0, totalShots: 0 };
                 }
 
-                workoutData.patterns.forEach(pattern => {
+                const isConfigLocked = getIsConfigLocked();
+                const workoutDefaultInterval = getWorkoutDefaultInterval();
+                const workoutLimits = workoutData.config.limits;
+
+                let patternsToProcess = [...workoutData.patterns];
+
+                patternsToProcess.forEach(pattern => {
                     const patternRepeatCount = pattern.config.repeatCount || 1;
+                    const applicableInterval = getApplicableInterval(pattern, isConfigLocked, workoutDefaultInterval);
 
                     for (let patternRepeat = 0; patternRepeat < patternRepeatCount; patternRepeat++) {
+                        let patternSkipped = false;
+
+                        if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                            patternSkipped = true;
+                        } else if (workoutLimits.type === 'time-limit') {
+                            const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                            if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                patternSkipped = true;
+                            }
+                        }
+
+                        if (!patternSkipped) {
+                            totalTime += applicableInterval;
+                        }
+
                         if (pattern.entries && pattern.entries.length > 0) {
+                            let patternShotsExecuted = 0;
+
                             pattern.entries.forEach(entry => {
                                 const entryRepeatCount = entry.config.repeatCount || 1;
 
-                                if (entry.type === 'Shot') {
-                                    totalShots += entryRepeatCount;
-                                    const interval = entry.config.interval || 5;
-                                    totalTime += interval * entryRepeatCount;
-                                } else if (entry.type === 'Message') {
-                                    // Convert MM:SS to seconds
-                                    const timeParts = entry.config.interval.split(':');
-                                    const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-                                    totalTime += intervalSeconds * entryRepeatCount;
+                                let entrySkipped = patternSkipped;
+                                if (!patternSkipped) {
+                                    if (pattern.config.limits.type === 'shot-limit' && patternShotsExecuted >= pattern.config.limits.value) {
+                                        entrySkipped = true;
+                                    } else if (pattern.config.limits.type === 'time-limit') {
+                                        const timeLimitSeconds = parseTimeLimit(pattern.config.limits.value);
+                                        if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                            entrySkipped = true;
+                                        }
+                                    }
+
+                                    if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                                        entrySkipped = true;
+                                    } else if (workoutLimits.type === 'time-limit') {
+                                        const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                                        if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                            entrySkipped = true;
+                                        }
+                                    }
+                                }
+
+                                if (!entrySkipped) {
+                                    if (entry.type === 'Shot') {
+                                        totalShots += entryRepeatCount;
+                                        patternShotsExecuted += entryRepeatCount;
+                                        totalShotsExecuted += entryRepeatCount;
+
+                                        const interval = entry.config.interval || 5;
+                                        totalTime += interval * entryRepeatCount;
+                                        currentTimeWithoutPadding += interval * entryRepeatCount;
+                                    } else if (entry.type === 'Message') {
+                                        const timeParts = entry.config.interval.split(':');
+                                        const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                                        totalTime += intervalSeconds * entryRepeatCount;
+                                        currentTimeWithoutPadding += intervalSeconds * entryRepeatCount;
+                                    }
+                                } else {
+                                    if (entry.type === 'Shot') {
+                                        const interval = entry.config.interval || 5;
+                                        currentTimeWithoutPadding += interval * entryRepeatCount;
+                                    } else if (entry.type === 'Message') {
+                                        const timeParts = entry.config.interval.split(':');
+                                        const intervalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                                        currentTimeWithoutPadding += intervalSeconds * entryRepeatCount;
+                                    }
                                 }
                             });
+                        }
+
+                        if (!patternSkipped) {
+                            totalTime += applicableInterval;
                         }
                     }
                 });
 
                 return { totalTime, totalShots };
+            }
+
+            /**
+             * Helper function to determine if config is locked
+             * @returns {boolean} Whether config is locked
+             */
+            function getIsConfigLocked() {
+                return lockConfigsToggle ? lockConfigsToggle.checked : false;
+            }
+
+            /**
+             * Helper function to get workout default interval
+             * @returns {number} Workout default interval in seconds
+             */
+            function getWorkoutDefaultInterval() {
+                return defaultShotIntervalSlider ? parseFloat(defaultShotIntervalSlider.value) : 5.0;
+            }
+
+            /**
+             * Helper function to get applicable interval based on config-lock rules
+             * @param {Object} pattern - The pattern object
+             * @param {boolean} isConfigLocked - Whether config is locked
+             * @param {number} workoutDefaultInterval - Workout default interval
+             * @returns {number} Applicable interval in seconds
+             */
+            function getApplicableInterval(pattern, isConfigLocked, workoutDefaultInterval) {
+                if (isConfigLocked) {
+                    return workoutDefaultInterval;
+                } else {
+                    return pattern.config.interval || workoutDefaultInterval;
+                }
+            }
+
+            /**
+             * Helper function to parse time limit string to seconds
+             * @param {string} timeLimit - Time limit in MM:SS format
+             * @returns {number} Time limit in seconds
+             */
+            function parseTimeLimit(timeLimit) {
+                const timeParts = timeLimit.split(':');
+                return parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
             }
 
             /**
@@ -4405,6 +4662,64 @@
                 const minutes = Math.floor(seconds / 60);
                 const remainingSeconds = Math.floor(seconds % 60);
                 return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+
+            /**
+             * Shuffles an array using Fisher-Yates algorithm
+             * @param {Array} array - Array to shuffle
+             * @returns {Array} Shuffled array
+             */
+            function shuffleArray(array) {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
+            /**
+             * Shuffles an array while respecting linked element groups
+             * @param {Array} array - Array to shuffle
+             * @returns {Array} Shuffled array with linked groups intact
+             */
+            function shuffleArrayRespectingLinks(array) {
+                if (!array || array.length === 0) return array;
+
+                const groups = [];
+                const processed = new Set();
+
+                // Group linked elements together
+                for (let i = 0; i < array.length; i++) {
+                    if (processed.has(i)) continue;
+
+                    const group = [array[i]];
+                    processed.add(i);
+
+                    // Check if next elements are linked to this one
+                    for (let j = i + 1; j < array.length; j++) {
+                        if (processed.has(j)) continue;
+
+                        if (array[j].positionType === 'linked') {
+                            group.push(array[j]);
+                            processed.add(j);
+                        } else {
+                            break; // Linked elements must be consecutive
+                        }
+                    }
+
+                    groups.push(group);
+                }
+
+                // Shuffle the groups while keeping linked elements together
+                const shuffledGroups = [];
+                for (let i = groups.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [groups[i], groups[j]] = [groups[j], groups[i]];
+                }
+
+                // Flatten the groups back into a single array
+                return groups.flat();
             }
 
         });
