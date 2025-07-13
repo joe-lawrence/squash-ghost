@@ -1,0 +1,88 @@
+{
+  "type": "Workout",
+  "name": "My Squash Workout",
+  "config": {
+    "iterationType": "in-order",
+    "limits": {
+      "type": "all-shots",
+      "value": null
+    },
+    "voice": "Default",
+    "speechRate": 1.0,
+    "interval": 5.0,
+    "intervalOffsetType": "fixed",
+    "intervalOffset": {
+      "min": 0.0,
+      "max": 0.0
+    },
+    "autoVoiceSplitStep": true,
+    "shotAnnouncementLeadTime": 2.5,
+    "splitStepSpeed": "auto-scale"
+  },
+  "patterns": [
+    {
+      "type": "Pattern",
+      "id": "patternInstance_1",
+      "name": "Six points",
+      "positionType": "normal",
+      "config": {
+        "iterationType": "in-order",
+        "limits": {
+          "type": "all-shots",
+          "value": null
+        }
+      },
+      "entries": [
+        {
+          "type": "Message",
+          "id": "msgInstance_1",
+          "name": "Intro",
+          "positionType": "normal",
+          "config": {
+            "message": "Get ready",
+            "interval": "00:10",
+            "intervalType": "fixed",
+            "countdown": false,
+            "skipAtEndOfWorkout": false
+          }
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_1",
+          "name": "Front left",
+          "positionType": "normal"
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_2",
+          "name": "Front right",
+          "positionType": "normal"
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_3",
+          "name": "Mid left",
+          "positionType": "normal"
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_4",
+          "name": "Mid right",
+          "positionType": "normal"
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_5",
+          "name": "Back left",
+          "positionType": "normal"
+        },
+        {
+          "type": "Shot",
+          "id": "shotInstance_6",
+          "name": "Back right",
+          "positionType": "normal"
+        }
+      ]
+    }
+  ]
+}
