@@ -6,7 +6,7 @@
  * @param {Object} [options] - Optional config: { getLinkedGroup, getElementPosition, isLocked, getLockType, getTargetPosition }
  * @returns {any|null} The element to insert before, or null to append at end.
  */
-function findCloneInsertionPositionShared(
+export function findCloneInsertionPositionShared(
   sourceElement,
   siblings,
   options = {}
@@ -92,14 +92,6 @@ function findCloneInsertionPositionShared(
   return null;
 }
 
-// Export for Node.js (for tests)
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    findCloneInsertionPositionShared,
-    findPatternInsertionPositionShared
-  };
-}
-
 /**
  * Finds the correct insertion position for a new pattern, considering linked groups and position locks.
  * This follows the same logic as shot/message insertion: when adding new (no source), only look for last-locked.
@@ -108,7 +100,7 @@ if (typeof module !== 'undefined' && module.exports) {
  * @param {Object} [options] - Optional config: { isLocked, getLockType }
  * @returns {any|null} The element to insert before, or null to append at end.
  */
-function findPatternInsertionPositionShared(
+export function findPatternInsertionPositionShared(
   existingPatterns,
   options = {}
 ) {
@@ -129,26 +121,4 @@ function findPatternInsertionPositionShared(
 
   // Otherwise, append at the end
   return null;
-}
-
-// Export the new function for Node.js (for tests)
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    findCloneInsertionPositionShared,
-    findPatternInsertionPositionShared
-  };
-}
-
-// Export for ES6 modules (for browser)
-if (typeof window !== 'undefined') {
-  window.findCloneInsertionPositionShared = findCloneInsertionPositionShared;
-  window.findPatternInsertionPositionShared = findPatternInsertionPositionShared;
-}
-
-// ES6 module exports
-export { findCloneInsertionPositionShared, findPatternInsertionPositionShared };
-
-// CommonJS exports for Node.js/Jest
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { findCloneInsertionPositionShared, findPatternInsertionPositionShared };
 }

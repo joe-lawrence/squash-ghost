@@ -1,3 +1,6 @@
+// Build ID: 2025-07-28-13-00-BUILD-005
+console.log('Squash Ghost Webapp loaded - Build ID: 2025-07-28-13-00-BUILD-005', new Date().toISOString());
+
 // Import movement utilities
 import {
   getSiblings,
@@ -202,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Show theme dropdown with all options
   function showThemeDropdown() {
     const dropdown = document.getElementById('themeDropdown');
-    populateAllThemeOptions();
+    populateThemeMenu();
     dropdown.classList.add('show');
 
     // Close dropdown when clicking outside
@@ -216,6 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const dropdown = document.getElementById('themeDropdown');
     dropdown.classList.remove('show');
     document.removeEventListener('click', handleClickOutside);
+    themeMenuState.current = 'main';
   }
 
   // Handle clicks outside dropdown
@@ -226,37 +230,57 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Populate all theme options in dropdown
-  function populateAllThemeOptions() {
+  // State to track which menu is open
+  let themeMenuState = {
+    current: 'main', // 'main', 'dark', 'light'
+  };
+
+  function populateThemeMenu() {
     const container = document.getElementById('themeOptions');
     container.innerHTML = '';
+    if (themeMenuState.current === 'main') {
+      // Main menu: show two options with chevron SVGs
+      const darkBtn = document.createElement('button');
+      darkBtn.className = 'theme-menu-btn';
+      darkBtn.innerHTML = `
+        <span>Dark Themes</span>
+        <span style="margin-left:auto;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M7 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      `;
+      darkBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenuState.current = 'dark';
+        populateThemeMenu();
+      });
+      container.appendChild(darkBtn);
 
-    // Add dark themes section
-    const darkSection = document.createElement('div');
-    darkSection.className = 'theme-section';
-    darkSection.innerHTML = '<div class="theme-section-header">Dark Themes</div>';
-
-    Object.entries(themeSchemes.dark).forEach(([schemeId, schemeData]) => {
-      const option = createThemeOption('dark', schemeId, schemeData);
-      darkSection.appendChild(option);
-    });
-
-    container.appendChild(darkSection);
-
-    // Add light themes section
-    const lightSection = document.createElement('div');
-    lightSection.className = 'theme-section';
-    lightSection.innerHTML = '<div class="theme-section-header">Light Themes</div>';
-
-    Object.entries(themeSchemes.light).forEach(([schemeId, schemeData]) => {
-      const option = createThemeOption('light', schemeId, schemeData);
-      lightSection.appendChild(option);
-    });
-
-    container.appendChild(lightSection);
+      const lightBtn = document.createElement('button');
+      lightBtn.className = 'theme-menu-btn';
+      lightBtn.innerHTML = `
+        <span>Light Themes</span>
+        <span style="margin-left:auto;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M7 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      `;
+      lightBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenuState.current = 'light';
+        populateThemeMenu();
+      });
+      container.appendChild(lightBtn);
+    } else {
+      // Submenu: show themes for selected mode (no Back button)
+      const mode = themeMenuState.current;
+      const schemes = themeSchemes[mode];
+      Object.entries(schemes).forEach(([schemeId, schemeData]) => {
+        const option = createThemeOption(mode, schemeId, schemeData);
+        container.appendChild(option);
+      });
+    }
   }
 
-  // Create a theme option element
+  // Update createThemeOption to work for submenu
   function createThemeOption(themeType, schemeId, schemeData) {
     const option = document.createElement('button');
     const isActive = themeState.currentTheme === themeType &&
@@ -269,7 +293,8 @@ document.addEventListener("DOMContentLoaded", function () {
       <span class="theme-name">${schemeData.name}</span>
     `;
 
-    option.addEventListener('click', () => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
       selectThemeScheme(themeType, schemeId);
     });
 
@@ -345,6 +370,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (newMode === 'on') {
       // Ensure voices are loaded before starting the heartbeat
       ensureVoicesLoaded().then(() => {
+        // Initialize synth if needed
+        if (!synth && 'speechSynthesis' in window) {
+          synth = window.speechSynthesis;
+        }
+        // Speak 'Audio ducking enabled' once, using default voice
+        if (synth) {
+          const utterance = new SpeechSynthesisUtterance('Audio ducking enabled');
+          utterance.lang = (navigator.language || navigator.userLanguage || 'en-US');
+          utterance.volume = 1.0;
+          synth.speak(utterance);
+        }
         startDuckingHeartbeat();
       });
     } else {
@@ -406,6 +442,268 @@ document.addEventListener("DOMContentLoaded", function () {
   const executeBtn = document.getElementById("executeBtn");
   const loadBtn = document.getElementById("loadBtn");
   const saveBtn = document.getElementById("saveBtn");
+  const heartBtn = document.getElementById("heartBtn");
+  const favoritesDropdown = document.getElementById("favoritesDropdown");
+
+  // --- Favorites Dropdown Functionality ---
+  const favoritesLoadMenuItem = document.getElementById("favoritesLoadMenuItem");
+  const favoritesSaveMenuItem = document.getElementById("favoritesSaveMenuItem");
+  const favoritesRemoveMenuItem = document.getElementById("favoritesRemoveMenuItem");
+  
+  // Enable the buttons
+  if (favoritesLoadMenuItem) favoritesLoadMenuItem.disabled = false;
+  if (favoritesSaveMenuItem) favoritesSaveMenuItem.disabled = false;
+  if (favoritesRemoveMenuItem) favoritesRemoveMenuItem.disabled = false;
+  
+  // Helper: Get all saved workouts from localStorage
+  function getSavedWorkouts() {
+    const workouts = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('favoriteWorkout:')) {
+        workouts.push({
+          key,
+          name: key.replace('favoriteWorkout:', '')
+        });
+      }
+    }
+    return workouts;
+  }
+  
+  // Helper: Save current workout to localStorage with confirm() for overwrite
+  function saveCurrentWorkoutToFavorites() {
+    if (typeof getWorkoutJSON !== 'function') {
+      alert('Save not available: getWorkoutJSON missing');
+      return;
+    }
+    
+    // Get workout name first, before any other operations
+    const workoutNameInput = document.querySelector('.workout-name');
+    let name = workoutNameInput ? workoutNameInput.value.trim() : '';
+    if (!name) {
+      name = prompt('Enter a name for this favorite workout:', `Workout ${new Date().toLocaleString()}`);
+      if (!name) return;
+    }
+    
+    // Check for existing workout with this name BEFORE getting workout data
+    let key = `favoriteWorkout:${name}`;
+    const existing = localStorage.getItem(key);
+    
+    if (existing) {
+      const ok = confirm('This will update the existing favorite. If you don\'t want to update, rename the workout first and try again.\n\nContinue?');
+      if (!ok) return;
+    }
+    
+
+    
+    // Only get workout data and save if user confirmed (or no existing workout)
+    const workoutData = getWorkoutJSON();
+    const jsonString = window.JSONFormatter ? window.JSONFormatter.formatWorkoutJSON(workoutData) : JSON.stringify(workoutData);
+    localStorage.setItem(key, jsonString);
+    
+    // Add glow when workout is successfully saved to favorites
+    addFavoritesGlow(key);
+    alert('Workout saved to favorites!');
+  }
+  
+  // Helper: Load a workout from localStorage
+  function loadFavoriteWorkout(key) {
+    const data = localStorage.getItem(key);
+    if (!data) return alert('Workout not found.');
+    let workout;
+    try {
+      workout = JSON.parse(data);
+    } catch (e) {
+      return alert('Failed to parse workout data.');
+    }
+    if (typeof loadWorkout === 'function') {
+      loadWorkout(workout);
+    } else {
+      alert('Load not available: loadWorkout missing');
+    }
+    addFavoritesGlow(key);
+  }
+  
+  // Helper: Remove a workout from localStorage
+  function removeFavoriteWorkout(key) {
+    localStorage.removeItem(key);
+    // If the removed workout is the currently loaded favorite, remove the glow
+    if (window._favoritesGlowActiveFor === key) {
+      window._favoritesGlowActiveFor = null;
+      removeFavoritesGlow();
+    }
+    alert('Workout removed from favorites.');
+  }
+  
+  // Helper: Attach event listeners to the root favorites menu
+  function attachFavoritesRootMenuListeners() {
+    const loadBtn = document.getElementById("favoritesLoadMenuItem");
+    const saveBtn = document.getElementById("favoritesSaveMenuItem");
+    const removeBtn = document.getElementById("favoritesRemoveMenuItem");
+    
+    // Remove existing event listeners to prevent duplicates
+    if (saveBtn) {
+      const newSaveBtn = saveBtn.cloneNode(true);
+      saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    }
+    if (loadBtn) {
+      const newLoadBtn = loadBtn.cloneNode(true);
+      loadBtn.parentNode.replaceChild(newLoadBtn, loadBtn);
+    }
+    if (removeBtn) {
+      const newRemoveBtn = removeBtn.cloneNode(true);
+      removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+    }
+    
+    // Get fresh references after cloning
+    const freshSaveBtn = document.getElementById("favoritesSaveMenuItem");
+    const freshLoadBtn = document.getElementById("favoritesLoadMenuItem");
+    const freshRemoveBtn = document.getElementById("favoritesRemoveMenuItem");
+    
+    // Get the current workout name
+    const workoutNameInput = document.querySelector('.workout-name');
+    let name = workoutNameInput ? workoutNameInput.value.trim() : '';
+    let key = name ? `favoriteWorkout:${name}` : null;
+    
+    // Check if current workout has user changes (same logic as glow removal)
+    function hasWorkoutUserChanges() {
+      // Check if there are any non-default settings in patterns, shots, messages, or global config
+      const patterns = document.querySelectorAll('.pattern-instance');
+      const shots = document.querySelectorAll('.shot-msg-instance');
+      const globalConfig = document.querySelector('.global-config');
+      const workoutName = document.querySelector('.workout-name');
+      
+      // Check patterns for non-default settings
+      for (const pattern of patterns) {
+        if (hasNonDefaultSettings(pattern)) {
+          return true;
+        }
+      }
+      
+      // Check shots and messages for non-default settings
+      for (const shot of shots) {
+        if (hasNonDefaultSettings(shot)) {
+          return true;
+        }
+      }
+      
+      // Check global config for non-default settings
+      if (globalConfig && hasNonDefaultSettings(globalConfig)) {
+        return true;
+      }
+      
+      // Check if workout name has been changed from default
+      if (workoutName && workoutName.value.trim() !== '') {
+        return true;
+      }
+      
+      return false;
+    }
+    
+    const hasUserChanges = hasWorkoutUserChanges();
+    
+    // Show/hide Save option based on user changes
+    // Show/hide Save option based on whether workout has user changes AND favorites limit
+    if (freshSaveBtn) {
+      const currentFavorites = getSavedWorkouts();
+      const isAtLimit = currentFavorites.length >= 8;
+      const isExistingFavorite = key && localStorage.getItem(key);
+      
+      // Show Save option only if:
+      // 1. Workout has user changes, AND
+      // 2. Either not at limit OR this is updating an existing favorite
+      if (hasUserChanges && (!isAtLimit || isExistingFavorite)) {
+        freshSaveBtn.style.display = 'block';
+        freshSaveBtn.disabled = false;
+      } else {
+        freshSaveBtn.style.display = 'none';
+        freshSaveBtn.disabled = true;
+      }
+    }
+    
+    // Show/hide Remove option based on whether workout exists in favorites
+    if (freshRemoveBtn) {
+      if (key && localStorage.getItem(key)) {
+        freshRemoveBtn.style.display = 'block';
+        freshRemoveBtn.disabled = false;
+      } else {
+        freshRemoveBtn.style.display = 'none';
+        freshRemoveBtn.disabled = true;
+      }
+    }
+    
+    // Load option is always available
+    if (freshLoadBtn) freshLoadBtn.disabled = false;
+    if (freshSaveBtn) {
+      freshSaveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveCurrentWorkoutToFavorites();
+        favoritesDropdown.classList.remove('active');
+      });
+    }
+    if (freshLoadBtn) {
+      freshLoadBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // No Back button, just the list
+        const workouts = getSavedWorkouts();
+        let html = '';
+        if (workouts.length === 0) {
+          html += '<div style="padding: 0.75rem 1rem; color: #888;">No saved workouts</div>';
+        } else {
+          workouts.forEach(({key, name}) => {
+            html += `<button class=\"favorites-dropdown-item favorites-load-item\" data-key=\"${key}\">${name}</button>`;
+          });
+        }
+        favoritesDropdown.innerHTML = html;
+        favoritesDropdown.classList.add('favorites-load-listing');
+        // Add event listeners for each workout
+        document.querySelectorAll('.favorites-load-item').forEach(btn => {
+          btn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            const key = btn.getAttribute('data-key');
+            loadFavoriteWorkout(key);
+            addFavoritesGlow(key);
+            favoritesDropdown.classList.remove('active');
+            favoritesDropdown.classList.remove('favorites-load-listing');
+          });
+        });
+      });
+    }
+    if (freshRemoveBtn) {
+      freshRemoveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!key) return;
+        if (!localStorage.getItem(key)) return;
+        if (confirm(`Remove "${name}" from favorites?`)) {
+          removeFavoriteWorkout(key);
+        }
+        favoritesDropdown.classList.remove('active');
+      });
+    }
+  }
+
+  if (heartBtn && favoritesDropdown) {
+    heartBtn.addEventListener("click", function(event) {
+      event.stopPropagation();
+      // Always restore the root menu before showing
+      if (favoritesDropdown._originalMenu) {
+        favoritesDropdown.innerHTML = favoritesDropdown._originalMenu;
+        attachFavoritesRootMenuListeners();
+      } else {
+        favoritesDropdown._originalMenu = favoritesDropdown.innerHTML;
+        attachFavoritesRootMenuListeners();
+      }
+      favoritesDropdown.classList.remove('favorites-load-listing');
+      const isActive = favoritesDropdown.classList.contains("active");
+      closeAllDropdowns(favoritesDropdown);
+      if (!isActive) {
+        favoritesDropdown.classList.add("active");
+      }
+    });
+  }
+
+  // Attach listeners on initial load
+  attachFavoritesRootMenuListeners();
 
   // Chevron toggle functionality
   if (chevronBtn) {
@@ -469,8 +767,42 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Prep time menu state management
+  let prepTimeMenuState = {
+    current: 'main', // 'main', 'submenu'
+    prepTimeSeconds: 0
+  };
+
+  // Load prep time setting from localStorage
+  function loadPrepTimeSetting() {
+    try {
+      const savedPrepTime = localStorage.getItem('squashGhostPrepTimeSeconds');
+      if (savedPrepTime !== null) {
+        prepTimeMenuState.prepTimeSeconds = parseInt(savedPrepTime);
+      }
+    } catch (error) {
+      console.warn('Failed to load prep time setting from localStorage:', error);
+    }
+  }
+
+  // Save prep time setting to localStorage
+  function savePrepTimeSetting(seconds) {
+    try {
+      localStorage.setItem('squashGhostPrepTimeSeconds', seconds.toString());
+    } catch (error) {
+      console.warn('Failed to save prep time setting to localStorage:', error);
+    }
+  }
+
+  // Load the saved prep time setting on initialization
+  loadPrepTimeSetting();
+
   if (executeBtn) {
     const executeDropdown = document.getElementById("executeDropdown");
+    const prepTimeMenuItem = document.getElementById("prepTimeMenuItem");
+    const prepTimeSubmenu = document.getElementById("prepTimeSubmenu");
+    const prepTimeSlider = document.getElementById("prepTimeSlider");
+    const prepTimeValue = document.getElementById("prepTimeValue");
     const previewMenuItem = document.getElementById("previewMenuItem");
     const runMenuItem = document.getElementById("runMenuItem");
 
@@ -481,8 +813,29 @@ document.addEventListener("DOMContentLoaded", function () {
       closeAllDropdowns(executeDropdown);
       if (!isActive) {
         executeDropdown.classList.add("active");
+        prepTimeMenuState.current = 'main';
+        showExecuteMainMenu();
       }
     });
+
+    // Prep time menu item click
+    if (prepTimeMenuItem) {
+      prepTimeMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        prepTimeMenuState.current = 'submenu';
+        showPrepTimeSubmenu();
+      });
+    }
+
+    // Prep time slider change
+    if (prepTimeSlider) {
+      prepTimeSlider.addEventListener("input", function(event) {
+        const seconds = parseInt(event.target.value);
+        prepTimeMenuState.prepTimeSeconds = seconds;
+        updatePrepTimeDisplay(seconds);
+        savePrepTimeSetting(seconds);
+      });
+    }
 
     // Preview menu item click
     if (previewMenuItem) {
@@ -502,6 +855,52 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
+    // Function to show main execute menu
+    function showExecuteMainMenu() {
+      executeDropdown.style.display = 'block';
+      if (prepTimeSubmenu) {
+        prepTimeSubmenu.style.display = 'none';
+      }
+    }
+
+    // Function to show prep time submenu
+    function showPrepTimeSubmenu() {
+      executeDropdown.style.display = 'none';
+      if (prepTimeSubmenu) {
+        prepTimeSubmenu.style.display = 'block';
+        prepTimeSubmenu.classList.add("active");
+        
+        // Initialize slider with current value
+        if (prepTimeSlider) {
+          prepTimeSlider.value = prepTimeMenuState.prepTimeSeconds;
+          updatePrepTimeDisplay(prepTimeMenuState.prepTimeSeconds);
+        }
+      }
+    }
+
+    // Function to update prep time display
+    function updatePrepTimeDisplay(seconds) {
+      if (prepTimeValue) {
+        if (seconds < 60) {
+          prepTimeValue.textContent = `${seconds}s`;
+        } else {
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          prepTimeValue.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}min`;
+        }
+      }
+    }
+
+    // Handle clicks outside to close submenu
+    document.addEventListener("click", function(event) {
+      const executeContainer = executeBtn.closest('.execute-btn-container');
+      if (!executeContainer.contains(event.target)) {
+        if (prepTimeSubmenu && prepTimeSubmenu.classList.contains("active")) {
+          prepTimeSubmenu.classList.remove("active");
+          prepTimeMenuState.current = 'main';
+        }
+      }
+    });
 
   }
 
@@ -750,14 +1149,16 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeBtn"),
       document.getElementById("editorBtn"),
       document.getElementById("loadBtn"),
-      document.getElementById("saveBtn")
+      document.getElementById("saveBtn"),
+      document.getElementById("heartBtn")
     ];
 
     const toolbarDropdowns = [
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     let clickedOnDropdownOrButton = false;
@@ -815,7 +1216,8 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     let focusedInDropdown = false;
@@ -1084,6 +1486,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const defaultVoiceRateSelect = document.getElementById(
     "defaultVoiceRateSelect",
   );
+  const defaultAutoVoiceSplitStepCheckbox = document.getElementById(
+    "defaultAutoVoiceSplitStepCheckbox",
+  );
   const modalCancelBtn = document.getElementById("modalCancelBtn");
   const modalOkBtn = document.getElementById("modalOkBtn");
   const deleteModal = document.getElementById("deleteModal");
@@ -1173,12 +1578,11 @@ document.addEventListener("DOMContentLoaded", function () {
               : 1;
           } else if (limitsType === "time-limit") {
             const totalSeconds = defaultTimeLimitSlider
-              ? parseInt(defaultTimeLimitSlider.value)
-              : 600;
+              ? parseInt(defaultTimeLimitSlider.value) // Ensure this says "defaultTimeLimitSlider"
+              : 3600;
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
-            const formattedSeconds = seconds < 10 ? "0" + seconds : seconds;
-            return `${minutes.toString().padStart(2, "0")}:${formattedSeconds}`;
+            return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
           }
           return null;
         })(),
@@ -1221,9 +1625,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })(),
       },
-      autoVoiceSplitStep: defaultSplitStepSpeedSelect
-        ? defaultSplitStepSpeedSelect.value === "auto-scale"
-        : true,
+      autoVoiceSplitStep: true, // Default to true, only set to false if explicitly disabled
       shotAnnouncementLeadTime: defaultLeadTimeSlider
         ? parseFloat(defaultLeadTimeSlider.value)
         : 2.5,
@@ -1267,9 +1669,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const voiceSelect = shotElement.querySelector(".voice-select");
     const voiceRateSelect = shotElement.querySelector(".voice-rate-select");
 
-    // Check if shot has non-default settings
-    const hasNonDefault = hasNonDefaultSettings(shotElement);
-
     const shotObject = {
       type: "Shot",
       id: shotElement.id || generateUniqueId(),
@@ -1277,61 +1676,85 @@ document.addEventListener("DOMContentLoaded", function () {
       positionType: getPositionType(shotElement),
     };
 
-    // Only include config if there are non-default settings
-    if (hasNonDefault) {
-      shotObject.config = {
-        repeatCount: repeatSlider ? parseInt(repeatSlider.value) : 1,
-        interval: shotIntervalSlider
-          ? parseFloat(shotIntervalSlider.value)
-          : 5.0,
-        intervalOffsetType: offsetTypeSelect ? offsetTypeSelect.value : "fixed",
-        intervalOffset: {
-          min: (() => {
-            const type = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
-            if (type === "fixed") {
-              return offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0;
-            } else {
-              return offsetRandomMinimumSlider
-                ? parseFloat(offsetRandomMinimumSlider.value)
-                : 0;
-            }
-          })(),
-          max: (() => {
-            const type = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
-            if (type === "fixed") {
-              return offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0;
-            } else {
-              return offsetRandomMaximumSlider
-                ? parseFloat(offsetRandomMaximumSlider.value)
-                : 0;
-            }
-          })(),
-        },
-        autoVoiceSplitStep: splitStepSpeedSelect
-          ? splitStepSpeedSelect.value === "auto-scale"
-          : true,
-        shotAnnouncementLeadTime: leadTimeSlider
-          ? parseFloat(leadTimeSlider.value)
-          : 2.5,
-        splitStepSpeed: (() => {
-          if (splitStepEnabledCheckbox && !splitStepEnabledCheckbox.checked)
-            return "none";
-          const speed = splitStepSpeedSelect
-            ? splitStepSpeedSelect.value
-            : "auto-scale";
-          return speed === "auto-scale" ? "medium" : speed;
-        })(),
-        voice:
-          voiceEnabledCheckbox && voiceEnabledCheckbox.checked && voiceSelect
-            ? voiceSelect.value
-            : undefined,
-        speechRate: (() => {
-          if (!voiceEnabledCheckbox || !voiceEnabledCheckbox.checked)
-            return undefined;
-          const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
-          return rate === "auto-scale" ? undefined : parseFloat(rate);
-        })(),
-      };
+    // Build config object with all values
+    const config = {};
+    
+    // Include repeatCount
+    const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
+    if (repeatCount > 1) {
+      config.repeatCount = repeatCount;
+    }
+
+    // Include interval
+    if (shotIntervalSlider) {
+      const interval = parseFloat(shotIntervalSlider.value);
+      config.interval = interval;
+    }
+
+    // Include lead time
+    if (leadTimeSlider) {
+      const leadTime = parseFloat(leadTimeSlider.value);
+      config.shotAnnouncementLeadTime = leadTime;
+    }
+
+    // Include interval offset - preserve original data if UI state is unreliable
+    const originalConfig = shotElement.dataset.originalConfig ? 
+      JSON.parse(shotElement.dataset.originalConfig) : null;
+    
+    if (offsetEnabledCheckbox && offsetEnabledCheckbox.checked) {
+      // UI indicates offset is enabled, use UI values
+      const offsetType = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
+      config.intervalOffsetType = offsetType;
+
+      const offsetMin = offsetType === "fixed" 
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMinimumSlider ? parseFloat(offsetRandomMinimumSlider.value) : 0);
+      const offsetMax = offsetType === "fixed"
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMaximumSlider ? parseFloat(offsetRandomMaximumSlider.value) : 0);
+
+      config.intervalOffset = { min: offsetMin, max: offsetMax };
+    } else if (originalConfig && originalConfig.intervalOffset) {
+      // UI indicates offset is disabled, but preserve original data
+      config.intervalOffset = originalConfig.intervalOffset;
+      config.intervalOffsetType = originalConfig.intervalOffsetType;
+    }
+
+    // Include split step speed
+    if (splitStepEnabledCheckbox) {
+      const isEnabled = splitStepEnabledCheckbox.checked;
+      if (isEnabled && splitStepSpeedSelect) {
+        const splitStepSpeed = splitStepSpeedSelect.value;
+        config.splitStepSpeed = splitStepSpeed;
+      } else if (!isEnabled) {
+        config.splitStepSpeed = 'none';
+      }
+    }
+
+    // Include auto voice split step
+    if (splitStepEnabledCheckbox) {
+      const isEnabled = splitStepEnabledCheckbox.checked;
+      config.autoVoiceSplitStep = isEnabled;
+    }
+
+    // Include voice settings
+    if (voiceEnabledCheckbox && voiceEnabledCheckbox.checked) {
+      const voice = voiceSelect ? voiceSelect.value : "Default";
+      config.voice = voice;
+
+      const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
+      const speechRate = rate === "auto-scale" ? 1.0 : parseFloat(rate);
+      config.speechRate = speechRate;
+    }
+
+    // Apply DRY principles to remove defaults and inherited values
+    const patternElement = shotElement.closest('.pattern-instance');
+    const patternConfig = patternElement ? getPatternConfig(patternElement) : null;
+    const cleanedConfig = applyDRYPrinciples(config, patternConfig);
+    
+    // Only include config if it's not empty
+    if (cleanedConfig) {
+      shotObject.config = cleanedConfig;
     }
 
     return shotObject;
@@ -1363,42 +1786,89 @@ document.addEventListener("DOMContentLoaded", function () {
     const voiceSelect = messageElement.querySelector(".voice-select");
     const voiceRateSelect = messageElement.querySelector(".voice-rate-select");
 
-    return {
+    const messageObject = {
       type: "Message",
       id: messageElement.id || generateUniqueId(),
       name: titleInput ? titleInput.value : "New message",
       positionType: getPositionType(messageElement),
-      config: {
-        repeatCount: repeatSlider ? parseInt(repeatSlider.value) : 1,
-        message:
-          messageInput && messageInput.value.trim()
-            ? messageInput.value
-            : "New message",
-        interval: (() => {
-          const seconds = messageIntervalSlider
-            ? parseInt(messageIntervalSlider.value)
-            : 0;
-          const minutes = Math.floor(seconds / 60);
-          const remainingSeconds = seconds % 60;
-          return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
-        })(),
-        intervalType: messageIntervalTypeSelect
-          ? messageIntervalTypeSelect.value
-          : "fixed",
-        countdown: messageCountdownEnabled
-          ? messageCountdownEnabled.checked
-          : false,
-        skipAtEndOfWorkout: skipAtEndCheckbox
-          ? skipAtEndCheckbox.checked
-          : false,
-        voice: voiceEnabledCheckbox && voiceEnabledCheckbox.checked && voiceSelect ? voiceSelect.value : undefined,
-        speechRate: (() => {
-          if (!voiceEnabledCheckbox || !voiceEnabledCheckbox.checked) return undefined;
-          const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
-          return rate === "auto-scale" ? undefined : parseFloat(rate);
-        })(),
-      },
     };
+
+    // Build config object with all values
+    const config = {};
+
+    // Message is always required
+    const message = messageInput && messageInput.value.trim()
+      ? messageInput.value
+      : "New message";
+    config.message = message;
+
+    // Preserve original data for properties not exposed in UI
+    const originalConfig = messageElement.dataset.originalConfig ? 
+      JSON.parse(messageElement.dataset.originalConfig) : null;
+
+    // Include interval
+    const intervalSeconds = messageIntervalSlider
+      ? parseInt(messageIntervalSlider.value)
+      : 0;
+    if (intervalSeconds > 0) {
+      const minutes = Math.floor(intervalSeconds / 60);
+      const remainingSeconds = intervalSeconds % 60;
+      const interval = `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+      config.interval = interval;
+    }
+
+    // Include interval type
+    const intervalType = messageIntervalTypeSelect
+      ? messageIntervalTypeSelect.value
+      : "fixed";
+    config.intervalType = intervalType;
+
+    // Include countdown (only if true, since false is the default)
+    const countdown = messageCountdownEnabled
+      ? messageCountdownEnabled.checked
+      : false;
+    if (countdown) {
+      config.countdown = countdown;
+    }
+
+    // Include skip at end
+    const skipAtEnd = skipAtEndCheckbox
+      ? skipAtEndCheckbox.checked
+      : false;
+    config.skipAtEndOfWorkout = skipAtEnd;
+
+    // Preserve original data for properties not exposed in UI
+    if (originalConfig) {
+      // Preserve intervalType if not set in UI
+      if (!config.intervalType && originalConfig.intervalType) {
+        config.intervalType = originalConfig.intervalType;
+      }
+      // Preserve skipAtEndOfWorkout if not set in UI
+      if (!config.skipAtEndOfWorkout && originalConfig.skipAtEndOfWorkout) {
+        config.skipAtEndOfWorkout = originalConfig.skipAtEndOfWorkout;
+      }
+    }
+
+    // Include voice settings
+    if (voiceEnabledCheckbox && voiceEnabledCheckbox.checked) {
+      const voice = voiceSelect ? voiceSelect.value : "Default";
+      config.voice = voice;
+
+      const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
+      const speechRate = rate === "auto-scale" ? 1.0 : parseFloat(rate);
+      config.speechRate = speechRate;
+    }
+
+    // Apply DRY principles to remove defaults and inherited values
+    const patternElement = messageElement.closest('.pattern-instance');
+    const patternConfig = patternElement ? getPatternConfig(patternElement) : null;
+    const cleanedConfig = applyDRYPrinciples(config, patternConfig);
+    
+    // Only include config if it's not empty
+    if (cleanedConfig) {
+      messageObject.config = cleanedConfig;
+    }
+    return messageObject;
   }
 
   /**
@@ -1446,77 +1916,228 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
-    return {
+    const patternObject = {
       type: "Pattern",
       id: patternElement.id || generateUniqueId(),
       name: titleInput ? titleInput.value : "New pattern",
       positionType: getPositionType(patternElement),
-      config: {
-        repeatCount: repeatSlider ? parseInt(repeatSlider.value) : 1,
-        iterationType: iterationTypeSelect
-          ? iterationTypeSelect.value
-          : "in-order",
-        limits: {
-          type: limitsTypeSelect ? limitsTypeSelect.value : "all-shots",
-          value: (() => {
-            const limitsType = limitsTypeSelect
-              ? limitsTypeSelect.value
-              : "all-shots";
-            if (limitsType === "shot-limit") {
-              return shotLimitSlider ? parseInt(shotLimitSlider.value) : 1;
-            } else if (limitsType === "time-limit") {
-              const totalSeconds = timeLimitSlider
-                ? parseInt(timeLimitSlider.value)
-                : 600;
-              const minutes = Math.floor(totalSeconds / 60);
-              const seconds = totalSeconds % 60;
-              return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-            }
-            return null;
-          })(),
-        },
-        interval: shotIntervalSlider ? parseFloat(shotIntervalSlider.value) : undefined,
-        intervalOffsetType: offsetTypeSelect ? offsetTypeSelect.value : undefined,
-        intervalOffset: offsetEnabledCheckbox && offsetEnabledCheckbox.checked ? {
-          min: (() => {
-            const type = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
-            if (type === "fixed") {
-              return offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0;
-            } else {
-              return offsetRandomMinimumSlider ? parseFloat(offsetRandomMinimumSlider.value) : 0;
-            }
-          })(),
-          max: (() => {
-            const type = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
-            if (type === "fixed") {
-              return offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0;
-            } else {
-              return offsetRandomMaximumSlider ? parseFloat(offsetRandomMaximumSlider.value) : 0;
-            }
-          })(),
-        } : undefined,
-        autoVoiceSplitStep: splitStepSpeedSelect ? splitStepSpeedSelect.value === "auto-scale" : undefined,
-        shotAnnouncementLeadTime: leadTimeSlider ? parseFloat(leadTimeSlider.value) : undefined,
-        splitStepSpeed: (() => {
-          if (splitStepEnabledCheckbox && !splitStepEnabledCheckbox.checked) return "none";
-          const speed = splitStepSpeedSelect ? splitStepSpeedSelect.value : "auto-scale";
-          return speed === "auto-scale" ? undefined : speed;
-        })(),
-        voice: voiceEnabledCheckbox && voiceEnabledCheckbox.checked && voiceSelect ? voiceSelect.value : undefined,
-        speechRate: (() => {
-          if (!voiceEnabledCheckbox || !voiceEnabledCheckbox.checked) return undefined;
-          const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
-          return rate === "auto-scale" ? undefined : parseFloat(rate);
-        })(),
-      },
       entries: entries,
     };
+
+    // Build config object with all values
+    const config = {};
+
+    // Include repeat count
+    const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
+    if (repeatCount > 1) {
+      config.repeatCount = repeatCount;
+    }
+
+    // Include iteration type
+    const iterationType = iterationTypeSelect ? iterationTypeSelect.value : "in-order";
+    config.iterationType = iterationType;
+
+    // Include limits
+    const limitsType = limitsTypeSelect ? limitsTypeSelect.value : "all-shots";
+    config.limits = {
+      type: limitsType,
+      value: (() => {
+        if (limitsType === "shot-limit") {
+          return shotLimitSlider ? parseInt(shotLimitSlider.value) : 1;
+        } else if (limitsType === "time-limit") {
+          const totalSeconds = timeLimitSlider
+            ? parseInt(timeLimitSlider.value)
+            : 3600;
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        }
+        return null;
+      })(),
+    };
+
+    // Include other config properties
+    const globalConfig = getGlobalConfigValues();
+    
+    if (shotIntervalSlider) {
+      const interval = parseFloat(shotIntervalSlider.value);
+      config.interval = interval;
+    }
+
+    if (leadTimeSlider) {
+      const leadTime = parseFloat(leadTimeSlider.value);
+      config.shotAnnouncementLeadTime = leadTime;
+    }
+
+    if (offsetEnabledCheckbox && offsetEnabledCheckbox.checked) {
+      const offsetType = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
+      config.intervalOffsetType = offsetType;
+
+      const offsetMin = offsetType === "fixed" 
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMinimumSlider ? parseFloat(offsetRandomMinimumSlider.value) : 0);
+      const offsetMax = offsetType === "fixed"
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMaximumSlider ? parseFloat(offsetRandomMaximumSlider.value) : 0);
+
+      config.intervalOffset = { min: offsetMin, max: offsetMax };
+    }
+
+    // Include split step speed
+    if (splitStepEnabledCheckbox) {
+      const isEnabled = splitStepEnabledCheckbox.checked;
+      if (isEnabled && splitStepSpeedSelect) {
+        const splitStepSpeed = splitStepSpeedSelect.value;
+        config.splitStepSpeed = splitStepSpeed;
+      } else if (!isEnabled) {
+        config.splitStepSpeed = 'none';
+      }
+    }
+
+    if (voiceEnabledCheckbox && voiceEnabledCheckbox.checked) {
+      const voice = voiceSelect ? voiceSelect.value : "Default";
+      config.voice = voice;
+    
+      const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
+      const speechRate = rate === "auto-scale" ? 1.0 : parseFloat(rate);
+      config.speechRate = speechRate;
+    }
+
+    if (splitStepEnabledCheckbox) {
+      const isEnabled = splitStepEnabledCheckbox.checked;
+      config.autoVoiceSplitStep = isEnabled;
+    }
+
+    // Apply DRY principles to remove defaults and inherited values
+    const cleanedConfig = applyDRYPrinciples(config, globalConfig);
+    
+    // Only include config if it's not empty
+    if (cleanedConfig) {
+      patternObject.config = cleanedConfig;
+    }
+
+    return patternObject;
   }
+
+  // Make functions available globally for debugging
+  window.patternToJSON = patternToJSON;
+  window.shotToJSON = shotToJSON;
+  window.messageToJSON = messageToJSON;
 
   /**
    * Collects the complete workout state and converts to JSON format.
    * @returns {Object} Complete workout object in JSON format.
    */
+  /**
+   * Gets the config object from a pattern element for inheritance comparison.
+   * @param {HTMLElement} patternElement - The pattern element
+   * @returns {Object|null} - The pattern's config object, or null if not found
+   */
+  function getPatternConfig(patternElement) {
+    if (!patternElement) return null;
+    
+    // This is a simplified version - in practice, you'd want to extract the actual config
+    // from the pattern element's UI state, similar to how patternToJSON works
+    const config = {};
+    
+    const shotIntervalSlider = patternElement.querySelector(".shot-interval-slider");
+    const leadTimeSlider = patternElement.querySelector(".lead-time-slider");
+    const offsetEnabledCheckbox = patternElement.querySelector(".offset-enabled");
+    const offsetTypeSelect = patternElement.querySelector(".offset-type-select");
+    const offsetFixedSlider = patternElement.querySelector(".offset-fixed-slider");
+    const offsetRandomMaximumSlider = patternElement.querySelector(".offset-random-maximum-slider");
+    const offsetRandomMinimumSlider = patternElement.querySelector(".offset-random-minimum-slider");
+    const splitStepSpeedSelect = patternElement.querySelector(".split-step-speed-select");
+    const splitStepEnabledCheckbox = patternElement.querySelector(".split-step-enabled");
+    const voiceEnabledCheckbox = patternElement.querySelector(".voice-enabled");
+    const voiceSelect = patternElement.querySelector(".voice-select");
+    const voiceRateSelect = patternElement.querySelector(".voice-rate-select");
+
+    if (shotIntervalSlider) {
+      config.interval = parseFloat(shotIntervalSlider.value);
+    }
+    if (leadTimeSlider) {
+      config.shotAnnouncementLeadTime = parseFloat(leadTimeSlider.value);
+    }
+    if (offsetEnabledCheckbox && offsetEnabledCheckbox.checked) {
+      const offsetType = offsetTypeSelect ? offsetTypeSelect.value : "fixed";
+      config.intervalOffsetType = offsetType;
+      const offsetMin = offsetType === "fixed" 
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMinimumSlider ? parseFloat(offsetRandomMinimumSlider.value) : 0);
+      const offsetMax = offsetType === "fixed"
+        ? (offsetFixedSlider ? parseFloat(offsetFixedSlider.value) : 0)
+        : (offsetRandomMaximumSlider ? parseFloat(offsetRandomMaximumSlider.value) : 0);
+      config.intervalOffset = { min: offsetMin, max: offsetMax };
+    }
+    if (splitStepSpeedSelect) {
+      config.splitStepSpeed = splitStepSpeedSelect.value;
+    }
+    if (splitStepEnabledCheckbox) {
+      config.autoVoiceSplitStep = splitStepEnabledCheckbox.checked;
+    }
+    if (voiceEnabledCheckbox && voiceEnabledCheckbox.checked) {
+      config.voice = voiceSelect ? voiceSelect.value : "Default";
+      const rate = voiceRateSelect ? voiceRateSelect.value : "auto-scale";
+      config.speechRate = rate === "auto-scale" ? 1.0 : parseFloat(rate);
+    }
+    
+    return Object.keys(config).length > 0 ? config : null;
+  }
+
+  /**
+   * Applies DRY principles to remove default and inherited values from config objects.
+   * @param {Object} config - The config object to clean
+   * @param {Object} parentConfig - The parent's config (for inheritance comparison)
+   * @param {Object} defaults - The default values to compare against
+   * @returns {Object|null} - The cleaned config object, or null if empty
+   */
+  function applyDRYPrinciples(config, parentConfig = null, defaults = null) {
+    if (!config || typeof config !== 'object') {
+      return null;
+    }
+
+    const cleanedConfig = { ...config };
+    
+    // Define default values according to the specification
+    const specDefaults = defaults || {
+      voice: "Default",
+      speechRate: 1.0,
+      interval: 5.0,
+      splitStepSpeed: "auto-scale",
+      shotAnnouncementLeadTime: 2.5,
+      intervalOffsetType: "fixed",
+      intervalOffset: { min: 0.0, max: 0.0 },
+      autoVoiceSplitStep: true,
+      iterationType: "in-order",
+      limits: { type: "all-shots", value: null }
+    };
+
+    // Remove values that match defaults
+    Object.keys(cleanedConfig).forEach(key => {
+      if (JSON.stringify(cleanedConfig[key]) === JSON.stringify(specDefaults[key])) {
+        delete cleanedConfig[key];
+      }
+    });
+
+    // Remove values that match parent config (inheritance)
+    if (parentConfig) {
+      Object.keys(cleanedConfig).forEach(key => {
+        if (JSON.stringify(cleanedConfig[key]) === JSON.stringify(parentConfig[key])) {
+          delete cleanedConfig[key];
+        }
+      });
+    }
+
+    // Remove repeatCount if it's 1 (default)
+    if (cleanedConfig.repeatCount === 1) {
+      delete cleanedConfig.repeatCount;
+    }
+
+    // Return null if config is empty, otherwise return the cleaned config
+    return Object.keys(cleanedConfig).length > 0 ? cleanedConfig : null;
+  }
+
   function getWorkoutJSON() {
     const patterns = [];
     document.querySelectorAll(".pattern-instance").forEach((patternElement) => {
@@ -1534,22 +2155,16 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
+  // Make main function available globally for debugging
+  window.getWorkoutJSON = getWorkoutJSON;
+
   /**
    * Downloads the workout as a JSON file.
    */
   function saveWorkout() {
     try {
       const workoutData = getWorkoutJSON();
-      let jsonString = JSON.stringify(workoutData, null, 2);
-
-      // Post-process the JSON to ensure float values show decimal points
-      // This ensures speechRate, interval, and intervalOffset values are always shown as floats
-      // Use word boundaries to avoid matching numbers that are already part of decimal values
-      jsonString = jsonString.replace(/"speechRate": (\d+)(?!\.)/g, '"speechRate": $1.0');
-      jsonString = jsonString.replace(/"interval": (\d+)(?!\.)/g, '"interval": $1.0');
-      jsonString = jsonString.replace(/"min": (\d+)(?!\.)/g, '"min": $1.0');
-      jsonString = jsonString.replace(/"max": (\d+)(?!\.)/g, '"max": $1.0');
-      jsonString = jsonString.replace(/"shotAnnouncementLeadTime": (\d+)(?!\.)/g, '"shotAnnouncementLeadTime": $1.0');
+      let jsonString = window.JSONFormatter ? window.JSONFormatter.formatWorkoutJSON(workoutData) : JSON.stringify(workoutData, null, 2);
 
       // Create a blob with the JSON data
       const blob = new Blob([jsonString], { type: "application/json" });
@@ -1569,9 +2184,7 @@ document.addEventListener("DOMContentLoaded", function () {
       URL.revokeObjectURL(url);
 
       // Log success after download is initiated
-      // Note: This indicates the download dialog was shown, but actual save depends on user action
-      console.log("Workout download initiated successfully");
-      console.log("File will be saved when user confirms the download dialog");
+      console.log("Workout saved successfully");
     } catch (error) {
       console.error("Error saving workout:", error);
       alert("Error saving workout. Please check the console for details.");
@@ -1590,16 +2203,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const workoutData = getWorkoutJSON();
-      let jsonString = JSON.stringify(workoutData, null, 2);
-
-      // Post-process the JSON to ensure float values show decimal points
-      // This ensures speechRate, interval, and intervalOffset values are always shown as floats
-      // Use word boundaries to avoid matching numbers that are already part of decimal values
-      jsonString = jsonString.replace(/"speechRate": (\d+)(?!\.)/g, '"speechRate": $1.0');
-      jsonString = jsonString.replace(/"interval": (\d+)(?!\.)/g, '"interval": $1.0');
-      jsonString = jsonString.replace(/"min": (\d+)(?!\.)/g, '"min": $1.0');
-      jsonString = jsonString.replace(/"max": (\d+)(?!\.)/g, '"max": $1.0');
-      jsonString = jsonString.replace(/"shotAnnouncementLeadTime": (\d+)(?!\.)/g, '"shotAnnouncementLeadTime": $1.0');
+      let jsonString = window.JSONFormatter ? window.JSONFormatter.formatWorkoutJSON(workoutData) : JSON.stringify(workoutData, null, 2);
 
       // Copy to clipboard
       await navigator.clipboard.writeText(jsonString);
@@ -1622,107 +2226,15 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {Object} workoutData The parsed JSON object to validate.
    * @returns {Object} Validation result with success flag and error messages.
    */
-  function validateWorkoutJSON(workoutData) {
-    const errors = [];
-
-    // Basic structure validation
-    if (!workoutData || typeof workoutData !== "object") {
-      return { success: false, errors: ["Invalid JSON structure"] };
+  async function validateWorkoutJSON(workoutData) {
+    try {
+      // Use the new library's validation function directly
+      const { validateWorkoutJSON } = await import('./lib/new-workout-parser/parser.js');
+      validateWorkoutJSON(workoutData);
+      return { success: true, errors: [] };
+    } catch (error) {
+      return { success: false, errors: [error.message] };
     }
-
-    // Required root properties
-    if (workoutData.type !== "Workout") {
-      errors.push('Root object must have type "Workout"');
-    }
-
-    if (!workoutData.name || typeof workoutData.name !== "string") {
-      errors.push("Workout must have a valid name");
-    }
-
-    // Config validation
-    if (!workoutData.config || typeof workoutData.config !== "object") {
-      errors.push("Workout must have a config object");
-    } else {
-      const config = workoutData.config;
-
-      if (!["in-order", "shuffle"].includes(config.iterationType)) {
-        errors.push('Config iterationType must be "in-order" or "shuffle"');
-      }
-
-      if (!config.limits || typeof config.limits !== "object") {
-        errors.push("Config must have limits object");
-      } else {
-        if (
-          !["all-shots", "shot-limit", "time-limit"].includes(
-            config.limits.type,
-          )
-        ) {
-          errors.push(
-            'Limits type must be "all-shots", "shot-limit", or "time-limit"',
-          );
-        }
-
-        // Validate limit values
-        if (config.limits.type === "shot-limit") {
-          if (
-            typeof config.limits.value !== "number" ||
-            config.limits.value < 1 ||
-            config.limits.value > 50
-          ) {
-            errors.push("Shot limit value must be a number between 1 and 50");
-          }
-        } else if (config.limits.type === "time-limit") {
-          if (
-            typeof config.limits.value !== "string" ||
-            !/^\d{2}:\d{2}$/.test(config.limits.value)
-          ) {
-            errors.push("Time limit value must be in MM:SS format");
-          }
-        } else if (config.limits.type === "all-shots") {
-          if (config.limits.value !== null) {
-            errors.push("All-shots limit value must be null");
-          }
-        }
-      }
-
-      // Validate voice field (optional)
-      if (
-        config.voice !== undefined &&
-        (typeof config.voice !== "string" || config.voice === "")
-      ) {
-        errors.push("Voice must be a non-empty string when provided");
-      }
-
-      // Validate speechRate field (optional)
-      if (
-        config.speechRate !== undefined &&
-        (typeof config.speechRate !== "number" ||
-          config.speechRate < 0.5 ||
-          config.speechRate > 1.5)
-      ) {
-        errors.push(
-          "Speech rate must be a number between 0.5 and 1.5 when provided",
-        );
-      }
-    }
-
-    // Patterns validation
-    if (
-      !Array.isArray(workoutData.patterns) ||
-      workoutData.patterns.length === 0
-    ) {
-      errors.push("Workout must have at least one pattern");
-    } else {
-      workoutData.patterns.forEach((pattern, index) => {
-        const patternErrors = validatePatternJSON(
-          pattern,
-          `Pattern ${index + 1}`,
-        );
-        errors.push(...patternErrors);
-      });
-    }
-
-    return { success: errors.length === 0, errors };
   }
 
   /**
@@ -1731,141 +2243,15 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {string} context Context for error messages.
    * @returns {Array} Array of error messages.
    */
-  function validatePatternJSON(pattern, context) {
-    const errors = [];
-
-    if (!pattern || typeof pattern !== "object") {
-      return [`${context}: Invalid pattern structure`];
+  async function validatePatternJSON(pattern, context) {
+    try {
+      // Use the new library's validation function directly
+      const { validatePatternJSON } = await import('./lib/new-workout-parser/parser.js');
+      validatePatternJSON(pattern, context);
+      return [];
+    } catch (error) {
+      return [`${context}: ${error.message}`];
     }
-
-    if (pattern.type !== "Pattern") {
-      errors.push(`${context}: Must have type "Pattern"`);
-    }
-
-    if (!pattern.name || typeof pattern.name !== "string") {
-      errors.push(`${context}: Must have a valid name`);
-    }
-
-    if (!pattern.id || typeof pattern.id !== "string") {
-      errors.push(`${context}: Must have a valid id`);
-    }
-
-    // Validate positionType
-    if (pattern.positionType) {
-      const validSpecialTypes = ["normal", "linked", "last"];
-      const positionNum = parseInt(pattern.positionType);
-      const isValidPosition = !isNaN(positionNum) && positionNum > 0;
-
-      if (
-        !validSpecialTypes.includes(pattern.positionType) &&
-        !isValidPosition
-      ) {
-        errors.push(
-          `${context}: positionType must be "normal", "linked", "last", or a positive integer`,
-        );
-      }
-    } else {
-      errors.push(`${context}: positionType is required`);
-    }
-
-    // Config validation - config is optional for DRY compatibility
-    if (pattern.config && typeof pattern.config === "object") {
-      const config = pattern.config;
-
-      // Validate repeatCount if explicitly set (inherits from defaults if not set)
-      if (config.repeatCount !== undefined) {
-        if (
-          typeof config.repeatCount !== "number" ||
-          config.repeatCount < 1 ||
-          config.repeatCount > 10
-        ) {
-          errors.push(
-            `${context}: repeatCount must be a number between 1 and 10`,
-          );
-        }
-      }
-
-      // Validate iteration if explicitly set
-      if (config.iterationType && !["in-order", "shuffle"].includes(config.iterationType)) {
-        errors.push(
-          `${context}: iterationType must be "in-order" or "shuffle"`,
-        );
-      }
-
-      // Validate limits if explicitly set
-      if (config.limits && typeof config.limits === "object") {
-        if (
-          !["all-shots", "shot-limit", "time-limit"].includes(
-            config.limits.type,
-          )
-        ) {
-          errors.push(
-            `${context}: limits type must be "all-shots", "shot-limit", or "time-limit"`,
-          );
-        }
-
-        // Validate limit values
-        if (config.limits.type === "shot-limit") {
-          if (
-            typeof config.limits.value !== "number" ||
-            config.limits.value < 1 ||
-            config.limits.value > 50
-          ) {
-            errors.push(
-              `${context}: Shot limit value must be a number between 1 and 50`,
-            );
-          }
-        } else if (config.limits.type === "time-limit") {
-          if (
-            typeof config.limits.value !== "string" ||
-            !/^\d{2}:\d{2}$/.test(config.limits.value)
-          ) {
-            errors.push(`${context}: Time limit value must be in MM:SS format`);
-          }
-        } else if (config.limits.type === "all-shots") {
-          if (config.limits.value !== null) {
-            errors.push(`${context}: All-shots limit value must be null`);
-          }
-        }
-      }
-
-      // Validate optional voice field
-      if (
-        config.voice !== undefined &&
-        (typeof config.voice !== "string" || config.voice === "")
-      ) {
-        errors.push(
-          `${context}: Voice must be a non-empty string when provided`,
-        );
-      }
-
-      // Validate optional speechRate field
-      if (
-        config.speechRate !== undefined &&
-        (typeof config.speechRate !== "number" ||
-          config.speechRate < 0.5 ||
-          config.speechRate > 1.5)
-      ) {
-        errors.push(
-          `${context}: Speech rate must be a number between 0.5 and 1.5 when provided`,
-        );
-      }
-    }
-
-    // Entries validation
-    if (!Array.isArray(pattern.entries) || pattern.entries.length === 0) {
-      errors.push(`${context}: Must have at least one entry`);
-    } else {
-      pattern.entries.forEach((entry, index) => {
-        const entryErrors = validateEntryJSON(
-          entry,
-          `${context} Entry ${index + 1}`,
-        );
-        errors.push(...entryErrors);
-      });
-    }
-
-    return errors;
   }
 
   /**
@@ -1874,209 +2260,26 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {string} context Context for error messages.
    * @returns {Array} Array of error messages.
    */
-  function validateEntryJSON(entry, context) {
-    const errors = [];
-
-    if (!entry || typeof entry !== "object") {
-      return [`${context}: Invalid entry structure`];
+  async function validateEntryJSON(entry, context) {
+    try {
+      // Use the new library's validation function directly
+      const { validateEntryJSON } = await import('./lib/new-workout-parser/parser.js');
+      validateEntryJSON(entry, context);
+      return [];
+    } catch (error) {
+      return [`${context}: ${error.message}`];
     }
-
-    if (!["Shot", "Message"].includes(entry.type)) {
-      errors.push(`${context}: Type must be "Shot" or "Message"`);
-    }
-
-    if (!entry.name || typeof entry.name !== "string") {
-      errors.push(`${context}: Must have a valid name`);
-    }
-
-    if (!entry.id || typeof entry.id !== "string") {
-      errors.push(`${context}: Must have a valid id`);
-    }
-
-    // Validate positionType
-    if (entry.positionType) {
-      const validSpecialTypes = ["normal", "linked", "last"];
-      const positionNum = parseInt(entry.positionType);
-      const isValidPosition = !isNaN(positionNum) && positionNum > 0;
-
-      if (!validSpecialTypes.includes(entry.positionType) && !isValidPosition) {
-        errors.push(
-          `${context}: positionType must be "normal", "linked", "last", or a positive integer`,
-        );
-      }
-    } else {
-      errors.push(`${context}: positionType is required`);
-    }
-
-    // Config validation - config is optional for DRY compatibility
-    const config = entry.config;
-
-    if (config && typeof config === "object") {
-      // Validate repeatCount if explicitly set (inherits from pattern defaults if not set)
-      if (config.repeatCount !== undefined) {
-        if (
-          typeof config.repeatCount !== "number" ||
-          config.repeatCount < 1 ||
-          config.repeatCount > 10
-        ) {
-          errors.push(`${context}: repeatCount must be a number between 1 and 10`);
-        }
-      }
-    }
-
-    if (entry.type === "Shot") {
-      // Validate interval if explicitly set (inherits from pattern/workout if not set)
-      if (config && config.interval !== undefined) {
-        if (
-          typeof config.interval !== "number" ||
-          config.interval < 3.0 ||
-          config.interval > 8.0
-        ) {
-          errors.push(
-            `${context}: Shot interval must be between 3.0 and 8.0 seconds`,
-          );
-        }
-      }
-
-      // Validate intervalOffsetType if explicitly set
-      if (config && config.intervalOffsetType && !["fixed", "random"].includes(config.intervalOffsetType)) {
-        errors.push(`${context}: intervalOffsetType must be "fixed" or "random"`);
-      }
-
-      // Validate shotAnnouncementLeadTime if explicitly set
-      if (config && config.shotAnnouncementLeadTime !== undefined) {
-        if (
-          typeof config.shotAnnouncementLeadTime !== "number" ||
-          config.shotAnnouncementLeadTime < 2.5 ||
-          (config.interval && config.shotAnnouncementLeadTime > config.interval)
-        ) {
-          errors.push(
-            `${context}: shotAnnouncementLeadTime must be between 2.5 and interval value`,
-          );
-        }
-      }
-
-      // Validate intervalOffset object if explicitly set
-      if (config && config.intervalOffset && typeof config.intervalOffset === "object") {
-        if (
-          typeof config.intervalOffset.min !== "number" ||
-          config.intervalOffset.min < -2.0 ||
-          config.intervalOffset.min > 2.0
-        ) {
-          errors.push(
-            `${context}: intervalOffset.min must be between -2.0 and 2.0`,
-          );
-        }
-        if (
-          typeof config.intervalOffset.max !== "number" ||
-          config.intervalOffset.max < -2.0 ||
-          config.intervalOffset.max > 2.0
-        ) {
-          errors.push(
-            `${context}: intervalOffset.max must be between -2.0 and 2.0`,
-          );
-        }
-        if (config.intervalOffset.min > config.intervalOffset.max) {
-          errors.push(
-            `${context}: intervalOffset.min must be less than or equal to intervalOffset.max`,
-          );
-        }
-      }
-
-      // Validate autoVoiceSplitStep if explicitly set
-      if (config && config.autoVoiceSplitStep !== undefined && typeof config.autoVoiceSplitStep !== "boolean") {
-        errors.push(`${context}: autoVoiceSplitStep must be a boolean`);
-      }
-
-      // Validate splitStepSpeed if explicitly set
-      if (config && config.splitStepSpeed && !["none", "slow", "medium", "fast", "random", "auto-scale"].includes(config.splitStepSpeed)) {
-        errors.push(
-          `${context}: splitStepSpeed must be "none", "slow", "medium", "fast", "random", or "auto-scale"`,
-        );
-      }
-
-      // Validate optional voice field
-      if (
-        config && config.voice !== undefined &&
-        (typeof config.voice !== "string" || config.voice === "")
-      ) {
-        errors.push(
-          `${context}: Voice must be a non-empty string when provided`,
-        );
-      }
-
-      // Validate optional speechRate field
-      if (
-        config && config.speechRate !== undefined &&
-        (typeof config.speechRate !== "number" ||
-          config.speechRate < 0.5 ||
-          config.speechRate > 1.5)
-      ) {
-        errors.push(
-          `${context}: Speech rate must be a number between 0.5 and 1.5 when provided`,
-        );
-      }
-    } else if (entry.type === "Message") {
-      // Validate message text if explicitly set (required for messages)
-      if (config && config.message !== undefined && (!config.message || typeof config.message !== "string")) {
-        errors.push(`${context}: Message must have valid message text`);
-      }
-
-      // Validate interval format (MM:SS) if explicitly set
-      if (config && config.interval !== undefined) {
-        if (
-          typeof config.interval !== "string" ||
-          !/^\d{2}:\d{2}$/.test(config.interval)
-        ) {
-          errors.push(`${context}: interval must be in MM:SS format`);
-        }
-      }
-
-      // Validate intervalType if explicitly set
-      if (config && config.intervalType !== undefined && !["fixed", "additional"].includes(config.intervalType)) {
-        errors.push(`${context}: intervalType must be "fixed" or "additional"`);
-      }
-
-      // Validate countdown if explicitly set
-      if (config && config.countdown !== undefined && typeof config.countdown !== "boolean") {
-        errors.push(`${context}: countdown must be a boolean`);
-      }
-
-      // Validate skipAtEndOfWorkout if explicitly set
-      if (config && config.skipAtEndOfWorkout !== undefined && typeof config.skipAtEndOfWorkout !== "boolean") {
-        errors.push(`${context}: skipAtEndOfWorkout must be a boolean`);
-      }
-
-      // Validate optional voice field
-      if (
-        config && config.voice !== undefined &&
-        (typeof config.voice !== "string" || config.voice === "")
-      ) {
-        errors.push(
-          `${context}: Voice must be a non-empty string when provided`,
-        );
-      }
-
-      // Validate optional speechRate field
-      if (
-        config && config.speechRate !== undefined &&
-        (typeof config.speechRate !== "number" ||
-          config.speechRate < 0.5 ||
-          config.speechRate > 1.5)
-      ) {
-        errors.push(
-          `${context}: Speech rate must be a number between 0.5 and 1.5 when provided`,
-        );
-      }
-    }
-
-    return errors;
   }
 
   /**
    * Clears the current workout and resets to empty state.
    */
   function clearWorkout() {
+    // Always remove favorites glow when clearing the workout
+    // Clear the tracking variable since no favorite is loaded
+    window._favoritesGlowActiveFor = null;
+    removeFavoritesGlow();
+    
     // Reset workout name to default
     const workoutNameInput = document.querySelector(".workout-name");
     if (workoutNameInput) {
@@ -2094,6 +2297,8 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {Object} config The global config object from workout JSON.
    */
   function setGlobalConfig(config) {
+    if (!config) return;
+    
     if (defaultIterationTypeSelect && config.iterationType) {
       defaultIterationTypeSelect.value = config.iterationType;
     }
@@ -2101,8 +2306,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (config.limits) {
       if (defaultLimitsTypeSelect) {
         defaultLimitsTypeSelect.value = config.limits.type;
-        // Trigger change event to show/hide appropriate containers
-        defaultLimitsTypeSelect.dispatchEvent(new Event("change"));
       }
 
       if (
@@ -2121,14 +2324,35 @@ document.addEventListener("DOMContentLoaded", function () {
         defaultTimeLimitSlider &&
         config.limits.value
       ) {
-        // Convert MM:SS to seconds
-        const timeParts = config.limits.value.split(":");
-        const totalSeconds =
-          parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+        let totalSeconds;
+        let displayValue;
+        
+        if (typeof config.limits.value === 'string') {
+          // Convert MM:SS to seconds
+          const timeParts = config.limits.value.split(":");
+          totalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+          displayValue = config.limits.value;
+        } else if (typeof config.limits.value === 'number') {
+          // Value is already in seconds, convert to MM:SS for display
+          totalSeconds = config.limits.value;
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          const formattedSeconds = seconds < 10 ? "0" + seconds : seconds;
+          displayValue = `${minutes.toString().padStart(2, "0")}:${formattedSeconds}`;
+        } else {
+          // Invalid value, skip
+          return;
+        }
+        
         defaultTimeLimitSlider.value = totalSeconds;
         if (defaultTimeLimitValue) {
-          defaultTimeLimitValue.textContent = config.limits.value;
+          defaultTimeLimitValue.textContent = displayValue;
         }
+      }
+
+      if (defaultLimitsTypeSelect) {
+        // Trigger change event to show/hide appropriate containers
+        defaultLimitsTypeSelect.dispatchEvent(new Event("change"));
       }
     }
 
@@ -2140,6 +2364,66 @@ document.addEventListener("DOMContentLoaded", function () {
       const rateValue =
         config.speechRate === 1.0 ? "auto-scale" : config.speechRate.toString();
       defaultVoiceRateSelect.value = rateValue;
+    }
+
+    // Set workout-level interval slider and value
+    if (defaultShotIntervalSlider && config.interval) {
+      defaultShotIntervalSlider.value = config.interval;
+      if (defaultShotIntervalValue) {
+        defaultShotIntervalValue.textContent = `${parseFloat(config.interval).toFixed(1)}s`;
+      }
+    }
+
+    // Set shot announcement lead time
+    if (defaultLeadTimeSlider && config.shotAnnouncementLeadTime) {
+      defaultLeadTimeSlider.value = config.shotAnnouncementLeadTime;
+      if (defaultLeadTimeValue) {
+        defaultLeadTimeValue.textContent = `${parseFloat(config.shotAnnouncementLeadTime).toFixed(1)}s`;
+      }
+    }
+
+    // Set split step speed
+    if (defaultSplitStepSpeedSelect && config.splitStepSpeed) {
+      defaultSplitStepSpeedSelect.value = config.splitStepSpeed;
+    }
+
+    // Set auto voice split step
+    // TODO: The defaultAutoVoiceSplitStepCheckbox element doesn't exist in the HTML
+    // This needs to be added to the default config UI
+    if (defaultAutoVoiceSplitStepCheckbox) {
+      defaultAutoVoiceSplitStepCheckbox.checked = config.autoVoiceSplitStep !== false;
+    }
+
+    // Set interval offset type
+    if (defaultOffsetTypeSelect && config.intervalOffsetType) {
+      defaultOffsetTypeSelect.value = config.intervalOffsetType;
+      // Trigger change event to show/hide appropriate containers
+      defaultOffsetTypeSelect.dispatchEvent(new Event("change"));
+    }
+
+    // Set interval offset values
+    if (config.intervalOffset) {
+      if (defaultOffsetFixedSlider && config.intervalOffset.min !== undefined) {
+        defaultOffsetFixedSlider.value = config.intervalOffset.min;
+        // Update the option text to reflect the new value
+        if (defaultOffsetFixedOption) {
+          defaultOffsetFixedOption.textContent = `Fixed: ${parseFloat(config.intervalOffset.min).toFixed(1)}s`;
+        }
+      }
+
+      if (defaultOffsetRandomMinimumSlider && config.intervalOffset.min !== undefined) {
+        defaultOffsetRandomMinimumSlider.value = config.intervalOffset.min;
+      }
+
+      if (defaultOffsetRandomMaximumSlider && config.intervalOffset.max !== undefined) {
+        defaultOffsetRandomMaximumSlider.value = config.intervalOffset.max;
+        // Update the option text to reflect the new values
+        if (defaultOffsetRandomOption) {
+          const minVal = parseFloat(config.intervalOffset.min || 0).toFixed(1);
+          const maxVal = parseFloat(config.intervalOffset.max || 0).toFixed(1);
+          defaultOffsetRandomOption.textContent = `Random range: ${minVal}s to ${maxVal}s`;
+        }
+      }
     }
   }
 
@@ -2248,12 +2532,29 @@ document.addEventListener("DOMContentLoaded", function () {
           timeLimitSlider &&
           config.limits.value
         ) {
-          const timeParts = config.limits.value.split(":");
-          const totalSeconds =
-            parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+          let totalSeconds;
+          let displayValue;
+          
+          if (typeof config.limits.value === 'string') {
+            // Convert MM:SS to seconds
+            const timeParts = config.limits.value.split(":");
+            totalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+            displayValue = config.limits.value;
+          } else if (typeof config.limits.value === 'number') {
+            // Value is already in seconds, convert to MM:SS for display
+            totalSeconds = config.limits.value;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formattedSeconds = seconds < 10 ? "0" + seconds : seconds;
+            displayValue = `${minutes.toString().padStart(2, "0")}:${formattedSeconds}`;
+          } else {
+            // Invalid value, skip
+            return;
+          }
+          
           timeLimitSlider.value = totalSeconds;
           const timeLimitValue = newPattern.querySelector(".time-limit-value");
-          if (timeLimitValue) timeLimitValue.textContent = config.limits.value;
+          if (timeLimitValue) timeLimitValue.textContent = displayValue;
         }
       }
 
@@ -2296,6 +2597,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      // Only set if not customized at this level
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(newPattern, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && newPattern.querySelector(propConfig.selector)) {
+          const el = newPattern.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            // Update display spans if present
+            if (prop === 'interval') {
+              const valSpan = newPattern.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = newPattern.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
+    }
+
     // Remove default shot that gets created automatically
     const defaultShots = newPattern.querySelectorAll(".shot-msg-instance");
     defaultShots.forEach((shot) => shot.remove());
@@ -2330,6 +2665,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // Set the ID from JSON data if provided
     if (shotData.id) {
       shotElement.id = shotData.id;
+    }
+
+    // Store original config data for data preservation
+    if (shotData.config) {
+      shotElement.dataset.originalConfig = JSON.stringify(shotData.config);
     }
 
     // Set basic properties
@@ -2405,6 +2745,8 @@ document.addEventListener("DOMContentLoaded", function () {
           (config.intervalOffset.min !== 0 || config.intervalOffset.max !== 0)
         ) {
           offsetEnabled.checked = true;
+          // Mark this shot as having offset enabled for reinitializeUIStates
+          shotElement.dataset.hasOffsetEnabled = "true";
         }
       }
 
@@ -2468,6 +2810,38 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(shotElement, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && shotElement.querySelector(propConfig.selector)) {
+          const el = shotElement.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            if (prop === 'interval') {
+              const valSpan = shotElement.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = shotElement.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
+    }
+
     // Update UI states
     updatePositionLockButton(shotElement);
     updateLinkWithPreviousButton(shotElement);
@@ -2487,6 +2861,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // Set the ID from JSON data if provided
     if (messageData.id) {
       messageElement.id = messageData.id;
+    }
+
+    // Store original config data for data preservation
+    if (messageData.config) {
+      messageElement.dataset.originalConfig = JSON.stringify(messageData.config);
     }
 
     // Set basic properties
@@ -2619,6 +2998,15 @@ document.addEventListener("DOMContentLoaded", function () {
    * Loads a workout synchronously (original behavior for small workouts)
    */
   function loadWorkoutSync(workoutData) {
+    // Set loading flag to prevent interference during loading
+    window.isLoadingWorkout = true;
+    
+    // Only remove favorites glow if this is not a favorite being loaded
+    // (favorites will set their own glow after loading)
+    if (!window._favoritesGlowActiveFor) {
+      removeFavoritesGlow();
+    }
+    
     // Clear existing workout
     clearWorkout();
 
@@ -2659,6 +3047,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Position the add pattern button after the last pattern
     positionAddPatternButton();
+
+    // Clear loading flag
+    window.isLoadingWorkout = false;
 
     console.log("Workout loaded and applied successfully");
   }
@@ -2792,17 +3183,22 @@ document.addEventListener("DOMContentLoaded", function () {
   /**
    * Handles the file selection and loading process.
    */
-  function handleFileLoad() {
+  async function handleFileLoad() {
     const file = workoutFileInput.files[0];
     if (!file) return;
-
+    
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
       try {
-        const jsonData = JSON.parse(e.target.result);
+        let jsonData = JSON.parse(e.target.result);
+        
+        // If the JSON is an array, take the first element
+        if (Array.isArray(jsonData)) {
+          jsonData = jsonData[0];
+        }
 
         // Validate the JSON structure
-        const validation = validateWorkoutJSON(jsonData);
+        const validation = await validateWorkoutJSON(jsonData);
         if (!validation.success) {
           const errorMessage =
             "Invalid workout file:\n\n" + validation.errors.join("\n");
@@ -2851,7 +3247,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const clipboardText = await navigator.clipboard.readText();
 
           if (clipboardText && clipboardText.trim() !== "") {
-            processClipboardText(clipboardText);
+            await processClipboardText(clipboardText);
             return;
           } else {
             // Fallback to manual paste if clipboard is empty
@@ -2876,7 +3272,7 @@ document.addEventListener("DOMContentLoaded", function () {
   /**
    * Shows a manual paste dialog for Safari and other restricted browsers.
    */
-  function showManualPasteDialog() {
+  async function showManualPasteDialog() {
     const pastedText = prompt(
       "Safari requires manual pasting due to security restrictions.\n\n" +
       "Please paste your workout JSON below:",
@@ -2884,7 +3280,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (pastedText !== null && pastedText.trim() !== "") {
-      processClipboardText(pastedText);
+      await processClipboardText(pastedText);
     }
   }
 
@@ -2892,13 +3288,13 @@ document.addEventListener("DOMContentLoaded", function () {
    * Processes the clipboard/pasted text and loads the workout.
    * @param {string} clipboardText The text to process
    */
-  function processClipboardText(clipboardText) {
+  async function processClipboardText(clipboardText) {
     try {
       // Parse the clipboard content as JSON
       const jsonData = JSON.parse(clipboardText);
 
       // Validate the JSON structure
-      const validation = validateWorkoutJSON(jsonData);
+      const validation = await validateWorkoutJSON(jsonData);
       if (!validation.success) {
         const errorMessage =
           "Invalid workout JSON:\n\n" + validation.errors.join("\n");
@@ -3091,11 +3487,29 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (config.limits.type === "time-limit" && timeLimitSlider && config.limits.value) {
-          const timeParts = config.limits.value.split(":");
-          const totalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+          let totalSeconds;
+          let displayValue;
+          
+          if (typeof config.limits.value === 'string') {
+            // Convert MM:SS to seconds
+            const timeParts = config.limits.value.split(":");
+            totalSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+            displayValue = config.limits.value;
+          } else if (typeof config.limits.value === 'number') {
+            // Value is already in seconds, convert to MM:SS for display
+            totalSeconds = config.limits.value;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formattedSeconds = seconds < 10 ? "0" + seconds : seconds;
+            displayValue = `${minutes.toString().padStart(2, "0")}:${formattedSeconds}`;
+          } else {
+            // Invalid value, skip
+            return;
+          }
+          
           timeLimitSlider.value = totalSeconds;
           const timeLimitValue = newPattern.querySelector(".time-limit-value");
-          if (timeLimitValue) timeLimitValue.textContent = config.limits.value;
+          if (timeLimitValue) timeLimitValue.textContent = displayValue;
         }
       }
 
@@ -3121,6 +3535,40 @@ document.addEventListener("DOMContentLoaded", function () {
       if (config.speechRate !== undefined) markPropertyAsCustomized(newPattern, 'speechRate');
       if (config.intervalOffsetType !== undefined) markPropertyAsCustomized(newPattern, 'intervalOffsetType');
       if (config.splitStepSpeed !== undefined) markPropertyAsCustomized(newPattern, 'splitStepSpeed');
+    }
+
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      // Only set if not customized at this level
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(newPattern, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && newPattern.querySelector(propConfig.selector)) {
+          const el = newPattern.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            // Update display spans if present
+            if (prop === 'interval') {
+              const valSpan = newPattern.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = newPattern.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
     }
 
     // Remove default shot that gets created automatically
@@ -3237,6 +3685,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const offsetEnabled = shotElement.querySelector(".offset-enabled");
         if (offsetEnabled && (config.intervalOffset.min !== 0 || config.intervalOffset.max !== 0)) {
           offsetEnabled.checked = true;
+          // Mark this shot as having offset enabled for reinitializeUIStates
+          shotElement.dataset.hasOffsetEnabled = "true";
         }
       }
 
@@ -3246,7 +3696,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (splitStepEnabled) splitStepEnabled.checked = config.splitStepSpeed !== "none";
         if (splitStepSpeedSelect && config.splitStepSpeed !== "none") {
-          splitStepSpeedSelect.value = config.autoVoiceSplitStep ? "auto-scale" : config.splitStepSpeed;
+          splitStepSpeedSelect.value = config.splitStepSpeed;
         }
       }
 
@@ -3271,6 +3721,38 @@ document.addEventListener("DOMContentLoaded", function () {
       if (config.speechRate !== undefined) markPropertyAsCustomized(shotElement, 'speechRate');
       if (config.intervalOffsetType !== undefined) markPropertyAsCustomized(shotElement, 'intervalOffsetType');
       if (config.splitStepSpeed !== undefined) markPropertyAsCustomized(shotElement, 'splitStepSpeed');
+    }
+
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(shotElement, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && shotElement.querySelector(propConfig.selector)) {
+          const el = shotElement.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            if (prop === 'interval') {
+              const valSpan = shotElement.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = shotElement.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
     }
 
     return shotElement;
@@ -3396,6 +3878,12 @@ document.addEventListener("DOMContentLoaded", function () {
    * Completes the workout loading process after all patterns are created
    */
   function finishWorkoutLoading() {
+    // Only remove favorites glow if this is not a favorite being loaded
+    // (favorites will set their own glow after loading)
+    if (!window._favoritesGlowActiveFor) {
+      removeFavoritesGlow();
+    }
+    
     updateLoadingProgress(100, 100, "Finalizing...");
 
     // Use setTimeout to allow the "Finalizing..." message to be displayed
@@ -3498,7 +3986,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Update all offset controls
     document.querySelectorAll(".offset-enabled").forEach((offsetCheckbox) => {
-      offsetCheckbox.dispatchEvent(new Event("change"));
+      const shotElement = offsetCheckbox.closest(".shot-msg-instance");
+      if (shotElement && shotElement.dataset.hasOffsetEnabled === "true") {
+        // This shot has offset enabled, ensure checkbox is checked and update controls
+        offsetCheckbox.checked = true;
+        updateOffsetControls(shotElement, null, null, null);
+      } else {
+        // Use the change event for other cases
+        offsetCheckbox.dispatchEvent(new Event("change"));
+      }
     });
 
     // Update all split step controls
@@ -3625,7 +4121,8 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     toolbarDropdowns.forEach(dropdown => {
@@ -3835,9 +4332,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentShotCount =
       patternElement.querySelectorAll(".shot-instance").length;
     if (currentShotCount > 0) {
-      shotLimitSlider.max = Math.max(50, currentShotCount);
+      shotLimitSlider.max = Math.max(200, currentShotCount);
       // If current value is greater than shot count, reset to shot count
-      if (parseInt(shotLimitSlider.value) > currentShotCount) {
+      // But only if we're not currently loading a workout (to preserve loaded values)
+      if (parseInt(shotLimitSlider.value) > currentShotCount && !window.isLoadingWorkout) {
         shotLimitSlider.value = currentShotCount;
         shotLimitValueSpan.textContent = currentShotCount;
       }
@@ -3991,6 +4489,85 @@ document.addEventListener("DOMContentLoaded", function () {
    * Gets the default configuration values from the global config.
    * @returns {Object} Default configuration object.
    */
+  /**
+   * Gets the spec-defined default values for inheritance comparison.
+   * These are the values that should be omitted from JSON when they match.
+   */
+  function getSpecDefaultValues() {
+    return {
+      // Pattern and shot level defaults (from spec)
+      voice: "Default",
+      speechRate: 1.0,
+      interval: 5.0,
+      splitStepSpeed: "auto-scale",
+      shotAnnouncementLeadTime: 2.5,
+      intervalOffsetType: "fixed",
+      intervalOffset: { min: 0.0, max: 0.0 },
+      autoVoiceSplitStep: true,
+      
+      // Pattern level defaults
+      iterationType: "in-order",
+      limits: { type: "all-shots", value: null },
+      repeatCount: 1,
+      
+      // Shot level defaults
+      repeatCount: 1,
+    };
+  }
+
+  /**
+   * Gets the effective inherited values for a shot from its parent pattern and workout
+   * @param {HTMLElement} shotElement The shot element
+   * @returns {Object} Object with effective inherited values
+   */
+  function getEffectiveInheritedValues(shotElement) {
+    const patternElement = shotElement.closest('.pattern-instance');
+    const globalConfig = getGlobalConfigValues();
+    
+    // Start with workout-level defaults
+    const inherited = {
+      voice: globalConfig.voice || "Default",
+      speechRate: globalConfig.speechRate || 1.0,
+      interval: globalConfig.interval || 5.0,
+      splitStepSpeed: globalConfig.splitStepSpeed || "auto-scale",
+      shotAnnouncementLeadTime: globalConfig.shotAnnouncementLeadTime || 2.5,
+      intervalOffsetType: globalConfig.intervalOffsetType || "fixed",
+      intervalOffset: globalConfig.intervalOffset || { min: 0.0, max: 0.0 },
+      autoVoiceSplitStep: true, // Default to true, only set to false if explicitly disabled
+    };
+    
+    // Override with pattern-level values if they exist
+    if (patternElement) {
+      const patternIntervalSlider = patternElement.querySelector('.shot-interval-slider');
+      const patternLeadTimeSlider = patternElement.querySelector('.lead-time-slider');
+      const patternSplitStepSpeedSelect = patternElement.querySelector('.split-step-speed-select');
+      const patternVoiceSelect = patternElement.querySelector('.voice-select');
+      const patternVoiceRateSelect = patternElement.querySelector('.voice-rate-select');
+      
+      if (patternIntervalSlider) {
+        inherited.interval = parseFloat(patternIntervalSlider.value);
+      }
+      if (patternLeadTimeSlider) {
+        inherited.shotAnnouncementLeadTime = parseFloat(patternLeadTimeSlider.value);
+      }
+      if (patternSplitStepSpeedSelect) {
+        inherited.splitStepSpeed = patternSplitStepSpeedSelect.value;
+      }
+      if (patternVoiceSelect) {
+        inherited.voice = patternVoiceSelect.value;
+      }
+      if (patternVoiceRateSelect) {
+        const rate = patternVoiceRateSelect.value;
+        inherited.speechRate = rate === "auto-scale" ? 1.0 : parseFloat(rate);
+      }
+    }
+    
+    return inherited;
+  }
+
+  // Make function available globally for debugging
+  window.getSpecDefaultValues = getSpecDefaultValues;
+
   function getDefaultConfigValues() {
     return {
       repeat: "1",
@@ -4005,7 +4582,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ? defaultLimitsTypeSelect.value
         : "all-shots",
       shotLimit: defaultShotLimitSlider ? defaultShotLimitSlider.value : "1",
-      timeLimit: defaultTimeLimitSlider ? defaultTimeLimitSlider.value : "600",
+      timeLimit: defaultTimeLimitSlider ? defaultTimeLimitSlider.value : "3600",
       offset: {
         enabled: defaultOffsetEnabled ? defaultOffsetEnabled.checked : false,
         type: defaultOffsetTypeSelect ? defaultOffsetTypeSelect.value : "fixed",
@@ -6255,12 +6832,16 @@ document.addEventListener("DOMContentLoaded", function () {
       patternShotIntervalValueSpan.textContent = `${parseFloat(patternShotIntervalSlider.value).toFixed(1)}s`;
 
     // Initialize shot limit default value based on current shots
+    // Only set to shot count if it's still at the default value (1)
     if (shotLimitSlider && shotLimitValueSpan) {
       const currentShotCount =
         patternElement.querySelectorAll(".shot-instance").length;
       if (currentShotCount > 0) {
-        shotLimitSlider.value = currentShotCount;
-        shotLimitSlider.max = Math.max(50, currentShotCount);
+        shotLimitSlider.max = Math.max(200, currentShotCount);
+        // Only override if the current value is the default (1) and we have shots
+        if (parseInt(shotLimitSlider.value) === 1) {
+          shotLimitSlider.value = currentShotCount;
+        }
       }
       shotLimitValueSpan.textContent = shotLimitSlider.value;
     }
@@ -7256,8 +7837,14 @@ document.addEventListener("DOMContentLoaded", function () {
         // Resume from pause
         resumeWorkout();
       } else {
-        // Start from beginning (or restart if already running)
-        startWorkout();
+        // Check if prep time is set and we're not already in a countdown
+        if (prepTimeMenuState.prepTimeSeconds > 0 && !workoutExecution.isRunning) {
+          // Start prep time countdown
+          startPrepTimeCountdown();
+        } else {
+          // Start from beginning (or restart if already running)
+          startWorkout();
+        }
       }
     });
   } else {
@@ -7275,11 +7862,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const workoutReplayBtn = document.getElementById("workoutReplayBtn");
   if (workoutReplayBtn) {
     workoutReplayBtn.addEventListener("click", function () {
+      // Preserve presentation mode state before stopping
+      const wasPresentationMode = workoutExecution.isPresentationMode;
+      
       // Restart the workout from the beginning
       stopWorkout(); // Reset state
 
       // Add small delay to ensure TTS cleanup completes before restart
       setTimeout(() => {
+        // Restore presentation mode if it was active
+        if (wasPresentationMode) {
+          workoutExecution.isPresentationMode = true;
+        }
         startWorkout(); // Start fresh
       }, 100);
     });
@@ -7842,14 +8436,36 @@ document.addEventListener("DOMContentLoaded", function () {
       },
     };
 
+    // DEBUG: Log the data being sent to the parser
+    console.log('DEBUG: Preview enrichedWorkoutData', JSON.stringify(enrichedWorkoutData, null, 2));
+
     const previewResult = WorkoutLib.generatePreviewHtml(enrichedWorkoutData);
-    document.getElementById("previewContent").innerHTML = previewResult.html;
+    
+    // Handle both old (string) and new (object) return formats
+    if (typeof previewResult === 'string') {
+      document.getElementById("previewContent").innerHTML = previewResult;
+      // Generate timeline for sound events for old format
+      let timeline = [];
+      if (WorkoutLib.loadWorkoutFromJsonWithValidation && WorkoutLib.generateWorkoutTimeline) {
+        try {
+          const result = WorkoutLib.loadWorkoutFromJsonWithValidation(enrichedWorkoutData);
+          if (result.success) {
+            timeline = WorkoutLib.generateWorkoutTimeline(result.workout);
+          }
+        } catch (error) {
+          console.warn('Failed to generate timeline:', error);
+        }
+      }
+      timelinePlayback.soundEvents = timeline;
+    } else {
+      // New format with html and soundEvents
+      document.getElementById("previewContent").innerHTML = previewResult.html;
+      timelinePlayback.soundEvents = previewResult.soundEvents;
+    }
+    
     document.getElementById("previewWorkoutName").textContent =
       enrichedWorkoutData.name;
     document.getElementById("previewModal").classList.remove("hidden");
-
-    // Use sound events from the golden source
-    timelinePlayback.soundEvents = previewResult.soundEvents;
 
     // Initialize timeline playback
     initializeTimelinePlayback();
@@ -7959,6 +8575,45 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
+   * Plays a shot sound effect for countdown.
+   */
+  function playShotSound() {
+    try {
+      if (!audioContext || audioContext.state !== 'running') {
+        if(audioContext && audioContext.state === 'suspended') {
+          audioContext.resume().then(() => {
+            // Retry the shot sound after a short delay
+            setTimeout(() => playShotSound(), 50);
+          }).catch(error => {
+            console.error("Failed to resume AudioContext for shot sound:", error);
+          });
+        }
+        return;
+      }
+
+      const duration = 0.1;
+      const frequency = 1000;
+      const volume = 3.0;
+
+      const now = audioContext.currentTime;
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, now);
+      gainNode.gain.setValueAtTime(volume, now);
+      oscillator.start(now);
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+      oscillator.stop(now + duration);
+
+    } catch (error) {
+      console.error("playShotSound: Error playing shot sound:", error);
+    }
+  }
+
+  /**
    * Plays a "power-up" sound effect for split-step hint.
    * @param {string} speed - 'Slow', 'Medium', or 'Fast'.
    * @param {string} [pitch='medium'] - 'low', 'medium', or 'high'.
@@ -8005,6 +8660,11 @@ document.addEventListener("DOMContentLoaded", function () {
           break;
         case 'fast':
           durationPerStep = 0.04;
+          break;
+        case 'auto-scale':
+          // Auto-scale should be resolved to the actual speed before calling this function
+          // This case should not be reached if the timeline generation is working correctly
+          durationPerStep = 0.06; // Fallback to medium speed
           break;
         default:
           return; // Don't play if speed is not recognized or 'None'
@@ -8090,21 +8750,25 @@ document.addEventListener("DOMContentLoaded", function () {
       // Create speech utterance
       const utterance = new SpeechSynthesisUtterance(cleanText);
 
+      // Ensure entryConfig exists and has default values
+      const config = entryConfig || {};
+      
       // Set voice if specified and not "Default"
-      if (entryConfig.voice && entryConfig.voice !== 'Default') {
+      if (config.voice && config.voice !== 'Default') {
         ensureVoicesLoaded().then(voices => {
-          const selectedVoice = voices.find(voice => voice.name === entryConfig.voice);
+          const selectedVoice = voices.find(voice => voice.name === config.voice);
           if (selectedVoice) {
             utterance.voice = selectedVoice;
           }
-          speakUtterance(utterance, entryConfig);
+          speakUtterance(utterance, config);
         });
       } else {
-        speakUtterance(utterance, entryConfig);
+        speakUtterance(utterance, config);
       }
 
     } catch (error) {
       console.error("playTTS: Error playing text-to-speech:", error);
+      // Don't let TTS errors crash the animation loop
     }
   }
 
@@ -8115,9 +8779,12 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function speakUtterance(utterance, entryConfig) {
     try {
+      // Ensure entryConfig exists and has default values
+      const config = entryConfig || {};
+      
       // Set speech rate with proper inheritance defaults
-      if (entryConfig.speechRate && entryConfig.speechRate !== 'auto-scale') {
-        const rate = parseFloat(entryConfig.speechRate);
+      if (config.speechRate && config.speechRate !== 'auto-scale') {
+        const rate = parseFloat(config.speechRate);
         if (!isNaN(rate) && rate >= 0.5 && rate <= 1.5) {
           utterance.rate = rate;
         }
@@ -8284,7 +8951,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const playIcon = document.getElementById('playIcon');
     const pauseIcon = document.getElementById('pauseIcon');
 
-    if (isPlaying) {
+    // Show pause button if workout is running OR if prep time countdown is active
+    if (isPlaying || workoutExecution.isPrepTimeCountdown) {
       playIcon.classList.add('hidden');
       pauseIcon.classList.remove('hidden');
     } else {
@@ -8323,6 +8991,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function updateTimelineHighlights() {
     try {
+      // Safety check: ensure timing badges are valid
+      if (!timelinePlayback.timingBadges || timelinePlayback.timingBadges.length === 0) {
+        console.warn('No timing badges available for highlighting');
+        return;
+      }
+
       let currentBadge = null;
       let latestCurrentBadge = null;
       const currentTime = timelinePlayback.currentTime;
@@ -8432,8 +9106,16 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       // Check for sound effects using extracted sound events data
-       if (audioContext && timelinePlayback.soundEvents) {
+       if (audioContext && timelinePlayback.soundEvents && timelinePlayback.soundEvents.length > 0) {
+         let ttsErrorCount = 0;
+         
          timelinePlayback.soundEvents.forEach(soundEvent => {
+           // Safety check: ensure sound event has required properties
+           if (!soundEvent || typeof soundEvent.time !== 'number' || !soundEvent.type) {
+             console.warn('Invalid sound event:', soundEvent);
+             return;
+           }
+
            // Check if this sound event should trigger at the current time
            // Use a small tolerance (50ms) to account for timing precision
            const tolerance = 0.05;
@@ -8451,9 +9133,21 @@ document.addEventListener("DOMContentLoaded", function () {
                  playTwoToneBeep();
                  triggerBeepFlash(soundEvent.time);
                  timelinePlayback.playedSounds.add(soundKey);
-                               } else if (soundEvent.type === 'tts') {
-                  playTTS(soundEvent.text, soundEvent.entryConfig);
-                  timelinePlayback.playedSounds.add(soundKey);
+               } else if (soundEvent.type === 'tts') {
+                 try {
+                   playTTS(soundEvent.text, soundEvent.entryConfig);
+                   timelinePlayback.playedSounds.add(soundKey);
+                 } catch (error) {
+                   console.error('TTS error in animation loop:', error);
+                   ttsErrorCount++;
+                   
+                   // Stop playback if too many TTS errors occur
+                   if (ttsErrorCount > 3) {
+                     console.error('Too many TTS errors, stopping playback');
+                     pauseTimeline();
+                     return;
+                   }
+                 }
                }
              }
            }
@@ -8572,6 +9266,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    // Additional safety check: ensure we have valid sound events
+    if (!timelinePlayback.soundEvents || timelinePlayback.soundEvents.length === 0) {
+      console.warn('No sound events found, cannot start timeline playback');
+      return;
+    }
+
     // Initialize audio context on user interaction
     initializeAudioContext();
 
@@ -8589,6 +9289,13 @@ document.addEventListener("DOMContentLoaded", function () {
       // Safety check to prevent runaway animations
       if (timelinePlayback.currentTime > timelinePlayback.maxTime + 5) {
         console.warn('Timeline exceeded expected duration, stopping playback');
+        pauseTimeline();
+        return;
+      }
+
+      // Additional safety check: ensure timing badges are still valid
+      if (!timelinePlayback.timingBadges || timelinePlayback.timingBadges.length === 0) {
+        console.warn('Timing badges became invalid during playback, stopping');
         pauseTimeline();
         return;
       }
@@ -8740,7 +9447,11 @@ document.addEventListener("DOMContentLoaded", function () {
     totalShots: 0,
     shotsCompleted: 0,
     countdownInterval: null,
-    currentCountdown: 0
+    currentCountdown: 0,
+    isPresentationMode: false,
+    isPrepTimeCountdown: false,
+    prepTimeRemaining: 0,
+    prepTimeOriginal: 0
   };
 
   function startWorkoutExecution() {
@@ -8783,7 +9494,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Reset and initialize workout execution state
     workoutExecution.workoutData = enrichedWorkoutData;
-    workoutExecution.soundEvents = previewResult.soundEvents;
+    
+    // Handle both old (string) and new (object) return formats
+    if (typeof previewResult === 'string') {
+      // Generate timeline for sound events for old format
+      let timeline = [];
+      if (WorkoutLib.loadWorkoutFromJsonWithValidation && WorkoutLib.generateWorkoutTimeline) {
+        try {
+          const result = WorkoutLib.loadWorkoutFromJsonWithValidation(enrichedWorkoutData);
+          if (result.success) {
+            timeline = WorkoutLib.generateWorkoutTimeline(result.workout);
+          }
+        } catch (error) {
+          console.warn('Failed to generate timeline:', error);
+        }
+      }
+      workoutExecution.soundEvents = timeline;
+    } else {
+      // New format with html and soundEvents
+      workoutExecution.soundEvents = previewResult.soundEvents;
+    }
     workoutExecution.maxTime = stats.totalTime;
     workoutExecution.totalShots = stats.totalShots;
     workoutExecution.shotsCompleted = 0;
@@ -8794,10 +9524,12 @@ document.addEventListener("DOMContentLoaded", function () {
       // Entering from preview at non-zero time - start paused
       workoutExecution.isRunning = true;
       workoutExecution.isPaused = true;
+      workoutExecution.isPresentationMode = true; // Mark as presentation mode
     } else {
       // Normal entry - start stopped
       workoutExecution.isRunning = false;
       workoutExecution.isPaused = false;
+      workoutExecution.isPresentationMode = false; // Not presentation mode
     }
     workoutExecution.playedSounds = new Set();
     workoutExecution.completionTriggered = false;
@@ -8819,6 +9551,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (startTime > 0) {
       workoutExecution.soundEvents.forEach(soundEvent => {
         if (soundEvent.time < startTime) {
+          // Don't mark completion events as played - they should only play at actual completion
+          if (soundEvent.isCompletion) {
+            return;
+          }
+          
           const soundKey = `${soundEvent.type}-${soundEvent.time.toFixed(3)}`;
           workoutExecution.playedSounds.add(soundKey);
 
@@ -8830,21 +9567,31 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
+    // Show workout modal first
+    document.getElementById("workoutExecutionName").textContent = workoutData.name;
+    document.getElementById("workoutModal").classList.remove("hidden");
+
+    // Always ensure workout-main elements are visible when entering presentation mode
+    if (workoutExecution.isPresentationMode) {
+      showWorkoutMain();
+      // Ensure all workout-main elements are visible and properly initialized
+      ensureWorkoutMainVisibility();
+    }
+
     // Initialize UI
     updateWorkoutUI();
 
     // Clear any previous effects
     const shotTitleElement = document.getElementById("workoutShotTitle");
     if (shotTitleElement) {
-      shotTitleElement.classList.remove("glow-pulse", "fade-out");
+      shotTitleElement.classList.remove("glow-pulse", "countdown-pulse", "countdown-flash", "fade-out");
     }
-
-    // Show workout modal
-    document.getElementById("workoutExecutionName").textContent = workoutData.name;
-    document.getElementById("workoutModal").classList.remove("hidden");
 
     // Initialize audio context
     initializeAudioContext();
+    
+    // Note: Prep time countdown will only start when user presses play button
+    // No auto-start when entering presentation mode
   }
 
   function updateWorkoutUI() {
@@ -8891,11 +9638,21 @@ document.addEventListener("DOMContentLoaded", function () {
       startBtn.classList.add("hidden");
       pauseBtn.classList.add("hidden");
       replayBtn.classList.remove("hidden");
-    } else if (isRunning && !isPaused) {
+    } else if ((isRunning && !isPaused) || (workoutExecution.isPrepTimeCountdown && !isPaused)) {
       // Once the play button is pressed, it should change to pause
+      // Also show pause button when prep time countdown is active (but not when paused)
       startBtn.classList.add("hidden");
       pauseBtn.classList.remove("hidden");
       replayBtn.classList.add("hidden");
+    } else if (workoutExecution.isPrepTimeCountdown && isPaused) {
+      // When prep time countdown is paused, show start button to resume
+      startBtn.classList.remove("hidden");
+      pauseBtn.classList.add("hidden");
+      replayBtn.classList.add("hidden");
+      
+      // Show resume icon
+      startBtn.classList.remove("workout-btn-start");
+      startBtn.classList.add("workout-btn-resume");
     } else {
       // When entering workout mode, show play button (unless from preview at non-zero time)
       startBtn.classList.remove("hidden");
@@ -8916,7 +9673,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Update timer
     const timerElement = document.getElementById("workoutTimer");
-    timerElement.textContent = WorkoutLib.formatTime(currentTime);
+    timerElement.textContent = WorkoutLib.formatTimeHighPrecision(currentTime);
 
     // Update shots counter
     document.getElementById("workoutShotsCounter").textContent = `${shotsCompleted} / ${totalShots}`;
@@ -8935,6 +9692,24 @@ document.addEventListener("DOMContentLoaded", function () {
     let progressPhase = "ready";
     let activeEventType = null;
     let currentEntryId = null;
+
+    // Handle prep time countdown display
+    if (workoutExecution.isPrepTimeCountdown) {
+      if (workoutExecution.prepTimeRemaining > 0) {
+        if (workoutExecution.prepTimeRemaining < 60) {
+          shotTitle = `${workoutExecution.prepTimeRemaining}`;
+        } else {
+          const minutes = Math.floor(workoutExecution.prepTimeRemaining / 60);
+          const seconds = workoutExecution.prepTimeRemaining % 60;
+          shotTitle = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+      } else {
+        shotTitle = "Get Ready!";
+      }
+      ensureTextVisible(); // Make sure text is visible
+      progressText = ""; // Remove smaller text
+      return; // Exit early to prevent other logic from overriding
+    }
 
     if (isPaused && currentTime > 0) {
       shotTitle = "Paused";
@@ -9091,7 +9866,9 @@ document.addEventListener("DOMContentLoaded", function () {
            // Progress meter ascends from 0% to 100%
            progressPercentage = Math.min(Math.max(prepareProgress * 100, 0), 100);
 
-           // No glow effect in preparing phase anymore
+           // Reset fade state for new shot
+           workoutExecution.fadeTriggered = false;
+           workoutExecution.glowTriggered = false;
 
            progressText = ""; // Remove smaller text
            progressPhase = "preparing";
@@ -9113,6 +9890,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
            const timeSinceBeep = currentTime - shot.beepTime;
            const pauseDuration = 0.2; // 0.2 second pause at 100%
+
+           // Ensure shot title is visible at start of execution
+           if (timeSinceBeep <= 0.05) {
+             ensureTextVisible();
+           }
 
            if (timeSinceBeep <= pauseDuration) {
              // Pause at 100% for 0.2 seconds
@@ -9223,8 +10005,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const progressTextElement = document.getElementById("workoutShotProgressText");
 
     // Only update if content actually changed to prevent flicker
-    if (shotTitleElement.textContent !== shotTitle) {
-      shotTitleElement.textContent = shotTitle;
+    // Use non-breaking space to maintain layout when text is empty
+    const displayText = shotTitle || "\u00A0"; // \u00A0 is non-breaking space
+    if (shotTitleElement.textContent !== displayText) {
+      shotTitleElement.textContent = displayText;
     }
 
     // Remove pulse effect when not in countdown mode
@@ -9332,59 +10116,69 @@ document.addEventListener("DOMContentLoaded", function () {
     const shots = [];
     const messages = [];
 
-    // Group events by entry to understand relationships
-    const eventsByEntry = new Map();
+    // Sort all events by time to process chronologically
+    const sortedEvents = [...soundEvents].sort((a, b) => a.time - b.time);
 
-    soundEvents.forEach(event => {
-      if (!event.entry) return;
+    // Process shot events: find TTS+beep pairs for each shot occurrence
+    const processedEvents = new Set();
 
-      const entryId = event.entry.id || `${event.entry.type}_${event.time}`;
-      if (!eventsByEntry.has(entryId)) {
-        eventsByEntry.set(entryId, {
-          entry: event.entry,
-          events: []
-        });
-      }
-      eventsByEntry.get(entryId).events.push(event);
-    });
+    sortedEvents.forEach(event => {
+      if (processedEvents.has(event) || !event.entry) return;
 
-    // Process each entry to create timeline segments
-    eventsByEntry.forEach((data, entryId) => {
-      const { entry, events } = data;
+      if (event.entry.type === 'Shot' && event.type === 'tts') {
+        // Look for the corresponding beep event for this shot occurrence
+        const maxLookAhead = 3.0; // Look ahead max 3 seconds for the beep
+        const correspondingBeep = sortedEvents.find(otherEvent =>
+          !processedEvents.has(otherEvent) &&
+          otherEvent.entry &&
+          otherEvent.entry.id === event.entry.id &&
+          otherEvent.type === 'beep' &&
+          otherEvent.time > event.time &&
+          otherEvent.time <= event.time + maxLookAhead
+        );
 
-      if (entry.type === 'Shot') {
-        const ttsEvent = events.find(e => e.type === 'tts');
-        const beepEvent = events.find(e => e.type === 'beep');
-
-        if (ttsEvent && beepEvent) {
+        if (correspondingBeep) {
           shots.push({
-            name: entry.name,
-            ttsTime: ttsEvent.time,
-            beepTime: beepEvent.time,
-            endTime: beepEvent.time + 3.0, // 3 seconds after beep
-            entry: entry,
-            ttsEvent: ttsEvent,
-            beepEvent: beepEvent
+            name: event.entry.name,
+            ttsTime: event.time,
+            beepTime: correspondingBeep.time,
+            endTime: correspondingBeep.time + 3.0, // 3 seconds after beep
+            entry: event.entry,
+            ttsEvent: event,
+            beepEvent: correspondingBeep
           });
-        }
-      } else if (entry.type === 'Message') {
-        const mainTTS = events.find(e => e.type === 'tts' && !e.isCountdown);
-        const countdownEvents = events.filter(e => e.type === 'tts' && e.isCountdown);
 
-        if (mainTTS) {
-          const messageDuration = calculateMessageDuration(mainTTS.entryConfig);
-          const ttsDuration = estimateTTSDuration(mainTTS.text, mainTTS.entryConfig?.speechRate || 1.0);
-
-          messages.push({
-            text: mainTTS.text,
-            startTime: mainTTS.time,
-            ttsEndTime: mainTTS.time + ttsDuration,
-            endTime: mainTTS.time + messageDuration,
-            countdownEvents: countdownEvents.sort((a, b) => a.time - b.time),
-            entry: entry,
-            mainTTS: mainTTS
-          });
+          processedEvents.add(event);
+          processedEvents.add(correspondingBeep);
         }
+      } else if (event.entry.type === 'Message' && event.type === 'tts' && !event.isCountdown) {
+        // Process message TTS events
+        const messageDuration = calculateMessageDuration(event.entryConfig);
+        const ttsDuration = estimateTTSDuration(event.text, event.entryConfig?.speechRate || 1.0);
+
+        // Find any countdown events for this message
+        const countdownEvents = sortedEvents.filter(otherEvent =>
+          !processedEvents.has(otherEvent) &&
+          otherEvent.entry &&
+          otherEvent.entry.id === event.entry.id &&
+          otherEvent.type === 'tts' &&
+          otherEvent.isCountdown &&
+          otherEvent.time > event.time &&
+          otherEvent.time <= event.time + messageDuration
+        );
+
+        messages.push({
+          text: event.text,
+          startTime: event.time,
+          ttsEndTime: event.time + ttsDuration,
+          endTime: event.time + messageDuration,
+          countdownEvents: countdownEvents.sort((a, b) => a.time - b.time),
+          entry: event.entry,
+          mainTTS: event
+        });
+
+        processedEvents.add(event);
+        countdownEvents.forEach(ce => processedEvents.add(ce));
       }
     });
 
@@ -9452,9 +10246,71 @@ document.addEventListener("DOMContentLoaded", function () {
   function ensureTextVisible() {
     // Helper function to ensure shot text is visible (remove fade-out)
     const shotTitleElement = document.getElementById("workoutShotTitle");
-    if (shotTitleElement && shotTitleElement.classList.contains("fade-out")) {
+    if (shotTitleElement) {
       shotTitleElement.classList.remove("fade-out");
       workoutExecution.fadeTriggered = false;
+    }
+  }
+
+  function ensureWorkoutMainVisibility() {
+    // Helper function to ensure all workout-main elements are visible and properly initialized
+    const workoutMainElement = document.querySelector(".workout-main");
+    if (workoutMainElement) {
+      // Ensure the main container is visible
+      workoutMainElement.style.display = "";
+      
+      // Ensure all sub-elements are visible and properly initialized
+      const shotTitleElement = document.getElementById("workoutShotTitle");
+      const progressBarElement = document.getElementById("workoutShotProgressBar");
+      const progressTextElement = document.getElementById("workoutShotProgressText");
+      const patternElement = document.getElementById("workoutCurrentPattern");
+      const shotsCounterElement = document.getElementById("workoutShotsCounter");
+
+      if (shotTitleElement) {
+        // Remove any fade effects and ensure visibility
+        shotTitleElement.classList.remove("fade-out", "glow-pulse", "countdown-pulse");
+        shotTitleElement.style.opacity = "";
+        // Set a placeholder to maintain layout if no content
+        if (!shotTitleElement.textContent || shotTitleElement.textContent.trim() === "") {
+          shotTitleElement.innerHTML = "&nbsp;";
+        }
+      }
+
+      if (progressBarElement) {
+        // Ensure progress bar is visible and has proper styling
+        progressBarElement.style.display = "";
+        progressBarElement.style.opacity = "";
+      }
+
+      if (progressTextElement) {
+        // Ensure progress text is visible
+        progressTextElement.style.display = "";
+        progressTextElement.style.opacity = "";
+        // Set default text if empty
+        if (!progressTextElement.textContent || progressTextElement.textContent.trim() === "") {
+          progressTextElement.textContent = "Ready";
+        }
+      }
+
+      if (patternElement) {
+        // Ensure pattern element is visible
+        patternElement.style.display = "";
+        patternElement.style.opacity = "";
+        // Set default text if empty
+        if (!patternElement.textContent || patternElement.textContent.trim() === "") {
+          patternElement.textContent = "--";
+        }
+      }
+
+      if (shotsCounterElement) {
+        // Ensure shots counter is visible
+        shotsCounterElement.style.display = "";
+        shotsCounterElement.style.opacity = "";
+        // Set default text if empty
+        if (!shotsCounterElement.textContent || shotsCounterElement.textContent.trim() === "") {
+          shotsCounterElement.textContent = "0 / 0";
+        }
+      }
     }
   }
 
@@ -9514,9 +10370,19 @@ document.addEventListener("DOMContentLoaded", function () {
     workoutExecution.fadeTriggered = false; // Reset fade flag
     workoutExecution.isCompleted = false; // Reset completed flag
     workoutExecution.lastShotCompleted = false; // Reset last shot completed flag
+    
+    // Reset presentation mode flag unless it was explicitly set to true (for replay in presentation mode)
+    if (!workoutExecution.isPresentationMode) {
+      workoutExecution.isPresentationMode = false;
+    }
 
     // Show workout main for fresh start
     showWorkoutMain();
+    
+    // Ensure workout-main elements are visible in presentation mode
+    if (workoutExecution.isPresentationMode) {
+      ensureWorkoutMainVisibility();
+    }
 
     // Set start time to account for any existing elapsed time (for resume functionality)
     workoutExecution.startTime = performance.now() - (workoutExecution.currentTime * 1000);
@@ -9561,7 +10427,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function pauseWorkout() {
-    if (!workoutExecution.isRunning || workoutExecution.isPaused) return;
+    if ((!workoutExecution.isRunning && !workoutExecution.isPrepTimeCountdown) || workoutExecution.isPaused) {
+      return;
+    }
 
     workoutExecution.isPaused = true;
 
@@ -9577,16 +10445,84 @@ document.addEventListener("DOMContentLoaded", function () {
       workoutExecution.activeTTSUtterances.clear();
     }
 
+    // Clear countdown animations when paused
+    if (workoutExecution.isPrepTimeCountdown) {
+      const shotTitleElement = document.getElementById("workoutShotTitle");
+      if (shotTitleElement) {
+        shotTitleElement.classList.remove("countdown-pulse", "countdown-flash");
+      }
+      
+      // Clear the countdown timer
+      if (workoutExecution.prepTimeTimerId) {
+        clearTimeout(workoutExecution.prepTimeTimerId);
+        workoutExecution.prepTimeTimerId = null;
+      }
+      
+      // Stop the smooth progress bar animation
+      if (workoutExecution.prepTimeAnimationId) {
+        cancelAnimationFrame(workoutExecution.prepTimeAnimationId);
+        workoutExecution.prepTimeAnimationId = null;
+      }
+    }
+
     updateWorkoutUI();
   }
 
   function resumeWorkout() {
-    if (!workoutExecution.isRunning || !workoutExecution.isPaused) return;
+    if ((!workoutExecution.isRunning && !workoutExecution.isPrepTimeCountdown) || !workoutExecution.isPaused) {
+      return;
+    }
 
     workoutExecution.isPaused = false;
 
+    // If we're in prep time countdown, restart the countdown from the beginning
+    if (workoutExecution.isPrepTimeCountdown) {
+      // Clear any existing countdown timer
+      if (workoutExecution.prepTimeTimerId) {
+        clearTimeout(workoutExecution.prepTimeTimerId);
+        workoutExecution.prepTimeTimerId = null;
+      } else {
+        console.log('🟢 [RESUME] No existing timer to clear');
+      }
+      
+      // Reset prep time state to restart from beginning
+      workoutExecution.prepTimeRemaining = workoutExecution.prepTimeOriginal;
+      workoutExecution.isPaused = false;
+      console.log('🟢 [RESUME] Reset state - prepTimeRemaining:', workoutExecution.prepTimeRemaining, 'isPaused:', workoutExecution.isPaused);
+      
+      // Update UI to show "Get Ready!" message
+      const shotTitleElement = document.getElementById("workoutShotTitle");
+      if (shotTitleElement) {
+        shotTitleElement.textContent = "Get Ready!";
+        shotTitleElement.classList.remove("glow-pulse", "countdown-pulse", "countdown-flash", "fade-out", "workout-done-message");
+      }
+      
+      // Play TTS announcement with workout voice settings
+      const globalConfig = getGlobalConfigValues();
+      playTTS("Get Ready!", globalConfig);
+      
+      // Start countdown after a short delay
+      setTimeout(() => {
+        if (workoutExecution.isPrepTimeCountdown && !workoutExecution.isPaused) {
+          // Restart smooth progress bar animation
+          workoutExecution.prepTimeStartTime = Date.now();
+          workoutExecution.prepTimeAnimationId = requestAnimationFrame(updatePrepTimeProgressBar);
+          
+          startPrepTimeCountdownTimer(workoutExecution.prepTimeOriginal);
+        }
+      }, 1000); // 1 second delay after "Get Ready!"
+      
+      updateWorkoutUI();
+      return;
+    }
+
     // Restart the timing from current position
     workoutExecution.startTime = performance.now() - (workoutExecution.currentTime * 1000);
+
+    // Ensure workout-main elements are visible in presentation mode when resuming
+    if (workoutExecution.isPresentationMode) {
+      ensureWorkoutMainVisibility();
+    }
 
     updateWorkoutUI();
 
@@ -9635,6 +10571,22 @@ document.addEventListener("DOMContentLoaded", function () {
     workoutExecution.currentPattern = null;
     workoutExecution.isCompleted = false;
     workoutExecution.lastShotCompleted = false;
+    workoutExecution.isPresentationMode = false;
+    workoutExecution.isPrepTimeCountdown = false;
+    workoutExecution.prepTimeRemaining = 0;
+    workoutExecution.prepTimeOriginal = 0;
+    
+    // Clear prep time countdown timer
+    if (workoutExecution.prepTimeTimerId) {
+      clearTimeout(workoutExecution.prepTimeTimerId);
+      workoutExecution.prepTimeTimerId = null;
+    }
+    
+    // Stop the smooth progress bar animation
+    if (workoutExecution.prepTimeAnimationId) {
+      cancelAnimationFrame(workoutExecution.prepTimeAnimationId);
+      workoutExecution.prepTimeAnimationId = null;
+    }
 
     if (workoutExecution.animationFrame) {
       cancelAnimationFrame(workoutExecution.animationFrame);
@@ -9645,6 +10597,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel();
       workoutExecution.activeTTSUtterances.clear();
+    }
+
+    // Clear any countdown animations
+    const shotTitleElement = document.getElementById("workoutShotTitle");
+    if (shotTitleElement) {
+      shotTitleElement.classList.remove("countdown-pulse", "countdown-flash");
     }
 
     updateWorkoutUI();
@@ -9659,11 +10617,17 @@ document.addEventListener("DOMContentLoaded", function () {
       workoutExecution.animationFrame = null;
     }
 
-    // Don't play additional TTS - the timeline already has "Workout complete" event
-    updateWorkoutUI();
-
-    // Hide workout-main immediately after completion
-    hideWorkoutMain();
+    // Check if we're in presentation mode and show "Done" message
+    if (workoutExecution.isPresentationMode) {
+      // Ensure workout-main elements are visible before showing "Done" message
+      ensureWorkoutMainVisibility();
+      showWorkoutDoneMessage();
+    } else {
+      // Don't play additional TTS - the timeline already has "Workout complete" event
+      updateWorkoutUI();
+      // Hide workout-main immediately after completion for normal mode
+      hideWorkoutMain();
+    }
   }
 
   function hideWorkoutMain() {
@@ -9671,6 +10635,50 @@ document.addEventListener("DOMContentLoaded", function () {
     if (workoutMainElement) {
       workoutMainElement.style.display = "none";
     }
+  }
+
+  function showWorkoutDoneMessage() {
+    // Add a 2-second delay before showing the "Done" message
+    // This gives time for the "Workout Complete" TTS to play
+    setTimeout(() => {
+      const workoutMainElement = document.querySelector(".workout-main");
+      if (workoutMainElement) {
+        // Keep the workout main visible but show "Done" message
+        workoutMainElement.style.display = "";
+
+        // Update the shot title to show "Done"
+        const shotTitleElement = document.getElementById("workoutShotTitle");
+        if (shotTitleElement) {
+          shotTitleElement.textContent = "Done";
+          shotTitleElement.classList.remove("glow-pulse", "countdown-pulse", "fade-out");
+          // Add a special class for the done message styling
+          shotTitleElement.classList.add("workout-done-message");
+        }
+
+        // Update progress bar to show 100% completion
+        const progressBarElement = document.getElementById("workoutShotProgressBar");
+        if (progressBarElement) {
+          progressBarElement.style.setProperty('--progress', '100%');
+        }
+
+        // Update progress text
+        const progressTextElement = document.getElementById("workoutShotProgressText");
+        if (progressTextElement) {
+          progressTextElement.textContent = "Workout Complete";
+        }
+
+        // Clear pattern and shots counter
+        const patternElement = document.getElementById("workoutCurrentPattern");
+        if (patternElement) {
+          patternElement.textContent = "--";
+        }
+
+        const shotsCounterElement = document.getElementById("workoutShotsCounter");
+        if (shotsCounterElement) {
+          shotsCounterElement.textContent = `${workoutExecution.shotsCompleted} / ${workoutExecution.totalShots}`;
+        }
+      }
+    }, 2000); // 2 second delay
   }
 
 
@@ -9704,6 +10712,191 @@ document.addEventListener("DOMContentLoaded", function () {
         shotsCounterElement.textContent = "0 / 0";
       }
     }
+  }
+
+  // Prep time countdown functions
+  function startPrepTimeCountdown() {
+    const prepTimeSeconds = prepTimeMenuState.prepTimeSeconds;
+    
+    // Clear any existing countdown timer
+    if (workoutExecution.prepTimeTimerId) {
+      clearTimeout(workoutExecution.prepTimeTimerId);
+      workoutExecution.prepTimeTimerId = null;
+    }
+    
+    // Set prep time countdown state
+    workoutExecution.isPrepTimeCountdown = true;
+    workoutExecution.prepTimeRemaining = prepTimeSeconds;
+    workoutExecution.prepTimeOriginal = prepTimeSeconds;
+    workoutExecution.isPaused = false;
+    
+    // Show workout main and ensure it's visible
+    showWorkoutMain();
+    ensureWorkoutMainVisibility();
+    
+    // Update UI to show "Get Ready!" message
+    const shotTitleElement = document.getElementById("workoutShotTitle");
+    if (shotTitleElement) {
+      shotTitleElement.textContent = "Get Ready!";
+      shotTitleElement.classList.remove("glow-pulse", "countdown-pulse", "countdown-flash", "fade-out", "workout-done-message");
+    }
+    
+    // Set "Preparing" text in current pattern
+    const patternElement = document.getElementById("workoutCurrentPattern");
+    if (patternElement) {
+      patternElement.textContent = "Preparing";
+    }
+    
+    // Set progress bar to 0% and start smooth animation
+    const progressBarElement = document.getElementById("workoutShotProgressBar");
+    if (progressBarElement) {
+      progressBarElement.style.setProperty('--progress', '0%');
+      
+      // Start smooth progress bar animation
+      workoutExecution.prepTimeStartTime = Date.now();
+      workoutExecution.prepTimeAnimationId = requestAnimationFrame(updatePrepTimeProgressBar);
+    }
+    
+    // Clear progress text
+    const progressTextElement = document.getElementById("workoutShotProgressText");
+    if (progressTextElement) {
+      progressTextElement.textContent = "";
+    }
+    
+    const shotsCounterElement = document.getElementById("workoutShotsCounter");
+    if (shotsCounterElement) {
+      shotsCounterElement.textContent = "0 / 0";
+    }
+    
+    // Play TTS announcement with workout voice settings
+    const globalConfig = getGlobalConfigValues();
+    playTTS("Get Ready!", globalConfig);
+    
+    // Update workout UI to show pause button during countdown
+    updateWorkoutUI();
+    
+    // Start countdown after a short delay
+    setTimeout(() => {
+      if (workoutExecution.isPrepTimeCountdown && !workoutExecution.isPaused) {
+        startPrepTimeCountdownTimer(prepTimeSeconds);
+      }
+    }, 1000); // 1 second delay after "Get Ready!"
+  }
+  
+  // Smooth progress bar animation function
+  function updatePrepTimeProgressBar() {
+    if (!workoutExecution.isPrepTimeCountdown || workoutExecution.isPaused) {
+      return;
+    }
+    
+    const progressBarElement = document.getElementById("workoutShotProgressBar");
+    if (progressBarElement && workoutExecution.prepTimeStartTime) {
+      const totalPrepTime = workoutExecution.prepTimeOriginal * 1000; // Convert to milliseconds
+      const elapsedTime = Date.now() - workoutExecution.prepTimeStartTime;
+      const progressPercentage = Math.min((elapsedTime / totalPrepTime) * 100, 100);
+      
+      progressBarElement.style.setProperty('--progress', `${progressPercentage}%`);
+      
+      // Continue animation if countdown is still active
+      if (workoutExecution.isPrepTimeCountdown && !workoutExecution.isPaused) {
+        workoutExecution.prepTimeAnimationId = requestAnimationFrame(updatePrepTimeProgressBar);
+      }
+    }
+  }
+
+  function startPrepTimeCountdownTimer(remainingSeconds) {
+    // Update state
+    workoutExecution.prepTimeRemaining = remainingSeconds;
+    
+    const shotTitleElement = document.getElementById("workoutShotTitle");
+    
+    if (remainingSeconds <= 0) {
+      // Countdown finished, start the workout
+      workoutExecution.isPrepTimeCountdown = false;
+      workoutExecution.prepTimeRemaining = 0;
+      workoutExecution.prepTimeOriginal = 0;
+      
+      if (shotTitleElement) {
+        shotTitleElement.textContent = "Starting...";
+        shotTitleElement.classList.remove("countdown-pulse", "countdown-flash");
+      }
+      
+      // Stop the smooth progress bar animation and reset to 0%
+      if (workoutExecution.prepTimeAnimationId) {
+        cancelAnimationFrame(workoutExecution.prepTimeAnimationId);
+        workoutExecution.prepTimeAnimationId = null;
+      }
+      
+      const progressBarElement = document.getElementById("workoutShotProgressBar");
+      if (progressBarElement) {
+        progressBarElement.style.setProperty('--progress', '0%');
+      }
+      
+      // Small delay before starting workout
+      setTimeout(() => {
+        if (!workoutExecution.isPaused) {
+          startWorkout();
+        }
+      }, 500);
+      
+      // Update UI to reflect the end of countdown
+      updateWorkoutUI();
+      return;
+    }
+    
+    // Check if paused
+    if (workoutExecution.isPaused) {
+      return; // Stop countdown when paused
+    }
+    
+    // Update display with countdown
+    if (shotTitleElement) {
+      if (remainingSeconds < 60) {
+        shotTitleElement.textContent = `${remainingSeconds}`;
+      } else {
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        shotTitleElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // Progress bar is now handled by smooth animation
+      
+      // Flash animation for last 10 seconds - only flash once when number changes
+      if (remainingSeconds <= 10) {
+        shotTitleElement.classList.remove("countdown-pulse");
+        
+        // Only add flash class if it's not already there (to prevent continuous flashing)
+        if (!shotTitleElement.classList.contains("countdown-flash")) {
+          shotTitleElement.classList.add("countdown-flash");
+          
+          // Remove flash class after animation completes
+          setTimeout(() => {
+            if (shotTitleElement.classList.contains("countdown-flash")) {
+              shotTitleElement.classList.remove("countdown-flash");
+            }
+          }, 500); // Match the animation duration
+        }
+        
+        // Play two-tone shot sound effect for last 10 seconds
+        if (remainingSeconds <= 10 && remainingSeconds > 0) {
+          playTwoToneBeep();
+          
+          // Trigger full screen flash effect for last 10 seconds
+          triggerWorkoutFlash();
+        }
+      } else {
+        shotTitleElement.classList.remove("countdown-flash");
+        shotTitleElement.classList.add("countdown-pulse");
+      }
+    }
+    
+    // Continue countdown
+    workoutExecution.prepTimeTimerId = setTimeout(() => {
+      // Double-check that we should still be counting down
+      if (workoutExecution.isPrepTimeCountdown && !workoutExecution.isPaused && !workoutExecution.isRunning) {
+        startPrepTimeCountdownTimer(remainingSeconds - 1);
+      }
+    }, 1000);
   }
 
   function processSoundEvents() {
@@ -10424,6 +11617,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateRocketIndicator(element);
   }
 
+
   /**
    * Updates the rocket indicator for an element based on its settings.
    * @param {Element} element - The element to update
@@ -11121,5 +12315,79 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
   }
+
+  // Add red glow to heart icon after loading a favorite
+  function addFavoritesGlow(favoriteKey) {
+    const heartBtn = document.getElementById('heartBtn');
+    if (heartBtn) {
+      const svg = heartBtn.querySelector('svg');
+      if (svg) {
+        svg.classList.add('favorites-glow');
+        // Track which favorite is currently loaded
+        window._favoritesGlowActiveFor = favoriteKey;
+      }
+    }
+  }
+  function removeFavoritesGlow(e) {
+    const heartBtn = document.getElementById('heartBtn');
+    if (heartBtn) {
+      const svg = heartBtn.querySelector('svg');
+      if (svg && svg.classList.contains('favorites-glow')) {
+        svg.classList.remove('favorites-glow');
+        // Clear the tracking variable
+        window._favoritesGlowActiveFor = null;
+      }
+    }
+  }
+
+          // Remove glow if any setting is changed (only for user-initiated events that actually modify the workout)
+        if (mainContainer) {
+          mainContainer.addEventListener('input', function(e) {
+            // Only remove glow for workout-related inputs, not file inputs or other UI elements
+            if (e.isTrusted && e.target.matches('input:not([type="file"]), select, textarea')) {
+              // Check if this is actually a workout setting change
+              const target = e.target;
+              if (target.closest('.pattern-instance, .shot-msg-instance') || 
+                  target.closest('.global-config') ||
+                  target.matches('.workout-name')) {
+                // Clear the tracking variable and remove glow when user changes a setting
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+          mainContainer.addEventListener('change', function(e) {
+            // Only remove glow for workout-related changes, not file inputs or other UI elements
+            if (e.isTrusted && e.target.matches('input:not([type="file"]), select, textarea')) {
+              // Check if this is actually a workout setting change
+              const target = e.target;
+              if (target.closest('.pattern-instance, .shot-msg-instance') || 
+                  target.closest('.global-config') ||
+                  target.matches('.workout-name')) {
+                // Clear the tracking variable and remove glow when user changes a setting
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+          mainContainer.addEventListener('click', function(e) {
+            // Remove glow for user button clicks that modify workout settings
+            if (e.isTrusted && e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT')) {
+              const target = e.target;
+              // Don't remove glow for file input buttons, theme buttons, or other UI buttons
+              if (!target.closest('#workoutFileInput') && 
+                  !target.closest('.theme-toggle') &&
+                  !target.closest('.rocket-toggle') &&
+                  !target.closest('.duck-toggle') &&
+                  !target.closest('.toolbar-icon-btn') &&
+                  !target.closest('.favorites-dropdown') &&
+                  !target.closest('#heartBtn')) {
+                // Clear the tracking variable and remove glow when user clicks workout-modifying buttons
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+        }
 
 });
