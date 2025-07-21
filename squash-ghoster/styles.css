@@ -68,6 +68,24 @@
     --glow-purple-sm: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
     --glow-purple-lg: drop-shadow(0 0 12px rgba(139, 92, 246, 0.9));
     --glow-purple-xl: drop-shadow(0 0 16px rgba(139, 92, 246, 1.0));
+    --glow-blue-sm: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8));
+    --glow-blue-lg: drop-shadow(0 0 12px rgba(59, 130, 246, 0.9));
+    --glow-blue-xl: drop-shadow(0 0 16px rgba(59, 130, 246, 1.0));
+    --glow-green-sm: drop-shadow(0 0 8px rgba(34, 197, 94, 0.8));
+    --glow-green-lg: drop-shadow(0 0 12px rgba(34, 197, 94, 0.9));
+    --glow-green-xl: drop-shadow(0 0 16px rgba(34, 197, 94, 1.0));
+    --glow-teal-sm: drop-shadow(0 0 8px rgba(20, 184, 166, 0.8));
+    --glow-teal-lg: drop-shadow(0 0 12px rgba(20, 184, 166, 0.9));
+    --glow-teal-xl: drop-shadow(0 0 16px rgba(20, 184, 166, 1.0));
+    --glow-gray-sm: drop-shadow(0 0 8px rgba(107, 114, 128, 0.8));
+    --glow-gray-lg: drop-shadow(0 0 12px rgba(107, 114, 128, 0.9));
+    --glow-gray-xl: drop-shadow(0 0 16px rgba(107, 114, 128, 1.0));
+    --glow-orange-sm: drop-shadow(0 0 8px rgba(251, 146, 60, 0.8));
+    --glow-orange-lg: drop-shadow(0 0 12px rgba(251, 146, 60, 0.9));
+    --glow-orange-xl: drop-shadow(0 0 16px rgba(251, 146, 60, 1.0));
+    --glow-pink-sm: drop-shadow(0 0 8px rgba(236, 72, 153, 0.8));
+    --glow-pink-lg: drop-shadow(0 0 12px rgba(236, 72, 153, 0.9));
+    --glow-pink-xl: drop-shadow(0 0 16px rgba(236, 72, 153, 1.0));
 }
 
 /* Base body styles */
@@ -506,7 +524,9 @@ input:checked ~ .toggle-dot {
 }
 
 /* Workout fullscreen container - completely replaces the main webapp */
-.workout-fullscreen-container {
+/* Preview fullscreen container - extends to full window like workout mode */
+.workout-fullscreen-container,
+.preview-fullscreen-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -524,17 +544,22 @@ input:checked ~ .toggle-dot {
 }
 
 /* Ensure hidden class properly hides the workout container */
-.workout-fullscreen-container.hidden {
+/* Ensure hidden class properly hides the preview container */
+.workout-fullscreen-container.hidden,
+.preview-fullscreen-container.hidden {
     display: none !important;
 }
 
 /* Additional specificity to ensure workout modal is hidden by default */
-#workoutModal.workout-fullscreen-container.hidden {
+/* Additional specificity to ensure preview modal is hidden by default */
+#workoutModal.workout-fullscreen-container.hidden,
+#previewModal.preview-fullscreen-container.hidden {
     display: none !important;
 }
 
 /* Workout modal specific styling - make it truly full-screen like squash-ghost app */
-#workoutModal {
+#workoutModal,
+#previewModal {
     position: fixed;
     top: 0;
     left: 0;
@@ -582,10 +607,50 @@ input:checked ~ .toggle-dot {
     .workout-fullscreen-container:not(.hidden) ~ * {
         display: none !important;
     }
+    
+    /* Preview modal mobile styling */
+    .preview-fullscreen-container {
+        /* Use viewport units that include the status bar area */
+        top: env(safe-area-inset-top, 0);
+        left: env(safe-area-inset-left, 0);
+        right: env(safe-area-inset-right, 0);
+        bottom: env(safe-area-inset-bottom, 0);
+        /* Ensure it covers the entire screen including status bar */
+        min-height: 100vh;
+        min-height: 100dvh; /* Dynamic viewport height for mobile */
+        width: 100vw;
+        /* Force full screen coverage */
+        position: fixed;
+        z-index: 99999;
+    }
+
+    .preview-fullscreen-container .preview-modal-content {
+        /* Ensure content also covers full screen on mobile */
+        min-height: 100vh;
+        min-height: 100dvh;
+        width: 100vw;
+        /* Extend background to cover status bar area */
+        padding-top: env(safe-area-inset-top, 0);
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* Hide any potential browser UI elements */
+    .preview-fullscreen-container:not(.hidden) ~ * {
+        display: none !important;
+    }
 }
 
 .workout-fullscreen-container:not(.hidden) {
     /* When workout modal is visible, hide the main webapp container */
+    & ~ .webapp-container {
+        display: none !important;
+    }
+}
+
+.preview-fullscreen-container:not(.hidden) {
+    /* When preview modal is visible, hide the main webapp container */
     & ~ .webapp-container {
         display: none !important;
     }
@@ -1210,99 +1275,151 @@ input:checked ~ .toggle-dot {
   border: 1px solid rgba(147, 51, 234, 0.3);
 }
 
-/* Preview Play/Pause Button */
+/* Consolidated Play/Pause, Workout, Present, and Export Buttons */
 [data-theme="dark"][data-color-scheme="blue-ocean"] #playPauseBtn,
-[data-theme="dark"]:not([data-color-scheme]) #playPauseBtn {
+[data-theme="dark"][data-color-scheme="blue-ocean"] #workoutPlayBtn,
+[data-theme="dark"][data-color-scheme="blue-ocean"] #workoutPauseBtn,
+[data-theme="dark"][data-color-scheme="blue-ocean"] #workoutReplayBtn,
+[data-theme="dark"][data-color-scheme="blue-ocean"] .workout-btn-resume,
+[data-theme="dark"][data-color-scheme="blue-ocean"] #presentBtn,
+[data-theme="dark"][data-color-scheme="blue-ocean"] #exportPreviewBtn {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="purple-nebula"] #playPauseBtn {
+[data-theme="dark"][data-color-scheme="purple-nebula"] #playPauseBtn,
+[data-theme="dark"][data-color-scheme="purple-nebula"] #workoutPlayBtn,
+[data-theme="dark"][data-color-scheme="purple-nebula"] #workoutPauseBtn,
+[data-theme="dark"][data-color-scheme="purple-nebula"] #workoutReplayBtn,
+[data-theme="dark"][data-color-scheme="purple-nebula"] .workout-btn-resume,
+[data-theme="dark"][data-color-scheme="purple-nebula"] #presentBtn,
+[data-theme="dark"][data-color-scheme="purple-nebula"] #exportPreviewBtn {
     background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="forest-night"] #playPauseBtn {
+[data-theme="dark"][data-color-scheme="forest-night"] #playPauseBtn,
+[data-theme="dark"][data-color-scheme="forest-night"] #workoutPlayBtn,
+[data-theme="dark"][data-color-scheme="forest-night"] #workoutPauseBtn,
+[data-theme="dark"][data-color-scheme="forest-night"] #workoutReplayBtn,
+[data-theme="dark"][data-color-scheme="forest-night"] .workout-btn-resume,
+[data-theme="dark"][data-color-scheme="forest-night"] #presentBtn,
+[data-theme="dark"][data-color-scheme="forest-night"] #exportPreviewBtn {
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="crimson-shadow"] #playPauseBtn {
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #playPauseBtn,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #workoutPlayBtn,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #workoutPauseBtn,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #workoutReplayBtn,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .workout-btn-resume,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #presentBtn,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #exportPreviewBtn {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="midnight-teal"] #playPauseBtn {
+[data-theme="dark"][data-color-scheme="midnight-teal"] #playPauseBtn,
+[data-theme="dark"][data-color-scheme="midnight-teal"] #workoutPlayBtn,
+[data-theme="dark"][data-color-scheme="midnight-teal"] #workoutPauseBtn,
+[data-theme="dark"][data-color-scheme="midnight-teal"] #workoutReplayBtn,
+[data-theme="dark"][data-color-scheme="midnight-teal"] .workout-btn-resume,
+[data-theme="dark"][data-color-scheme="midnight-teal"] #presentBtn,
+[data-theme="dark"][data-color-scheme="midnight-teal"] #exportPreviewBtn {
     background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
 }
 
 [data-theme="light"][data-color-scheme="cloud-silver"] #playPauseBtn,
-[data-theme="light"]:not([data-color-scheme]) #playPauseBtn {
+[data-theme="light"][data-color-scheme="cloud-silver"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="cloud-silver"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="cloud-silver"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="cloud-silver"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="cloud-silver"] #presentBtn,
+[data-theme="light"][data-color-scheme="cloud-silver"] #exportPreviewBtn {
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
-[data-theme="light"][data-color-scheme="warm-sunset"] #playPauseBtn {
+[data-theme="light"][data-color-scheme="warm-sunset"] #playPauseBtn,
+[data-theme="light"][data-color-scheme="warm-sunset"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="warm-sunset"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="warm-sunset"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="warm-sunset"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="warm-sunset"] #presentBtn,
+[data-theme="light"][data-color-scheme="warm-sunset"] #exportPreviewBtn {
     background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
 }
 
-[data-theme="light"][data-color-scheme="fresh-mint"] #playPauseBtn {
+[data-theme="light"][data-color-scheme="fresh-mint"] #playPauseBtn,
+[data-theme="light"][data-color-scheme="fresh-mint"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="fresh-mint"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="fresh-mint"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="fresh-mint"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="fresh-mint"] #presentBtn,
+[data-theme="light"][data-color-scheme="fresh-mint"] #exportPreviewBtn {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
 }
 
-[data-theme="light"][data-color-scheme="rose-gold"] #playPauseBtn {
+[data-theme="light"][data-color-scheme="rose-gold"] #playPauseBtn,
+[data-theme="light"][data-color-scheme="rose-gold"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="rose-gold"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="rose-gold"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="rose-gold"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="rose-gold"] #presentBtn,
+[data-theme="light"][data-color-scheme="rose-gold"] #exportPreviewBtn {
     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
 }
 
-[data-theme="light"][data-color-scheme="arctic-blue"] #playPauseBtn {
+[data-theme="light"][data-color-scheme="arctic-blue"] #playPauseBtn,
+[data-theme="light"][data-color-scheme="arctic-blue"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="arctic-blue"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="arctic-blue"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="arctic-blue"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="arctic-blue"] #presentBtn,
+[data-theme="light"][data-color-scheme="arctic-blue"] #exportPreviewBtn {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
 }
 
-[data-theme="light"][data-color-scheme="lavender-mist"] #playPauseBtn {
+[data-theme="light"][data-color-scheme="lavender-mist"] #playPauseBtn,
+[data-theme="light"][data-color-scheme="lavender-mist"] #workoutPlayBtn,
+[data-theme="light"][data-color-scheme="lavender-mist"] #workoutPauseBtn,
+[data-theme="light"][data-color-scheme="lavender-mist"] #workoutReplayBtn,
+[data-theme="light"][data-color-scheme="lavender-mist"] .workout-btn-resume,
+[data-theme="light"][data-color-scheme="lavender-mist"] #presentBtn,
+[data-theme="light"][data-color-scheme="lavender-mist"] #exportPreviewBtn {
     background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%) !important;
 }
 
-/* Preview Present Button */
-[data-theme="dark"][data-color-scheme="blue-ocean"] #presentBtn,
-[data-theme="dark"]:not([data-color-scheme]) #presentBtn {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+/* Default color scheme rules (when no color scheme is specified) */
+[data-theme="dark"]:not([data-color-scheme]) #playPauseBtn,
+[data-theme="dark"]:not([data-color-scheme]) #workoutPlayBtn,
+[data-theme="dark"]:not([data-color-scheme]) #workoutPauseBtn,
+[data-theme="dark"]:not([data-color-scheme]) #workoutReplayBtn,
+[data-theme="dark"]:not([data-color-scheme]) .workout-btn-resume,
+[data-theme="dark"]:not([data-color-scheme]) #presentBtn,
+[data-theme="dark"]:not([data-color-scheme]) #exportPreviewBtn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="purple-nebula"] #presentBtn {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+[data-theme="light"]:not([data-color-scheme]) #playPauseBtn,
+[data-theme="light"]:not([data-color-scheme]) #workoutPlayBtn,
+[data-theme="light"]:not([data-color-scheme]) #workoutPauseBtn,
+[data-theme="light"]:not([data-color-scheme]) #workoutReplayBtn,
+[data-theme="light"]:not([data-color-scheme]) .workout-btn-resume,
+[data-theme="light"]:not([data-color-scheme]) #presentBtn,
+[data-theme="light"]:not([data-color-scheme]) #exportPreviewBtn {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="forest-night"] #presentBtn {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+:root:not([data-theme="dark"]):not([data-color-scheme]) #playPauseBtn,
+:root:not([data-theme="dark"]):not([data-color-scheme]) #workoutPlayBtn,
+:root:not([data-theme="dark"]):not([data-color-scheme]) #workoutPauseBtn,
+:root:not([data-theme="dark"]):not([data-color-scheme]) #workoutReplayBtn,
+:root:not([data-theme="dark"]):not([data-color-scheme]) .workout-btn-resume,
+:root:not([data-theme="dark"]):not([data-color-scheme]) #presentBtn,
+:root:not([data-theme="dark"]):not([data-color-scheme]) #exportPreviewBtn {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
-[data-theme="dark"][data-color-scheme="crimson-shadow"] #presentBtn {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-}
 
-[data-theme="dark"][data-color-scheme="midnight-teal"] #presentBtn {
-    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
-}
 
-[data-theme="light"][data-color-scheme="cloud-silver"] #presentBtn,
-[data-theme="light"]:not([data-color-scheme]) #presentBtn {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-}
 
-[data-theme="light"][data-color-scheme="warm-sunset"] #presentBtn {
-    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
-}
-
-[data-theme="light"][data-color-scheme="fresh-mint"] #presentBtn {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-}
-
-[data-theme="light"][data-color-scheme="rose-gold"] #presentBtn {
-    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
-}
-
-[data-theme="light"][data-color-scheme="arctic-blue"] #presentBtn {
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-}
-
-[data-theme="light"][data-color-scheme="lavender-mist"] #presentBtn {
-    background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%) !important;
-}
 
 /* Preview Content Background */
 [data-theme="dark"] #previewContent {
@@ -1311,6 +1428,15 @@ input:checked ~ .toggle-dot {
 
 [data-theme="light"] #previewContent {
     background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Preview Content Text Theme Overrides */
+[data-theme="dark"] #previewContent .text-gray-600 {
+    color: var(--color-gray-700) !important;
+}
+
+[data-theme="light"] #previewContent .text-gray-600 {
+    color: var(--color-gray-600) !important;
 }
 
 [data-theme="dark"] .dropdown-content {
@@ -1461,7 +1587,6 @@ input:checked ~ .toggle-dot {
 
 .theme-toggle:hover, .rocket-toggle:hover, .duck-toggle:hover, .toolbar-icon-btn:hover {
     background-color: var(--color-gray-200);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
 }
 
@@ -1471,7 +1596,6 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"] .toolbar-icon-btn {
     background-color: var(--color-gray-100);
     border-color: var(--color-gray-200);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="dark"] .theme-toggle:hover,
@@ -1479,7 +1603,6 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"] .duck-toggle:hover,
 [data-theme="dark"] .toolbar-icon-btn:hover {
     background-color: var(--color-gray-200);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15);
     transform: translateY(-1px);
 }
 
@@ -1707,6 +1830,16 @@ input:checked ~ .toggle-dot {
     display: block !important;
 }
 
+/* Hide sub-element timings in preview mode when rocket mode is OFF */
+[data-rocket-mode="off"] .rocket-timing-badge {
+    display: none !important;
+}
+
+/* Hide entire sub-element lines in preview mode when rocket mode is OFF */
+[data-rocket-mode="off"] .flex.items-center.gap-2.py-0\.5.ml-6 {
+    display: none !important;
+}
+
 /* Ensure accordion bodies maintain width in rocket mode on when hidden */
 [data-rocket-mode="on"] .shot-body.hidden,
 [data-rocket-mode="on"] .message-body.hidden,
@@ -1929,7 +2062,7 @@ svg, svg path {
   border-radius: 0;
   box-shadow: var(--shadow-lg);
   z-index: 1000;
-  min-width: 120px;
+  min-width: 160px;
   opacity: 0;
   visibility: hidden;
   transform: translateX(-10px);
@@ -1944,7 +2077,9 @@ svg, svg path {
 }
 
 .execute-dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   padding: 0.75rem 1rem;
   color: var(--color-gray-700);
@@ -2012,6 +2147,119 @@ svg, svg path {
 /* Execute button container for positioning */
 .execute-btn-container {
   position: relative;
+}
+
+/* Prep time submenu styles */
+.prep-time-submenu {
+  min-width: 200px;
+  position: absolute;
+  top: 0;
+  left: 100%;
+  right: auto;
+  margin-left: 0.5rem;
+  margin-top: 0;
+  background: white;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+  display: none;
+}
+
+.prep-time-submenu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.prep-time-header {
+  padding: 0.75rem 1rem;
+  color: var(--color-gray-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.prep-time-slider-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.prep-time-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-gray-200);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.prep-time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-blue-500);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.prep-time-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-blue-500);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.prep-time-value {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  padding: 0.25rem 0;
+}
+
+/* Dark mode prep time submenu styles */
+[data-theme="dark"] .prep-time-header {
+  color: #E5E7EB;
+  border-bottom-color: #374151;
+}
+
+[data-theme="dark"] .prep-time-slider {
+  background: #374151;
+}
+
+[data-theme="dark"] .prep-time-slider::-webkit-slider-thumb {
+  background: #3B82F6;
+  border-color: #1F2937;
+}
+
+[data-theme="dark"] .prep-time-slider::-moz-range-thumb {
+  background: #3B82F6;
+  border-color: #1F2937;
+}
+
+[data-theme="dark"] .prep-time-value {
+  color: #E5E7EB;
+}
+
+[data-theme="dark"] .prep-time-submenu {
+  background-color: var(--color-gray-100) !important;
+  border-color: var(--color-gray-400) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 10px 20px -5px rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Editor button dropdown menu */
@@ -2748,6 +2996,157 @@ datalist {
   overflow: hidden;
 }
 
+/* Preview Modal Content Styles */
+.preview-modal-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f9fafb;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* Preview Header - matches workout header styling exactly */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 70px;
+  gap: 12px;
+}
+
+.preview-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: white;
+}
+
+.preview-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Preview Status Ghost */
+.preview-status-ghost {
+  pointer-events: none;
+  /* Always bob up and down */
+  animation: workout-status-ghost-bob 2s ease-in-out infinite;
+  /* Base glow effect */
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)) drop-shadow(0 0 16px rgba(139, 92, 246, 0.4));
+}
+
+.preview-status-ghost.running {
+  /* When running, add glow pulse while keeping the bob animation */
+  animation: workout-status-ghost-bob 2s ease-in-out infinite, workout-status-ghost-glow 3s ease-in-out infinite;
+}
+
+.preview-status-ghost.flipped {
+  /* When flipped, use the flipped bob animation */
+  animation: workout-status-ghost-bob-flipped 2s ease-in-out infinite;
+}
+
+.preview-status-ghost.flipped.running {
+  /* When flipped and running, use flipped bob animation with glow */
+  animation: workout-status-ghost-bob-flipped 2s ease-in-out infinite, workout-status-ghost-glow 3s ease-in-out infinite;
+}
+
+.preview-status-ghost:not(.running) {
+  /* When not running, make more transparent */
+  opacity: 0.6;
+}
+
+.preview-status-ghost img {
+  image-rendering: crisp-edges;
+  vertical-align: middle;
+}
+
+/* Preview Status Spacer - replaces ghost in header */
+.preview-status-spacer {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Preview Close Button */
+.preview-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Preview Export Button */
+.preview-btn-export {
+  background: linear-gradient(135deg, var(--color-btn-export-start, #6b7280) 0%, var(--color-btn-export-end, #4b5563) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.preview-btn-export:hover {
+  background: linear-gradient(135deg, var(--color-btn-export-start-hover, #9ca3af) 0%, var(--color-btn-export-end-hover, #6b7280) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.preview-btn-export:active {
+  background: linear-gradient(135deg, var(--color-btn-export-start-active, #4b5563) 0%, var(--color-btn-export-end-active, #374151) 100%);
+  transform: translateY(1px);
+}
+
+
+
+/* Preview Timer - matches workout timer styling exactly */
+.preview-timer {
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  min-width: 60px;
+  text-align: center;
+}
+
 /* All Color Schemes for Workout Modal */
 
 /* Dark Mode Schemes */
@@ -2806,6 +3205,65 @@ datalist {
 }
 
 [data-theme="light"][data-color-scheme="lavender-mist"] .workout-modal-content {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  color: #581c87;
+}
+
+/* Color Scheme Specific Preview Modal Content */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .preview-modal-content,
+[data-theme="dark"]:not([data-color-scheme]) .preview-modal-content {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: white;
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .preview-modal-content {
+  background: linear-gradient(135deg, #2d1b69 0%, #11004c 50%, #0c0032 100%);
+  color: #e0e7ff;
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .preview-modal-content {
+  background: linear-gradient(135deg, #1a2e1a 0%, #0f3b0f 50%, #064e3b 100%);
+  color: #dcfce7;
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .preview-modal-content {
+  background: linear-gradient(135deg, #2e1a1a 0%, #3b0f0f 50%, #4c1d1d 100%);
+  color: #fef2f2;
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .preview-modal-content {
+  background: linear-gradient(135deg, #1a2e2e 0%, #0f3b3b 50%, #134e4a 100%);
+  color: #f0fdfa;
+}
+
+[data-theme="light"][data-color-scheme="cloud-silver"] .preview-modal-content,
+[data-theme="light"]:not([data-color-scheme]) .preview-modal-content,
+:root:not([data-theme="dark"]):not([data-color-scheme]) .preview-modal-content {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  color: #1e293b;
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .preview-modal-content {
+  background: linear-gradient(135deg, #fef7ed 0%, #fed7aa 50%, #fdba74 100%);
+  color: #9a3412;
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .preview-modal-content {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+  color: #14532d;
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .preview-modal-content {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+  color: #831843;
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .preview-modal-content {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+  color: #0c4a6e;
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .preview-modal-content {
   background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
   color: #581c87;
 }
@@ -2900,10 +3358,11 @@ datalist {
 
 
 
-/* Header Button Styles */
-.workout-btn-header {
+/* Base style for all header buttons in both workout and preview modes */
+.workout-btn-header,
+.preview-btn-header {
   background: transparent;
-  border: 1.5px solid;
+  border: 1.5px solid transparent;
   color: white;
   padding: 8px;
   border-radius: 15px;
@@ -2919,44 +3378,27 @@ datalist {
   gap: 4px;
 }
 
-.workout-btn-header.workout-btn-start {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+.workout-btn-header.workout-btn-start,
+.preview-btn-header.preview-btn-play {
+  background: linear-gradient(135deg, var(--color-btn-play-start, #10b981) 0%, var(--color-btn-play-end, #059669) 100%);
 }
 
-.workout-btn-header.workout-btn-start:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+.workout-btn-header.workout-btn-pause,
+.preview-btn-header.preview-btn-pause {
+  background: linear-gradient(135deg, var(--color-btn-pause-start, #f59e0b) 0%, var(--color-btn-pause-end, #d97706) 100%);
+}
+
+.workout-btn-header.workout-btn-replay,
+.workout-btn-header.workout-btn-resume,
+.preview-btn-header.preview-btn-present {
+  background: linear-gradient(135deg, var(--color-btn-present-start, #3b82f6) 0%, var(--color-btn-present-end, #2563eb) 100%);
+}
+
+/* Hover and transform effects */
+.workout-btn-header:hover,
+.preview-btn-header:hover {
   transform: scale(1.05);
-}
-
-.workout-btn-header.workout-btn-resume {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.workout-btn-header.workout-btn-resume:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: scale(1.05);
-}
-
-.workout-btn-header.workout-btn-pause {
-  border-color: #f59e0b;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.workout-btn-header.workout-btn-pause:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: scale(1.05);
-}
-
-.workout-btn-header.workout-btn-replay {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.workout-btn-header.workout-btn-replay:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: scale(1.05);
+  filter: brightness(1.1);
 }
 
 .workout-timer {
@@ -2969,7 +3411,7 @@ datalist {
   padding: 6px 12px;
   border-radius: 10px;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  min-width: 60px;
+  min-width: 90px;
   text-align: center;
 }
 
@@ -3162,6 +3604,59 @@ datalist {
   }
 }
 
+/* Countdown flash effect for last 10 seconds */
+.workout-shot-title.countdown-flash {
+  animation: countdown-flash 0.5s ease-in-out infinite;
+}
+
+@keyframes countdown-flash {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    text-shadow:
+      0 0 20px rgba(255, 255, 255, 1),
+      0 0 30px rgba(255, 255, 255, 0.9),
+      0 0 40px rgba(255, 255, 255, 0.7);
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Light mode countdown flash */
+[data-theme="light"] .workout-shot-title.countdown-flash,
+:root:not([data-theme="dark"]) .workout-shot-title.countdown-flash {
+  animation: countdown-flash-light 0.5s ease-in-out infinite;
+}
+
+@keyframes countdown-flash-light {
+  0% {
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    text-shadow:
+      0 0 20px rgba(239, 68, 68, 1),
+      0 0 30px rgba(239, 68, 68, 0.9),
+      0 0 40px rgba(239, 68, 68, 0.7);
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 
 
 .workout-progress-text {
@@ -3245,6 +3740,24 @@ datalist {
     font-size: 14px;
     padding: 4px 8px;
   }
+  
+  /* Preview header landscape mode */
+  .preview-header {
+    padding: 8px 16px;
+    min-height: 50px;
+  }
+
+  .preview-btn-header {
+    padding: 4px 8px;
+    font-size: 10px;
+    height: 24px;
+    min-width: 40px;
+  }
+
+  .preview-timer {
+    font-size: 14px;
+    padding: 4px 8px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -3287,6 +3800,42 @@ datalist {
     flex-direction: column;
     gap: 12px;
   }
+  
+  /* Preview header responsive design */
+  .preview-header {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    min-height: auto;
+  }
+
+  .preview-header-controls {
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .preview-status {
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .preview-btn-header {
+    min-width: 45px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .preview-timer {
+    font-size: 14px;
+    padding: 4px 8px;
+    min-width: 50px;
+  }
+
+  .preview-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+  }
 }
 
 @media (max-height: 500px) {
@@ -3303,6 +3852,12 @@ datalist {
   .workout-shot-title {
     font-size: clamp(2.5rem, 7vw, 4.5rem);
   }
+  
+  /* Preview header short height */
+  .preview-header {
+    padding: 6px 16px;
+    min-height: 45px;
+  }
 }
 
 /* All Color Schemes for Workout Headers */
@@ -3315,6 +3870,20 @@ datalist {
 
 /* Light Mode Headers */
 [data-theme="light"] .workout-header {
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* All Color Schemes for Preview Headers */
+
+/* Dark Mode Preview Headers */
+[data-theme="dark"] .preview-header {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Light Mode Preview Headers */
+[data-theme="light"] .preview-header {
   background: rgba(255, 255, 255, 0.8);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
@@ -3356,6 +3925,43 @@ datalist {
   border-bottom-color: rgba(88, 28, 135, 0.1);
 }
 
+/* Color Scheme Specific Preview Headers */
+[data-theme="dark"][data-color-scheme="purple-nebula"] .preview-header {
+  border-bottom-color: rgba(224, 231, 255, 0.1);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .preview-header {
+  border-bottom-color: rgba(220, 252, 231, 0.1);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .preview-header {
+  border-bottom-color: rgba(254, 242, 242, 0.1);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .preview-header {
+  border-bottom-color: rgba(240, 253, 250, 0.1);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .preview-header {
+  border-bottom-color: rgba(154, 52, 18, 0.1);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .preview-header {
+  border-bottom-color: rgba(20, 83, 45, 0.1);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .preview-header {
+  border-bottom-color: rgba(131, 24, 67, 0.1);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .preview-header {
+  border-bottom-color: rgba(12, 74, 110, 0.1);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .preview-header {
+  border-bottom-color: rgba(88, 28, 135, 0.1);
+}
+
 /* Color Scheme Specific Close Buttons */
 [data-theme="dark"] .workout-close-btn {
   color: rgba(255, 255, 255, 0.7);
@@ -3371,6 +3977,25 @@ datalist {
 }
 
 [data-theme="light"] .workout-close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 1);
+}
+
+/* Color Scheme Specific Preview Close Buttons */
+[data-theme="dark"] .preview-close-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .preview-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .preview-close-btn {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="light"] .preview-close-btn:hover {
   background: rgba(0, 0, 0, 0.1);
   color: rgba(0, 0, 0, 1);
 }
@@ -3453,6 +4078,143 @@ datalist {
   text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+/* Color Scheme Specific Preview Timers */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .preview-timer,
+[data-theme="dark"]:not([data-color-scheme]) .preview-timer {
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .preview-timer {
+  color: #a855f7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .preview-timer {
+  color: #22c55e;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .preview-timer {
+  color: #ef4444;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .preview-timer {
+  color: #14b8a6;
+  text-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="cloud-silver"] .preview-timer,
+[data-theme="light"]:not([data-color-scheme]) .preview-timer {
+  color: #059669;
+  text-shadow: 0 0 10px rgba(5, 150, 105, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .preview-timer {
+  color: #ea580c;
+  text-shadow: 0 0 10px rgba(234, 88, 12, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .preview-timer {
+  color: #16a34a;
+  text-shadow: 0 0 10px rgba(22, 163, 74, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .preview-timer {
+  color: #ec4899;
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .preview-timer {
+  color: #0284c7;
+  text-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .preview-timer {
+  color: #9333ea;
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+/* Color Scheme Specific Preview Buttons */
+[data-theme="dark"][data-color-scheme="blue-ocean"] {
+  --color-btn-play-start: #10b981; --color-btn-play-end: #059669;
+  --color-btn-pause-start: #f59e0b; --color-btn-pause-end: #d97706;
+  --color-btn-present-start: #3b82f6; --color-btn-present-end: #2563eb;
+}
+[data-theme="dark"][data-color-scheme="purple-nebula"] {
+  --color-btn-play-start: #a855f7; --color-btn-play-end: #9333ea;
+  --color-btn-pause-start: #facc15; --color-btn-pause-end: #eab308;
+  --color-btn-present-start: #60a5fa; --color-btn-present-end: #3b82f6;
+}
+[data-theme="dark"][data-color-scheme="forest-night"] {
+  --color-btn-play-start: #22c55e; --color-btn-play-end: #16a34a;
+  --color-btn-pause-start: #eab308; --color-btn-pause-end: #ca8a04;
+  --color-btn-present-start: #6ee7b7; --color-btn-present-end: #34d399;
+}
+[data-theme="dark"][data-color-scheme="crimson-shadow"] {
+  --color-btn-play-start: #ef4444; --color-btn-play-end: #dc2626;
+  --color-btn-pause-start: #f59e0b; --color-btn-pause-end: #d97706;
+  --color-btn-present-start: #fca5a5; --color-btn-present-end: #f87171;
+}
+[data-theme="dark"][data-color-scheme="midnight-teal"] {
+  --color-btn-play-start: #14b8a6; --color-btn-play-end: #0d9488;
+  --color-btn-pause-start: #f59e0b; --color-btn-pause-end: #d97706;
+  --color-btn-present-start: #5eead4; --color-btn-present-end: #2dd4bf;
+}
+[data-theme="light"][data-color-scheme="cloud-silver"] {
+  --color-btn-play-start: #059669; --color-btn-play-end: #047857;
+  --color-btn-pause-start: #d97706; --color-btn-pause-end: #b45309;
+  --color-btn-present-start: #2563eb; --color-btn-present-end: #1d4ed8;
+}
+[data-theme="light"][data-color-scheme="warm-sunset"] {
+  --color-btn-play-start: #ea580c; --color-btn-play-end: #c2410c;
+  --color-btn-pause-start: #dc2626; --color-btn-pause-end: #b91c1c;
+  --color-btn-present-start: #fb923c; --color-btn-present-end: #f97316;
+}
+[data-theme="light"][data-color-scheme="fresh-mint"] {
+  --color-btn-play-start: #16a34a; --color-btn-play-end: #15803d;
+  --color-btn-pause-start: #e11d48; --color-btn-pause-end: #be123c;
+  --color-btn-present-start: #2563eb; --color-btn-present-end: #1d4ed8;
+}
+[data-theme="light"][data-color-scheme="rose-gold"] {
+  --color-btn-play-start: #ec4899; --color-btn-play-end: #db2777;
+  --color-btn-pause-start: #f43f5e; --color-btn-pause-end: #e11d48;
+  --color-btn-present-start: #d946ef; --color-btn-present-end: #c026d3;
+}
+[data-theme="light"][data-color-scheme="arctic-blue"] {
+  --color-btn-play-start: #0284c7; --color-btn-play-end: #0369a1;
+  --color-btn-pause-start: #ea580c; --color-btn-pause-end: #c2410c;
+  --color-btn-present-start: #60a5fa; --color-btn-present-end: #3b82f6;
+}
+[data-theme="light"][data-color-scheme="lavender-mist"] {
+  --color-btn-play-start: #9333ea; --color-btn-play-end: #7e22ce;
+  --color-btn-pause-start: #db2777; --color-btn-pause-end: #be185d;
+  --color-btn-present-start: #4f46e5; --color-btn-present-end: #4338ca;
 }
 
 /* Color Scheme Specific Shot Titles */
@@ -4153,6 +4915,287 @@ datalist {
   background-color: rgba(147, 51, 234, 0.1) !important;
 }
 
+/* Sub-element Badge Color Scheme Overrides */
+
+/* Announcement (Orange) Badge Color Scheme Overrides */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .text-orange-700,
+[data-theme="dark"][data-color-scheme="blue-ocean"] .bg-orange-100,
+[data-theme="dark"]:not([data-color-scheme]) .text-orange-700,
+[data-theme="dark"]:not([data-color-scheme]) .bg-orange-100 {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .text-orange-700,
+[data-theme="dark"][data-color-scheme="purple-nebula"] .bg-orange-100 {
+  color: #a855f7 !important;
+  background-color: rgba(168, 85, 247, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .text-orange-700,
+[data-theme="dark"][data-color-scheme="forest-night"] .bg-orange-100 {
+  color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .text-orange-700,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .bg-orange-100 {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .text-orange-700,
+[data-theme="dark"][data-color-scheme="midnight-teal"] .bg-orange-100 {
+  color: #14b8a6 !important;
+  background-color: rgba(20, 184, 166, 0.1) !important;
+}
+
+/* Light Mode Announcement Colors */
+[data-theme="light"][data-color-scheme="cloud-silver"] .text-orange-700,
+[data-theme="light"][data-color-scheme="cloud-silver"] .bg-orange-100,
+[data-theme="light"]:not([data-color-scheme]) .text-orange-700,
+[data-theme="light"]:not([data-color-scheme]) .bg-orange-100 {
+  color: #059669 !important;
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .text-orange-700,
+[data-theme="light"][data-color-scheme="warm-sunset"] .bg-orange-100 {
+  color: #ea580c !important;
+  background-color: rgba(234, 88, 12, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .text-orange-700,
+[data-theme="light"][data-color-scheme="fresh-mint"] .bg-orange-100 {
+  color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .text-orange-700,
+[data-theme="light"][data-color-scheme="rose-gold"] .bg-orange-100 {
+  color: #ec4899 !important;
+  background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .text-orange-700,
+[data-theme="light"][data-color-scheme="arctic-blue"] .bg-orange-100 {
+  color: #0284c7 !important;
+  background-color: rgba(2, 132, 199, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .text-orange-700,
+[data-theme="light"][data-color-scheme="lavender-mist"] .bg-orange-100 {
+  color: #9333ea !important;
+  background-color: rgba(147, 51, 234, 0.1) !important;
+}
+
+/* Split-step (Yellow) Badge Color Scheme Overrides */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .text-yellow-700,
+[data-theme="dark"][data-color-scheme="blue-ocean"] .bg-yellow-100,
+[data-theme="dark"]:not([data-color-scheme]) .text-yellow-700,
+[data-theme="dark"]:not([data-color-scheme]) .bg-yellow-100 {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .text-yellow-700,
+[data-theme="dark"][data-color-scheme="purple-nebula"] .bg-yellow-100 {
+  color: #a855f7 !important;
+  background-color: rgba(168, 85, 247, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .text-yellow-700,
+[data-theme="dark"][data-color-scheme="forest-night"] .bg-yellow-100 {
+  color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .text-yellow-700,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .bg-yellow-100 {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .text-yellow-700,
+[data-theme="dark"][data-color-scheme="midnight-teal"] .bg-yellow-100 {
+  color: #14b8a6 !important;
+  background-color: rgba(20, 184, 166, 0.1) !important;
+}
+
+/* Light Mode Split-step Colors */
+[data-theme="light"][data-color-scheme="cloud-silver"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="cloud-silver"] .bg-yellow-100,
+[data-theme="light"]:not([data-color-scheme]) .text-yellow-700,
+[data-theme="light"]:not([data-color-scheme]) .bg-yellow-100 {
+  color: #059669 !important;
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="warm-sunset"] .bg-yellow-100 {
+  color: #ea580c !important;
+  background-color: rgba(234, 88, 12, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="fresh-mint"] .bg-yellow-100 {
+  color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="rose-gold"] .bg-yellow-100 {
+  color: #ec4899 !important;
+  background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="arctic-blue"] .bg-yellow-100 {
+  color: #0284c7 !important;
+  background-color: rgba(2, 132, 199, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .text-yellow-700,
+[data-theme="light"][data-color-scheme="lavender-mist"] .bg-yellow-100 {
+  color: #9333ea !important;
+  background-color: rgba(147, 51, 234, 0.1) !important;
+}
+
+/* Message (Green) Badge Color Scheme Overrides */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .text-green-600,
+[data-theme="dark"][data-color-scheme="blue-ocean"] .bg-green-100,
+[data-theme="dark"]:not([data-color-scheme]) .text-green-600,
+[data-theme="dark"]:not([data-color-scheme]) .bg-green-100 {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .text-green-600,
+[data-theme="dark"][data-color-scheme="purple-nebula"] .bg-green-100 {
+  color: #a855f7 !important;
+  background-color: rgba(168, 85, 247, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .text-green-600,
+[data-theme="dark"][data-color-scheme="forest-night"] .bg-green-100 {
+  color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .text-green-600,
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .bg-green-100 {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .text-green-600,
+[data-theme="dark"][data-color-scheme="midnight-teal"] .bg-green-100 {
+  color: #14b8a6 !important;
+  background-color: rgba(20, 184, 166, 0.1) !important;
+}
+
+/* Light Mode Message Colors */
+[data-theme="light"][data-color-scheme="cloud-silver"] .text-green-600,
+[data-theme="light"][data-color-scheme="cloud-silver"] .bg-green-100,
+[data-theme="light"]:not([data-color-scheme]) .text-green-600,
+[data-theme="light"]:not([data-color-scheme]) .bg-green-100 {
+  color: #059669 !important;
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .text-green-600,
+[data-theme="light"][data-color-scheme="warm-sunset"] .bg-green-100 {
+  color: #ea580c !important;
+  background-color: rgba(234, 88, 12, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .text-green-600,
+[data-theme="light"][data-color-scheme="fresh-mint"] .bg-green-100 {
+  color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .text-green-600,
+[data-theme="light"][data-color-scheme="rose-gold"] .bg-green-100 {
+  color: #ec4899 !important;
+  background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .text-green-600,
+[data-theme="light"][data-color-scheme="arctic-blue"] .bg-green-100 {
+  color: #0284c7 !important;
+  background-color: rgba(2, 132, 199, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .text-green-600,
+[data-theme="light"][data-color-scheme="lavender-mist"] .bg-green-100 {
+  color: #9333ea !important;
+  background-color: rgba(147, 51, 234, 0.1) !important;
+}
+
+/* Rocket Timing Badge Color Scheme Overrides */
+
+/* Dark Mode Rocket Timing Badge Colors */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .rocket-timing-badge,
+[data-theme="dark"]:not([data-color-scheme]) .rocket-timing-badge {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .rocket-timing-badge {
+  color: #a855f7 !important;
+  background-color: rgba(168, 85, 247, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .rocket-timing-badge {
+  color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .rocket-timing-badge {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .rocket-timing-badge {
+  color: #14b8a6 !important;
+  background-color: rgba(20, 184, 166, 0.1) !important;
+}
+
+/* Light Mode Rocket Timing Badge Colors */
+[data-theme="light"][data-color-scheme="cloud-silver"] .rocket-timing-badge,
+[data-theme="light"]:not([data-color-scheme]) .rocket-timing-badge {
+  color: #059669 !important;
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .rocket-timing-badge {
+  color: #ea580c !important;
+  background-color: rgba(234, 88, 12, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .rocket-timing-badge {
+  color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .rocket-timing-badge {
+  color: #ec4899 !important;
+  background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .rocket-timing-badge {
+  color: #0284c7 !important;
+  background-color: rgba(2, 132, 199, 0.1) !important;
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .rocket-timing-badge {
+  color: #9333ea !important;
+  background-color: rgba(147, 51, 234, 0.1) !important;
+}
+
+
+
 /* Themed Ribbon Styles */
 
 /* Workout Ribbons (Red) */
@@ -4257,6 +5300,376 @@ datalist {
 
 [data-theme="light"][data-color-scheme="lavender-mist"] .pattern-ribbon {
   background: linear-gradient(to bottom, #9333ea, #7c3aed, #6d28d9);
+}
+
+.theme-menu-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  gap: 8px;
+}
+.theme-menu-btn:hover, .theme-menu-btn:focus {
+  background: #f3f4f6;
+  color: #111827;
+}
+[data-theme="dark"] .theme-menu-btn {
+  color: var(--color-gray-700);
+}
+[data-theme="dark"] .theme-menu-btn:hover, [data-theme="dark"] .theme-menu-btn:focus {
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+.theme-menu-btn.back-btn {
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .theme-menu-btn.back-btn {
+  border-bottom: 1px solid #4b5563;
+}
+
+/* Favorites dropdown styling (matches theme-dropdown) */
+.favorites-dropdown {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  right: auto;
+  margin-left: 0.5rem;
+  margin-top: 0;
+  background: white;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 120px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+.favorites-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.favorites-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0;
+}
+.favorites-dropdown-item:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+[data-theme="dark"] .favorites-dropdown {
+  background-color: var(--color-gray-100) !important;
+  border-color: var(--color-gray-400) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 10px 20px -5px rgba(0, 0, 0, 0.8) !important;
+}
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item,
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item > div,
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item span,
+[data-theme="dark"] .favorites-dropdown div {
+  color: var(--color-gray-700) !important;
+  background-color: transparent !important;
+}
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item:hover {
+  background-color: var(--color-gray-200) !important;
+  color: var(--color-gray-900) !important;
+}
+
+/* Portrait: favorites-dropdown to the right of the heart icon */
+@media (orientation: portrait) {
+  .favorites-dropdown {
+    left: 100%;
+    right: auto;
+    top: 0;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    transform: translateX(-10px);
+  }
+  .favorites-dropdown.active {
+    transform: translateX(0);
+  }
+}
+
+/* Landscape: favorites-dropdown below the heart icon */
+@media (orientation: landscape) {
+  .favorites-dropdown {
+    top: 100%;
+    left: 0;
+    right: auto;
+    margin-left: 0;
+    margin-top: 0.5rem;
+    transform: translateY(-10px);
+  }
+  .favorites-dropdown.active {
+    transform: translateY(0);
+  }
+}
+
+.heart-btn-container {
+  position: relative;
+  display: inline-block;
+}
+
+.favorites-dropdown, .favorites-submenu {
+  min-width: 180px;
+  max-width: 420px;
+  width: max-content;
+}
+.favorites-dropdown-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favorites-dropdown-item[style*="display: none"] {
+  display: none !important;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+/* Only grow the menu when showing the load listing */
+.favorites-dropdown.favorites-load-listing {
+  min-width: 180px;
+  max-width: 420px;
+  width: max-content;
+}
+/* Default favorites dropdown stays narrow */
+.favorites-dropdown {
+  min-width: 120px;
+  width: auto;
+}
+
+.favorites-glow {
+  color: var(--color-red-500) !important;
+  filter: var(--glow-red-sm) !important;
+  transition: all 0.2s;
+}
+
+/* Ensure favorites glow overrides toolbar button SVG styles */
+.toolbar-icon-btn .favorites-glow {
+  color: var(--color-red-500) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
+/* Dark theme favorites glow */
+[data-theme="dark"] .favorites-glow {
+  color: var(--color-red-400) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
+/* Dark theme favorites glow for toolbar buttons */
+[data-theme="dark"] .toolbar-icon-btn .favorites-glow {
+  color: var(--color-red-400) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
+/* Workout Done Message Styling */
+.workout-done-message {
+  color: var(--color-green-600) !important;
+  font-weight: bold;
+  text-align: center;
+}
+
+[data-theme="dark"] .workout-done-message {
+  color: var(--color-green-400) !important;
+}
+
+@keyframes workout-done-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Backdrop blur effect for dropdown menus */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  pointer-events: none;
+}
+
+/* iOS Safari fallback for backdrop blur */
+@supports not (backdrop-filter: blur(2px)) {
+  .dropdown-backdrop {
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* iOS Safari specific backdrop blur */
+@supports (-webkit-backdrop-filter: blur(2px)) {
+  .dropdown-backdrop {
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
+.dropdown-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Apply blur to main content when dropdowns are active */
+.webapp-container.dropdown-active {
+  filter: blur(2px);
+  -webkit-filter: blur(2px);
+  transition: filter 0.2s ease, -webkit-filter 0.2s ease;
+}
+
+/* iOS Safari fallback for content blur */
+@supports not (filter: blur(2px)) {
+  .webapp-container.dropdown-active {
+    opacity: 0.7;
+  }
+}
+
+/* Ensure dropdowns remain sharp when backdrop is active */
+.execute-dropdown.active,
+.editor-dropdown.active,
+.load-dropdown.active,
+.save-dropdown.active,
+.favorites-dropdown.active,
+.prep-time-submenu.active,
+.rocket-indicator-dropdown.active,
+.settings-panel.active {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Glow effect for toolbar icon buttons when revealed */
+.theme-toggle.glow-effect,
+.rocket-toggle.glow-effect,
+.duck-toggle.glow-effect,
+.toolbar-icon-btn.glow-effect {
+  filter: var(--glow-blue-sm);
+  transition: filter 0.3s ease;
+}
+
+/* Theme-specific glow effects for toolbar buttons */
+[data-color-scheme="blue-ocean"] .theme-toggle.glow-effect,
+[data-color-scheme="blue-ocean"] .rocket-toggle.glow-effect,
+[data-color-scheme="blue-ocean"] .duck-toggle.glow-effect,
+[data-color-scheme="blue-ocean"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-blue-sm);
+}
+
+[data-color-scheme="purple-nebula"] .theme-toggle.glow-effect,
+[data-color-scheme="purple-nebula"] .rocket-toggle.glow-effect,
+[data-color-scheme="purple-nebula"] .duck-toggle.glow-effect,
+[data-color-scheme="purple-nebula"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-purple-sm);
+}
+
+[data-color-scheme="forest-night"] .theme-toggle.glow-effect,
+[data-color-scheme="forest-night"] .rocket-toggle.glow-effect,
+[data-color-scheme="forest-night"] .duck-toggle.glow-effect,
+[data-color-scheme="forest-night"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-green-sm);
+}
+
+[data-color-scheme="crimson-shadow"] .theme-toggle.glow-effect,
+[data-color-scheme="crimson-shadow"] .rocket-toggle.glow-effect,
+[data-color-scheme="crimson-shadow"] .duck-toggle.glow-effect,
+[data-color-scheme="crimson-shadow"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-red-sm);
+}
+
+[data-color-scheme="midnight-teal"] .theme-toggle.glow-effect,
+[data-color-scheme="midnight-teal"] .rocket-toggle.glow-effect,
+[data-color-scheme="midnight-teal"] .duck-toggle.glow-effect,
+[data-color-scheme="midnight-teal"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-teal-sm);
+}
+
+[data-color-scheme="cloud-silver"] .theme-toggle.glow-effect,
+[data-color-scheme="cloud-silver"] .rocket-toggle.glow-effect,
+[data-color-scheme="cloud-silver"] .duck-toggle.glow-effect,
+[data-color-scheme="cloud-silver"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-gray-sm);
+}
+
+[data-color-scheme="warm-sunset"] .theme-toggle.glow-effect,
+[data-color-scheme="warm-sunset"] .rocket-toggle.glow-effect,
+[data-color-scheme="warm-sunset"] .duck-toggle.glow-effect,
+[data-color-scheme="warm-sunset"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-orange-sm);
+}
+
+[data-color-scheme="fresh-mint"] .theme-toggle.glow-effect,
+[data-color-scheme="fresh-mint"] .rocket-toggle.glow-effect,
+[data-color-scheme="fresh-mint"] .duck-toggle.glow-effect,
+[data-color-scheme="fresh-mint"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-green-sm);
+}
+
+[data-color-scheme="rose-gold"] .theme-toggle.glow-effect,
+[data-color-scheme="rose-gold"] .rocket-toggle.glow-effect,
+[data-color-scheme="rose-gold"] .duck-toggle.glow-effect,
+[data-color-scheme="rose-gold"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-pink-sm);
+}
+
+[data-color-scheme="arctic-blue"] .theme-toggle.glow-effect,
+[data-color-scheme="arctic-blue"] .rocket-toggle.glow-effect,
+[data-color-scheme="arctic-blue"] .duck-toggle.glow-effect,
+[data-color-scheme="arctic-blue"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-blue-sm);
+}
+
+[data-color-scheme="lavender-mist"] .theme-toggle.glow-effect,
+[data-color-scheme="lavender-mist"] .rocket-toggle.glow-effect,
+[data-color-scheme="lavender-mist"] .duck-toggle.glow-effect,
+[data-color-scheme="lavender-mist"] .toolbar-icon-btn.glow-effect {
+  filter: var(--glow-purple-sm);
+}
+
+
+
+/* iOS Safari specific styles - only for backdrop */
+.ios-safari .dropdown-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.ios-safari .webapp-container.dropdown-active {
+  opacity: 0.6;
 }
 
 

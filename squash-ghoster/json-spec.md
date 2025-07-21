@@ -22,7 +22,7 @@ The workout system supports inheritance of configuration properties from higher 
   * **min** (number, required): The minimum offset for the interval in seconds (-2.0 to +2.0). If intervalOffsetType is "fixed", min and max will be the same value.
   * **max** (number, required): The maximum offset for the interval in seconds (-2.0 to +2.0).
 * **autoVoiceSplitStep** (boolean, optional): If true, splitStepSpeed is automatically determined by the system. Overrides parent setting.
-* **shotAnnouncementLeadTime** (number, optional): Time in seconds before the shot period expires that the shot is announced (2.5 to interval value, step 0.1s). Overrides parent setting.
+* **shotAnnouncementLeadTime** (number, optional): Time in seconds before the shot period expires that the shot is announced (1.0 to interval value, step 0.1s). Overrides parent setting.
 * **splitStepSpeed** (string, optional): Defines the split-step sound effect speed. If autoVoiceSplitStep is true, this may be overridden. Overrides parent setting.
   * "none"
   * "slow"
@@ -36,9 +36,11 @@ The workout system supports inheritance of configuration properties from higher 
 * **iterationType** (string): Controls iteration order but operates on different lists at each level:
   * **Workout level**: Controls iteration over patterns
   * **Pattern level**: Controls iteration over shots/messages within that pattern
+  * **Note**: Pattern iterationType is NOT inherited from workout - each pattern must define its own
 * **limits** (object): Controls termination conditions but operates on different lists at each level:
   * **Workout level**: Controls termination based on pattern visits
   * **Pattern level**: Controls termination based on shot/message visits within that pattern
+  * **Note**: Pattern limits are NOT inherited from workout - each pattern must define its own
 * **repeatCount** (integer): Pattern-specific property that controls how many times a pattern runs consecutively
 
 #### **Inheritance Hierarchy**
@@ -51,12 +53,14 @@ Workout (defines defaults)
     └── Pattern (can override workout defaults)
         ├── voice, speechRate (overrides workout)
         ├── interval, intervalOffsetType, intervalOffset, autoVoiceSplitStep, shotAnnouncementLeadTime, splitStepSpeed (overrides workout)
-        ├── iterationType (operates on shots/messages - overrides workout)
-        ├── limits (operates on shots/messages - overrides workout)
-        └── repeatCount (pattern-specific)
+        ├── iterationType (operates on shots/messages - NOT inherited from workout)
+        ├── limits (operates on shots/messages - NOT inherited from workout)
+        └── repeatCount (pattern-specific, applies to the pattern's entire sequence of entries)
             └── Shot (can override pattern defaults)
                 ├── voice, speechRate (overrides pattern)
-                └── interval, intervalOffsetType, intervalOffset, autoVoiceSplitStep, shotAnnouncementLeadTime, splitStepSpeed (overrides pattern)
+                ├── interval, intervalOffsetType, intervalOffset, autoVoiceSplitStep, shotAnnouncementLeadTime, splitStepSpeed (overrides pattern)
+                └── repeatCount (shot-specific, applies to the individual shot, not inherited)
+
 ```
 
 ---
@@ -107,7 +111,7 @@ The top-level JSON object represents the entire workout.
       * "shot-limit": Workout ends after a maximum number of pattern entries (value) are visited.
       * "time-limit": Workout ends after a maximum time (value) has elapsed.
     * **value** (union, required):
-      * If limits.type is "shot-limit", this is an **integer** (1-50).
+      * If limits.type is "shot-limit", this is an **integer** (1-200).
       * If limits.type is "time-limit", this is a **string** in MM:SS format (e.g., "01:00", "30:00").
       * If limits.type is "all-shots", this field is **null**.
   * **voice** (string, optional): The name of the Text-to-Speech voice to use. Can be set to "Default" to use the browser's default voice, or omitted entirely to inherit from parent level. If omitted at the workout level, defaults to "Default".
@@ -120,7 +124,7 @@ The top-level JSON object represents the entire workout.
     * **min** (number, required): The minimum offset for the interval in seconds (-2.0 to +2.0).
     * **max** (number, required): The maximum offset for the interval in seconds (-2.0 to +2.0).
   * **autoVoiceSplitStep** (boolean, optional): Default setting for automatic split-step speed determination.
-  * **shotAnnouncementLeadTime** (number, optional): Default time in seconds before shot period expires for announcement (2.5 to interval value, step 0.1s).
+  * **shotAnnouncementLeadTime** (number, optional): Default time in seconds before shot period expires for announcement (1.0 to interval value, step 0.1s).
   * **splitStepSpeed** (string, optional): Default split-step sound effect speed.
     * "none"
     * "slow"
@@ -178,16 +182,16 @@ Represents a sequence of shots or messages within a workout.
   * "last": Locked to the last position in iteration.
   * "1", "2", "3", etc.: Locked to a specific position number in iteration.
 * **config** (object, required):
-  * **iterationType** (string, required): Specifies the order of entries within this pattern. Overrides workout-level iterationType.
+  * **iterationType** (string, required): Specifies the order of entries within this pattern. NOT inherited from workout - each pattern must define its own.
     * "in-order": Entries are executed in their display order.
     * "shuffle": Entries are executed in a randomized order.
-  * **limits** (object, required): Overrides workout-level limits.
+  * **limits** (object, required): Defines how this pattern terminates. NOT inherited from workout - each pattern must define its own.
     * **type** (string, required): Defines how the pattern terminates.
       * "all-shots": Pattern ends after all child entries are visited.
       * "shot-limit": Pattern ends after a maximum number of child entries (value) are visited.
       * "time-limit": Pattern ends after a maximum time (value) has elapsed.
     * **value** (union, required):
-      * If limits.type is "shot-limit", this is an **integer** (1-50).
+      * If limits.type is "shot-limit", this is an **integer** (1-200).
       * If limits.type is "time-limit", this is a **string** in MM:SS format (e.g., "01:00", "30:00").
       * If limits.type is "all-shots", this field is **null**.
   * **repeatCount** (integer, optional): How many times this pattern should be consecutively run (1-10). If omitted, defaults to 1.
@@ -241,7 +245,7 @@ Represents a single shot within a pattern.
   * "last": Locked to the last position in iteration.
   * "1", "2", "3", etc.: Locked to a specific position number in iteration.
 * **config** (object, required):
-  * **repeatCount** (integer, optional): How many times this shot should be consecutively run (1-10). Overrides pattern-level repeatCount. If omitted, defaults to 1.
+  * **repeatCount** (integer, optional): Specifies how many times this individual shot should be executed consecutively before moving to the next entry in the pattern. This property is not inherited.
   * **interval** (number, optional): The duration of the shot timer in seconds (3.0-8.0, step 0.1s). **Note: Shots use numeric seconds, Messages use "MM:SS" strings.** Overrides pattern-level interval setting.
   * **intervalOffsetType** (string, optional): Type of interval offset. Overrides pattern-level setting.
     * "fixed": A single fixed offset applied.
@@ -250,7 +254,7 @@ Represents a single shot within a pattern.
     * **min** (number, required): The minimum offset for the interval in seconds (-2.0 to +2.0). If intervalOffsetType is "fixed", min and max will be the same value.
     * **max** (number, required): The maximum offset for the interval in seconds (-2.0 to +2.0).
   * **autoVoiceSplitStep** (boolean, optional): If true, splitStepSpeed is automatically determined by the system. Overrides pattern-level setting.
-  * **shotAnnouncementLeadTime** (number, optional): Time in seconds before the shot period expires that the shot is announced (2.5 to interval value, step 0.1s). Overrides pattern-level setting.
+  * **shotAnnouncementLeadTime** (number, optional): Time in seconds before the shot period expires that the shot is announced (1.0 to interval value, step 0.1s). Overrides pattern-level setting.
   * **splitStepSpeed** (string, optional): Defines the split-step sound effect speed. If autoVoiceSplitStep is true, this may be overridden. Overrides pattern-level setting.
     * "none"
     * "slow"
@@ -274,7 +278,6 @@ Represents a message announcement within a pattern.
   "name": "string",
   "positionType": "normal" | "linked" | "last" | "1" | "2" | "3" | "...",
   "config": {
-    "repeatCount": "integer",
     "message": "string",
     "interval": "string",
     "intervalType": "fixed" | "additional",
@@ -297,7 +300,6 @@ Represents a message announcement within a pattern.
   * "last": Locked to the last position in iteration.
   * "1", "2", "3", etc.: Locked to a specific position number in iteration.
 * **config** (object, required):
-  * **repeatCount** (integer, optional): How many times this message should be consecutively run (1-10). Overrides pattern-level repeatCount. If omitted, defaults to 1.
   * **message** (string, required): The announcement message text.
   * **interval** (string, required): The interval duration in MM:SS format (e.g., "00:00" to "05:00"). **Note: "02:00" = 2 minutes, "00:30" = 30 seconds.** The meaning depends on intervalType.
   * **intervalType** (string, optional): Defines how the interval value is interpreted. If omitted, defaults to "fixed".
@@ -332,7 +334,7 @@ Configurations at lower levels (Pattern, Shot/Message) override those at higher 
 **Important**: Different entry types use different interval formats:
 - **Shot intervals**: Numeric seconds (e.g., `5.0`, `3.5`) - range 3.0-8.0 seconds
 - **Message intervals**: String MM:SS format (e.g., `"02:00"`, `"00:30"`) - range "00:00" to "05:00"
-- **Time limits**: String MM:SS format (e.g., `"10:00"` for 10 minutes)
+- **Time limits**: String MM:SS format (e.g., `"60:00"` for 60 minutes)
 
 The implementation handles conversion between seconds and MM:SS format internally.
 

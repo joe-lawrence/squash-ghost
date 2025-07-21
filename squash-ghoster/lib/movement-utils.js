@@ -83,7 +83,7 @@ export function updateGroupLockStyling(element, mainContainer) {
   group.forEach((groupElement) => {
     // Update visual indicators based on lock state
     groupElement.classList.toggle('position-locked', isLocked && lockType === 'position');
-    groupElement.classList.toggle('last-locked', isLocked && lockType === 'last');
+    groupElement.classList.toggle('position-locked-last', isLocked && lockType === 'last');
   });
 }
 

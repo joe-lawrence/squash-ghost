@@ -329,6 +329,18 @@ export function calculateWorkoutStats(workoutData, isConfigLocked = false, worko
             for (let patternRepeat = 0; patternRepeat < patternRepeatCount; patternRepeat++) {
                 if (!continueProcessing) return;
 
+                // Check if workout limits have been reached before processing this pattern repeat
+                if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                    continueProcessing = false;
+                    return;
+                } else if (workoutLimits.type === 'time-limit') {
+                    const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                    if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                        continueProcessing = false;
+                        return;
+                    }
+                }
+
                 let patternSkipped = false;
                 if (pattern.entries && pattern.entries.length > 0) {
                     let lastShotIndex = -1;
@@ -367,8 +379,39 @@ export function calculateWorkoutStats(workoutData, isConfigLocked = false, worko
                                 const wouldBeLastEntry = isLastPattern && isLastPatternRepeat && isLastEntry && isLastEntryRepeat;
                                 let wouldHitLimits = false;
 
+                                // Check if workout limits have already been reached
+                                if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                                    wouldHitLimits = true;
+                                }
+
+                                // Check if current iteration will reach the workout limits
+                                if (workoutLimits.type === 'shot-limit' && !wouldHitLimits) {
+                                    // Count shots that come AFTER this message in the current iteration
+                                    let shotsAfterThisMessage = 0;
+                                    for (let checkIndex = entryIndex + 1; checkIndex < entriesToProcess.length; checkIndex++) {
+                                        const checkEntry = entriesToProcess[checkIndex];
+                                        if (checkEntry.type === 'Shot') {
+                                            const checkEntryConfig = getEffectiveConfig(checkEntry, workoutData);
+                                            shotsAfterThisMessage += (checkEntryConfig.repeatCount || 1);
+                                        }
+                                    }
+
+                                    // Skip if executing the remaining shots in this iteration would reach or exceed the limit
+                                    if (totalShotsExecuted + shotsAfterThisMessage >= workoutLimits.value) {
+                                        wouldHitLimits = true;
+                                    }
+                                }
+
+                                // Check if time limit has already been reached
+                                if (workoutLimits.type === 'time-limit') {
+                                    const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                                    if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                                        wouldHitLimits = true;
+                                    }
+                                }
+
                                 // Check if next shot would exceed limits (if there are more entries)
-                                if (!wouldBeLastEntry && entryIndex < entriesToProcess.length - 1) {
+                                if (!wouldBeLastEntry && !wouldHitLimits && entryIndex < entriesToProcess.length - 1) {
                                     const nextEntry = entriesToProcess[entryIndex + 1];
                                     if (nextEntry.type === 'Shot') {
                                         const nextShotConfig = getEffectiveConfig(nextEntry, workoutData);
@@ -968,6 +1011,28 @@ export function generatePreviewHtml(workoutData) {
                 const repeatCount = pattern.config.repeatCount || 1;
 
                 for (let i = 1; i <= repeatCount; i++) {
+                    // Check if workout limits have been reached before processing this pattern repeat
+                    if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                        // Stop processing this pattern and all future patterns
+                        stopFutureSupersets = true;
+                        limitsHitInSuperset = true;
+                        if (!skipReasons.includes('workout shot limit')) {
+                            skipReasons.push('workout shot limit');
+                        }
+                        break; // Exit the pattern repeat loop
+                    } else if (workoutLimits.type === 'time-limit') {
+                        const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                        if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                            // Stop processing this pattern and all future patterns
+                            stopFutureSupersets = true;
+                            limitsHitInSuperset = true;
+                            if (!skipReasons.includes('workout time limit')) {
+                                skipReasons.push('workout time limit');
+                            }
+                            break; // Exit the pattern repeat loop
+                        }
+                    }
+
                     // Check if this pattern should be skipped due to workout limits
                     let patternSkipped = false;
                     let skipReason = '';
@@ -976,28 +1041,13 @@ export function generatePreviewHtml(workoutData) {
                         patternSkipped = true;
                         skipReason = 'Skipped';
                         continueProcessing = false;
-                    } else if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
-                        patternSkipped = true;
-                        skipReason = 'Skipped';
-                        if (!skipReasons.includes('workout shot limit')) {
-                            skipReasons.push('workout shot limit');
-                        }
-                        // Continue processing remaining patterns in this superset to show them as skipped
-                        limitsHitInSuperset = true;
-                        stopFutureSupersets = true;
-                    } else if (workoutLimits.type === 'time-limit') {
-                        const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
-                        if (currentTimeWithoutPadding >= timeLimitSeconds) {
-                            patternSkipped = true;
-                            skipReason = 'Skipped';
-                            if (!skipReasons.includes('workout time limit')) {
-                                skipReasons.push('workout time limit');
-                            }
-                            // Continue processing remaining patterns in this superset to show them as skipped
-                            limitsHitInSuperset = true;
-                            stopFutureSupersets = true;
-                        }
                     }
+
+                    // Check if this pattern repeat will cause the workout to stop due to limits
+                    let willStopWorkout = stopFutureSupersets || limitsHitInSuperset;
+
+                    // Don't mark the entire pattern repeat as stopped for shot limits
+                    // The individual entries will handle their own timing
 
                     const patternResult = generatePatternPreviewHtml(
                         pattern,
@@ -1015,7 +1065,8 @@ export function generatePreviewHtml(workoutData) {
                         workoutData,
                         patternsToProcess,
                         i - 1,  // patternRepeat (0-based)
-                        pattern.config.repeatCount || 1  // patternRepeatCount
+                        pattern.config.repeatCount || 1,  // patternRepeatCount
+                        willStopWorkout  // workoutStopped
                     );
 
                     if (!patternSkipped) {
@@ -1112,7 +1163,7 @@ export function generatePreviewHtml(workoutData) {
  * @param {Array} skipReasons - Array of skip reasons
  * @returns {Object} Object with html, endTime, endTimeWithoutPadding, and totalShotsExecuted properties
  */
-function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCount = 1, patternSkipped = false, skipReason = '', isConfigLocked = false, workoutDefaultInterval = 5.0, workoutLimits = {}, totalShotsExecuted = 0, startTimeWithoutPadding = 0, skipReasons = [], workoutData = null, patternsToProcess = [], patternRepeat = 0, patternRepeatCount = 1) {
+function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCount = 1, patternSkipped = false, skipReason = '', isConfigLocked = false, workoutDefaultInterval = 5.0, workoutLimits = {}, totalShotsExecuted = 0, startTimeWithoutPadding = 0, skipReasons = [], workoutData = null, patternsToProcess = [], patternRepeat = 0, patternRepeatCount = 1, workoutStopped = false) {
     const patternClass = patternSkipped ? 'bg-gray-100 opacity-60' : 'bg-white';
     let html = `<div class="${patternClass} rounded-lg shadow-sm border border-gray-200 p-3 mb-4 relative">`;
 
@@ -1247,10 +1298,56 @@ function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCoun
                     }
                 }
 
+                // Check if this shot will be the last one before incrementing totalShotsExecuted
                 if (!entrySkipped) {
+                    // Check if this shot will be the last one executed
+                    const isLastShot = workoutLimits.type === 'shot-limit' && totalShotsExecuted + 1 === workoutLimits.value;
+                    if (isLastShot) {
+                        workoutStopped = true;
+                    }
+
+                    // Generate HTML for this entry before incrementing totalShotsExecuted
+                    const entryResult = generateEntryPreviewHtml(
+                        entry,
+                        currentTime,
+                        entrySkipped,
+                        skipReason,
+                        isConfigLocked,
+                        workoutDefaultInterval,
+                        workoutLimits,
+                        totalShotsExecuted,
+                        currentTimeWithoutPadding,
+                        skipReasons,
+                        workoutData,
+                        isLastShot  // Pass isLastShot instead of workoutStopped
+                    );
+
+                    html += entryResult.html;
+                    soundEvents.push(...entryResult.soundEvents);
+
+                    // Now increment totalShotsExecuted after generating HTML
                     totalShotsExecuted++;
                     patternShotsExecuted++;
                     lastApplicableInterval = entryInterval;
+                } else {
+                    // Generate HTML for skipped entries
+                    const entryResult = generateEntryPreviewHtml(
+                        entry,
+                        currentTime,
+                        entrySkipped,
+                        skipReason,
+                        isConfigLocked,
+                        workoutDefaultInterval,
+                        workoutLimits,
+                        totalShotsExecuted,
+                        currentTimeWithoutPadding,
+                        skipReasons,
+                        workoutData,
+                        false  // Not the last shot if skipped
+                    );
+
+                    html += entryResult.html;
+                    soundEvents.push(...entryResult.soundEvents);
                 }
             } else if (entry.type === 'Message') {
                 // For messages with skipAtEndOfWorkout, check if this would be the last entry (only if pattern isn't skipped)
@@ -1263,8 +1360,39 @@ function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCoun
                     const wouldBeLastEntry = isLastPattern && isLastPatternRepeat && isLastEntry && isLastEntryRepeat;
                     let wouldHitLimits = false;
 
+                    // Check if workout limits have already been reached
+                    if (workoutLimits.type === 'shot-limit' && totalShotsExecuted >= workoutLimits.value) {
+                        wouldHitLimits = true;
+                    }
+
+                    // Check if current iteration will reach the workout limits
+                    if (workoutLimits.type === 'shot-limit' && !wouldHitLimits) {
+                        // Count shots that come AFTER this message in the current iteration
+                        let shotsAfterThisMessage = 0;
+                        for (let checkIndex = entryIndex + 1; checkIndex < entriesToProcess.length; checkIndex++) {
+                            const checkEntry = entriesToProcess[checkIndex];
+                            if (checkEntry.type === 'Shot') {
+                                const checkEntryConfig = getEffectiveConfig(checkEntry, workoutData);
+                                shotsAfterThisMessage += (checkEntryConfig.repeatCount || 1);
+                            }
+                        }
+
+                        // Skip if executing the remaining shots in this iteration would reach or exceed the limit
+                        if (totalShotsExecuted + shotsAfterThisMessage >= workoutLimits.value) {
+                            wouldHitLimits = true;
+                        }
+                    }
+
+                    // Check if time limit has already been reached
+                    if (workoutLimits.type === 'time-limit') {
+                        const timeLimitSeconds = parseTimeLimit(workoutLimits.value);
+                        if (currentTimeWithoutPadding >= timeLimitSeconds) {
+                            wouldHitLimits = true;
+                        }
+                    }
+
                     // Check if next shot would exceed limits (if there are more entries)
-                    if (!wouldBeLastEntry && entryIndex < entriesToProcess.length - 1) {
+                    if (!wouldBeLastEntry && !wouldHitLimits && entryIndex < entriesToProcess.length - 1) {
                         const nextEntry = entriesToProcess[entryIndex + 1];
                         if (nextEntry.type === 'Shot') {
                             const nextShotConfig = getEffectiveConfig(nextEntry, workoutData);
@@ -1294,71 +1422,74 @@ function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCoun
                     }
                 }
 
-                // Note: Message timing will be updated after HTML generation
+                // Generate HTML for this message
+                const entryResult = generateEntryPreviewHtml(
+                    entry,
+                    currentTime,
+                    entrySkipped,
+                    skipReason,
+                    isConfigLocked,
+                    workoutDefaultInterval,
+                    workoutLimits,
+                    totalShotsExecuted,
+                    currentTimeWithoutPadding,
+                    skipReasons,
+                    workoutData,
+                    false  // Messages don't show END
+                );
+
+                html += entryResult.html;
+                soundEvents.push(...entryResult.soundEvents);
             }
 
-            // Generate HTML for this entry
-            const entryResult = generateEntryPreviewHtml(
-                entry,
-                currentTime,
-                entrySkipped,
-                skipReason,
-                isConfigLocked,
-                workoutDefaultInterval,
-                workoutLimits,
-                totalShotsExecuted,
-                currentTimeWithoutPadding,
-                skipReasons,
-                workoutData
-            );
-
-            html += entryResult.html;
-            soundEvents.push(...entryResult.soundEvents);
+            // HTML generation moved to shot/message processing
 
             // Update timing after HTML generation
-            if (entry.type === 'Shot') {
-                // Calculate the same interval again for timing update
-                let entryInterval;
-                if (isConfigLocked) {
-                    entryInterval = workoutDefaultInterval;
-                } else {
-                    entryInterval = entryConfig.interval !== undefined ? entryConfig.interval : applicableInterval;
-                    if (typeof entryInterval === 'string') {
-                        entryInterval = parseTimeLimit(entryInterval);
+            if (!workoutStopped) {
+                if (entry.type === 'Shot') {
+                    // Calculate the same interval again for timing update
+                    let entryInterval;
+                    if (isConfigLocked) {
+                        entryInterval = workoutDefaultInterval;
+                    } else {
+                        entryInterval = entryConfig.interval !== undefined ? entryConfig.interval : applicableInterval;
+                        if (typeof entryInterval === 'string') {
+                            entryInterval = parseTimeLimit(entryInterval);
+                        }
+                        if (entryConfig.intervalOffsetType === 'fixed' && entryConfig.intervalOffset) {
+                            entryInterval += entryConfig.intervalOffset.min;
+                        } else if (entryConfig.intervalOffsetType === 'random' && entryConfig.intervalOffset) {
+                            // Generate random value between min and max (inclusive)
+                            const min = entryConfig.intervalOffset.min;
+                            const max = entryConfig.intervalOffset.max;
+                            const randomOffset = Math.random() * (max - min) + min;
+                            entryInterval += randomOffset;
+                        }
                     }
-                    if (entryConfig.intervalOffsetType === 'fixed' && entryConfig.intervalOffset) {
-                        entryInterval += entryConfig.intervalOffset.min;
-                    } else if (entryConfig.intervalOffsetType === 'random' && entryConfig.intervalOffset) {
-                        // Generate random value between min and max (inclusive)
-                        const min = entryConfig.intervalOffset.min;
-                        const max = entryConfig.intervalOffset.max;
-                        const randomOffset = Math.random() * (max - min) + min;
-                        entryInterval += randomOffset;
+
+                    // Update timing for preview display
+                    currentTime += entryInterval;
+                    if (!entrySkipped) {
+                        currentTimeWithoutPadding += entryInterval;
+                        patternTimeExecuted += entryInterval;
+                    } else if (!patternSkipped) {
+                        // For individually skipped entries (but not pattern-skipped), still advance workout timing
+                        currentTimeWithoutPadding += entryInterval;
+                        patternTimeExecuted += entryInterval;
                     }
-                }
+                } else if (entry.type === 'Message') {
+                    // Calculate message duration for timing update
+                    const entryInterval = calculateMessageDuration(entryConfig);
 
-                // Update timing for preview display
-                currentTime += entryInterval;
-                if (!entrySkipped) {
-                    currentTimeWithoutPadding += entryInterval;
-                    patternTimeExecuted += entryInterval;
-                } else if (!patternSkipped) {
-                    // For individually skipped entries (but not pattern-skipped), still advance workout timing
-                    currentTimeWithoutPadding += entryInterval;
-                    patternTimeExecuted += entryInterval;
-                }
-            } else if (entry.type === 'Message') {
-                // Calculate message duration for timing update
-                const entryInterval = calculateMessageDuration(entryConfig);
-
-                // Update timing for preview display
-                if (!entrySkipped) {
-                    currentTime += entryInterval;
-                    currentTimeWithoutPadding += entryInterval;
-                    patternTimeExecuted += entryInterval;
-                } else if (patternSkipped) {
-                    // For skipped patterns, still advance timing for display purposes but don't affect workout stats
-                    currentTime += entryInterval;
+                    // Update timing for preview display
+                    if (!entrySkipped) {
+                        currentTime += entryInterval;
+                        currentTimeWithoutPadding += entryInterval;
+                        patternTimeExecuted += entryInterval;
+                    } else if (patternSkipped) {
+                        // For skipped patterns, still advance timing for display purposes but don't affect workout stats
+                        currentTime += entryInterval;
+                    }
                 }
             }
         }
@@ -1390,7 +1521,7 @@ function generatePatternPreviewHtml(pattern, patternIndex, startTime, repeatCoun
  * @param {Object} workoutData - The full workout data for config resolution
  * @returns {Object} Object with html and soundEvents properties
  */
-function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, isConfigLocked, workoutDefaultInterval, workoutLimits, totalShotsExecuted, currentTimeWithoutPadding, skipReasons, workoutData) {
+function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, isConfigLocked, workoutDefaultInterval, workoutLimits, totalShotsExecuted, currentTimeWithoutPadding, skipReasons, workoutData, workoutStopped = false) {
     const entryConfig = getEffectiveConfig(entry, workoutData);
     let html = '';
     let soundEvents = []; // Collect sound events for this entry
@@ -1435,7 +1566,19 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
 
     // Add interval timing badge with data attributes for timeline tracking
     const timeColorClass = entry.type === 'Shot' ? 'text-blue-700 bg-blue-100' : 'text-cyan-700 bg-cyan-100';
-    html += `<span class="timing-badge text-xs font-medium ${timeColorClass} px-1.5 py-0.5 rounded" data-start-time="${currentTime}" data-end-time="${endTime}">${formatTime(currentTime)} - ${formatTime(endTime)}</span>`;
+    let timeDisplay;
+    let isLastShot = false;
+
+    if (entrySkipped) {
+        timeDisplay = '--:-- - --:--';
+    } else if (workoutStopped || (workoutLimits.type === 'shot-limit' && entry.type === 'Shot' && totalShotsExecuted + 1 === workoutLimits.value)) {
+        timeDisplay = formatTime(currentTime) + ' - END';
+        isLastShot = true;  // Set isLastShot for the data-end-time attribute
+        console.log('DEBUG: Setting END display for ' + entry.name + ' at ' + formatTime(currentTime));
+    } else {
+        timeDisplay = formatTime(currentTime) + ' - ' + formatTime(endTime);
+    }
+    html += '<span class="timing-badge text-xs font-medium ' + timeColorClass + ' px-1.5 py-0.5 rounded" data-start-time="' + currentTime + '" data-end-time="' + (isLastShot || workoutStopped ? currentTime : endTime) + '">' + timeDisplay + '</span>';
 
     // Add entry name
     const entryDisplayName = entry.name || (entry.type === 'Shot' ? 'Shot' : 'Message');
@@ -1477,107 +1620,110 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
         html += '</div></div>'; // Close badges container and main container
 
     // Calculate sound events for all modes (even when rocket-mode is off)
-    if (entry.type === 'Shot') {
-        // Shot announcement TTS - add before split step and beep events
-        if (entryConfig.shotAnnouncementLeadTime && entryConfig.shotAnnouncementLeadTime > 0) {
-            const announceTime = endTime - entryConfig.shotAnnouncementLeadTime;
-            soundEvents.push({
-                type: 'tts',
-                time: announceTime,
-                text: entry.name,
-                entry: entry,
-                entryConfig: entryConfig
-            });
-        }
-
-        // Split step timing - always calculate for sound events
-        if (entryConfig.splitStepSpeed && entryConfig.splitStepSpeed !== 'none') {
-            const splitStepIntervals = {
-                'slow': 0.50625,
-                'medium': 0.5,
-                'fast': 0.49375
-            };
-
-            let actualSpeed;
-            let splitStepInterval;
-
-            if (entryConfig.splitStepSpeed === 'auto-scale') {
-                if (entryInterval < 4.0) actualSpeed = 'fast';
-                else if (entryInterval > 6.0) actualSpeed = 'slow';
-                else actualSpeed = 'medium';
-                splitStepInterval = splitStepIntervals[actualSpeed];
-            } else if (entryConfig.splitStepSpeed === 'random') {
-                const speeds = ['slow', 'medium', 'fast'];
-                actualSpeed = speeds[Math.floor(Math.random() * speeds.length)];
-                splitStepInterval = splitStepIntervals[actualSpeed];
-            } else {
-                actualSpeed = entryConfig.splitStepSpeed;
-                splitStepInterval = splitStepIntervals[actualSpeed] || 0.5;
+    // Only generate sound events for entries that are NOT skipped
+    if (!entrySkipped) {
+        if (entry.type === 'Shot') {
+            // Shot announcement TTS - add before split step and beep events
+            if (entryConfig.shotAnnouncementLeadTime && entryConfig.shotAnnouncementLeadTime > 0) {
+                const announceTime = endTime - entryConfig.shotAnnouncementLeadTime;
+                soundEvents.push({
+                    type: 'tts',
+                    time: announceTime,
+                    text: entry.name,
+                    entry: entry,
+                    entryConfig: entryConfig
+                });
             }
 
-            const splitStepTime = endTime - splitStepInterval;
+            // Split step timing - always calculate for sound events
+            if (entryConfig.splitStepSpeed && entryConfig.splitStepSpeed !== 'none') {
+                const splitStepIntervals = {
+                    'slow': 0.50625,
+                    'medium': 0.5,
+                    'fast': 0.49375
+                };
 
-            // Collect split step sound event (always, regardless of rocket-mode)
+                let actualSpeed;
+                let splitStepInterval;
+
+                if (entryConfig.splitStepSpeed === 'auto-scale') {
+                    if (entryInterval < 4.0) actualSpeed = 'fast';
+                    else if (entryInterval > 6.0) actualSpeed = 'slow';
+                    else actualSpeed = 'medium';
+                    splitStepInterval = splitStepIntervals[actualSpeed];
+                } else if (entryConfig.splitStepSpeed === 'random') {
+                    const speeds = ['slow', 'medium', 'fast'];
+                    actualSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+                    splitStepInterval = splitStepIntervals[actualSpeed];
+                } else {
+                    actualSpeed = entryConfig.splitStepSpeed;
+                    splitStepInterval = splitStepIntervals[actualSpeed] || 0.5;
+                }
+
+                const splitStepTime = endTime - splitStepInterval;
+
+                // Collect split step sound event (always, regardless of rocket-mode)
+                soundEvents.push({
+                    type: 'splitStep',
+                    time: splitStepTime,
+                    speed: actualSpeed,
+                    entry: entry,
+                    entryConfig: entryConfig
+                });
+            }
+
+            // Beep timing - always collect for sound events
             soundEvents.push({
-                type: 'splitStep',
-                time: splitStepTime,
-                speed: actualSpeed,
+                type: 'beep',
+                time: endTime,
                 entry: entry,
                 entryConfig: entryConfig
             });
-        }
+        } else if (entry.type === 'Message') {
+            // Message announcement TTS at start
+            soundEvents.push({
+                type: 'tts',
+                time: currentTime,
+                text: entryConfig.message,
+                entry: entry,
+                entryConfig: entryConfig
+            });
 
-        // Beep timing - always collect for sound events
-        soundEvents.push({
-            type: 'beep',
-            time: endTime,
-            entry: entry,
-            entryConfig: entryConfig
-        });
-    } else if (entry.type === 'Message') {
-        // Message announcement TTS at start
-        soundEvents.push({
-            type: 'tts',
-            time: currentTime,
-            text: entryConfig.message,
-            entry: entry,
-            entryConfig: entryConfig
-        });
+            // Add countdown TTS events if countdown is enabled
+            if (entryConfig.countdown) {
+                const ttsDuration = estimateTTSDuration(entryConfig.message, entryConfig.speechRate || 1.0);
+                const remainingTime = entryInterval - ttsDuration;
 
-        // Add countdown TTS events if countdown is enabled
-        if (entryConfig.countdown) {
-            const ttsDuration = estimateTTSDuration(entryConfig.message, entryConfig.speechRate || 1.0);
-            const remainingTime = entryInterval - ttsDuration;
+                if (remainingTime > 0) {
+                    const countdownDuration = Math.min(10, remainingTime);
+                    // Only announce whole seconds for countdown
+                    const wholeSecondsToCount = Math.floor(countdownDuration);
 
-            if (remainingTime > 0) {
-                const countdownDuration = Math.min(10, remainingTime);
-                // Only announce whole seconds for countdown
-                const wholeSecondsToCount = Math.floor(countdownDuration);
+                    // Add countdown announcements for each whole second in the countdown period
+                    for (let i = wholeSecondsToCount; i >= 1; i--) {
+                        const countdownTime = endTime - i;
+                        soundEvents.push({
+                            type: 'tts',
+                            time: countdownTime,
+                            text: i.toString(),
+                            entry: entry,
+                            entryConfig: entryConfig,
+                            isCountdown: true
+                        });
+                    }
 
-                // Add countdown announcements for each whole second in the countdown period
-                for (let i = wholeSecondsToCount; i >= 1; i--) {
-                    const countdownTime = endTime - i;
-                    soundEvents.push({
-                        type: 'tts',
-                        time: countdownTime,
-                        text: i.toString(),
-                        entry: entry,
-                        entryConfig: entryConfig,
-                        isCountdown: true
-                    });
-                }
-
-                // Add two-tone beep events during the last 10 seconds of countdown
-                // Play beep on each second during countdown (when countdown is enabled)
-                for (let i = wholeSecondsToCount; i >= 1; i--) {
-                    const beepTime = endTime - i;
-                    soundEvents.push({
-                        type: 'beep',
-                        time: beepTime,
-                        entry: entry,
-                        entryConfig: entryConfig,
-                        isCountdown: true
-                    });
+                    // Add two-tone beep events during the last 10 seconds of countdown
+                    // Play beep on each second during countdown (when countdown is enabled)
+                    for (let i = wholeSecondsToCount; i >= 1; i--) {
+                        const beepTime = endTime - i;
+                        soundEvents.push({
+                            type: 'beep',
+                            time: beepTime,
+                            entry: entry,
+                            entryConfig: entryConfig,
+                            isCountdown: true
+                        });
+                    }
                 }
             }
         }
@@ -1589,8 +1735,9 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
             // Shot announcement lead time
             if (entryConfig.shotAnnouncementLeadTime && entryConfig.shotAnnouncementLeadTime > 0) {
                 const announceTime = endTime - entryConfig.shotAnnouncementLeadTime;
+                const announceTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(announceTime);
                 html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${announceTime}" data-end-time="${announceTime}">${formatTimeHighPrecision(announceTime)}</span>`;
+                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${announceTime}" data-end-time="${announceTime}">${announceTimeDisplay}</span>`;
                 html += `<span class="text-xs text-gray-600">Announced (${entryConfig.shotAnnouncementLeadTime}s lead)</span>`;
                 html += `</div>`;
             }
@@ -1621,9 +1768,10 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
                 }
 
                 const splitStepTime = endTime - splitStepInterval;
+                const splitStepTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(splitStepTime);
 
                 html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${splitStepTime}" data-end-time="${splitStepTime}">${formatTimeHighPrecision(splitStepTime)}</span>`;
+                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${splitStepTime}" data-end-time="${splitStepTime}">${splitStepTimeDisplay}</span>`;
 
                 const speedCapitalized = actualSpeed.charAt(0).toUpperCase() + actualSpeed.slice(1);
                 const timingValue = splitStepInterval.toFixed(2);
@@ -1640,8 +1788,9 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
             }
 
                         // Shot beep timing display (only when rocket-mode is on)
+            const beepTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(endTime);
             html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-            html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${endTime}" data-end-time="${endTime}">${formatTimeHighPrecision(endTime)}</span>`;
+            html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${endTime}" data-end-time="${endTime}">${beepTimeDisplay}</span>`;
             if (Math.abs(offsetValue) > 0.001) {
                 // Add offset information when it's not zero (using small threshold for floating point comparison)
                 const offsetSign = offsetValue >= 0 ? '+' : '';
@@ -1653,8 +1802,9 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
         } else if (entry.type === 'Message') {
             // Message TTS duration
             const ttsDuration = estimateTTSDuration(entryConfig.message, entryConfig.speechRate || 1.0);
+            const ttsTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(currentTime);
             html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-            html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${currentTime}" data-end-time="${currentTime + ttsDuration}">${formatTimeHighPrecision(currentTime)}</span>`;
+            html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${currentTime}" data-end-time="${currentTime + ttsDuration}">${ttsTimeDisplay}</span>`;
             html += `<span class="text-xs text-gray-600">Announced (~${ttsDuration.toFixed(1)}s TTS)</span>`;
             html += `</div>`;
 
@@ -1662,8 +1812,9 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
             const remainingTime = entryInterval - ttsDuration;
             if (remainingTime > 0) {
                 const remainingStart = currentTime + ttsDuration;
+                const remainingTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(remainingStart);
                 html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${remainingStart}" data-end-time="${endTime}">${formatTimeHighPrecision(remainingStart)}</span>`;
+                html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${remainingStart}" data-end-time="${endTime}">${remainingTimeDisplay}</span>`;
                 html += `<span class="text-xs text-gray-600">Remaining time (${formatRemainingTime(remainingTime)})</span>`;
                 html += `</div>`;
 
@@ -1671,8 +1822,9 @@ function generateEntryPreviewHtml(entry, currentTime, entrySkipped, skipReason, 
                 if (entryConfig.countdown) {
                     const countdownDuration = Math.min(10, remainingTime);
                     const countdownStart = endTime - countdownDuration;
+                    const countdownTimeDisplay = entrySkipped ? '--:--' : formatTimeHighPrecision(countdownStart);
                     html += `<div class="flex items-center gap-2 py-0.5 ml-6">`;
-                    html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${countdownStart}" data-end-time="${endTime}">${formatTimeHighPrecision(countdownStart)}</span>`;
+                    html += `<span class="rocket-timing-badge text-xs font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded" data-start-time="${countdownStart}" data-end-time="${endTime}">${countdownTimeDisplay}</span>`;
                     html += `<span class="text-xs text-gray-600">Countdown (${countdownDuration.toFixed(1)}s)</span>`;
                     html += `</div>`;
                 }
@@ -1709,3 +1861,4 @@ function getApplicableInterval(pattern, isConfigLocked, workoutDefaultInterval, 
     }
     return interval;
 }
+
