@@ -165,6 +165,23 @@
           </div>
         </div>
 
+        <!-- New Heart Button -->
+        <div class="heart-btn-container">
+          <button
+            class="toolbar-icon-btn"
+            id="heartBtn"
+            aria-label="Favorites"
+            title="Favorites"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          </button>
+          <div class="favorites-dropdown" id="favoritesDropdown">
+            <button class="favorites-dropdown-item" id="favoritesLoadMenuItem" disabled>Load</button>
+            <button class="favorites-dropdown-item" id="favoritesSaveMenuItem" disabled>Save</button>
+            <button class="favorites-dropdown-item" id="favoritesRemoveMenuItem" disabled>Remove</button>
+          </div>
+        </div>
+
         <!-- Duck mode toggle button -->
         <button
           class="duck-toggle"
@@ -2694,6 +2711,20 @@
           >
             Override All
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Favorites Save Confirmation Modal -->
+    <div id="favoritesSaveModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Update Favorite?</h3>
+        <p id="favoritesSaveModalMessage" class="text-sm text-gray-600 mb-6 text-center">
+          This will update the existing favorite. If you don't want to update, rename the workout first and try again.
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button id="favoritesSaveModalCancelBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">Cancel</button>
+          <button id="favoritesSaveModalOverwriteBtn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">OK</button>
         </div>
       </div>
     </div>

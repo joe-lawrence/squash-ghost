@@ -4259,4 +4259,189 @@ datalist {
   background: linear-gradient(to bottom, #9333ea, #7c3aed, #6d28d9);
 }
 
+.theme-menu-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  gap: 8px;
+}
+.theme-menu-btn:hover, .theme-menu-btn:focus {
+  background: #f3f4f6;
+  color: #111827;
+}
+[data-theme="dark"] .theme-menu-btn {
+  color: var(--color-gray-700);
+}
+[data-theme="dark"] .theme-menu-btn:hover, [data-theme="dark"] .theme-menu-btn:focus {
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+.theme-menu-btn.back-btn {
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .theme-menu-btn.back-btn {
+  border-bottom: 1px solid #4b5563;
+}
+
+/* Favorites dropdown styling (matches theme-dropdown) */
+.favorites-dropdown {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  right: auto;
+  margin-left: 0.5rem;
+  margin-top: 0;
+  background: white;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 120px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+.favorites-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.favorites-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0;
+}
+.favorites-dropdown-item:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+[data-theme="dark"] .favorites-dropdown {
+  background-color: var(--color-gray-100) !important;
+  border-color: var(--color-gray-400) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 10px 20px -5px rgba(0, 0, 0, 0.8) !important;
+}
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item,
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item > div,
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item span,
+[data-theme="dark"] .favorites-dropdown div {
+  color: var(--color-gray-700) !important;
+  background-color: transparent !important;
+}
+[data-theme="dark"] .favorites-dropdown .favorites-dropdown-item:hover {
+  background-color: var(--color-gray-200) !important;
+  color: var(--color-gray-900) !important;
+}
+
+/* Portrait: favorites-dropdown to the right of the heart icon */
+@media (orientation: portrait) {
+  .favorites-dropdown {
+    left: 100%;
+    right: auto;
+    top: 0;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    transform: translateX(-10px);
+  }
+  .favorites-dropdown.active {
+    transform: translateX(0);
+  }
+}
+
+/* Landscape: favorites-dropdown below the heart icon */
+@media (orientation: landscape) {
+  .favorites-dropdown {
+    top: 100%;
+    left: 0;
+    right: auto;
+    margin-left: 0;
+    margin-top: 0.5rem;
+    transform: translateY(-10px);
+  }
+  .favorites-dropdown.active {
+    transform: translateY(0);
+  }
+}
+
+.heart-btn-container {
+  position: relative;
+  display: inline-block;
+}
+
+.favorites-dropdown, .favorites-submenu {
+  min-width: 180px;
+  max-width: 420px;
+  width: max-content;
+}
+.favorites-dropdown-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favorites-dropdown-item[style*="display: none"] {
+  display: none !important;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+/* Only grow the menu when showing the load listing */
+.favorites-dropdown.favorites-load-listing {
+  min-width: 180px;
+  max-width: 420px;
+  width: max-content;
+}
+/* Default favorites dropdown stays narrow */
+.favorites-dropdown {
+  min-width: 120px;
+  width: auto;
+}
+
+.favorites-glow {
+  color: var(--color-red-500) !important;
+  filter: var(--glow-red-sm) !important;
+  transition: all 0.2s;
+}
+
+/* Ensure favorites glow overrides toolbar button SVG styles */
+.toolbar-icon-btn .favorites-glow {
+  color: var(--color-red-500) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
+/* Dark theme favorites glow */
+[data-theme="dark"] .favorites-glow {
+  color: var(--color-red-400) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
+/* Dark theme favorites glow for toolbar buttons */
+[data-theme="dark"] .toolbar-icon-btn .favorites-glow {
+  color: var(--color-red-400) !important;
+  filter: var(--glow-red-sm) !important;
+}
+
 

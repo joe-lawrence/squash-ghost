@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Show theme dropdown with all options
   function showThemeDropdown() {
     const dropdown = document.getElementById('themeDropdown');
-    populateAllThemeOptions();
+    populateThemeMenu();
     dropdown.classList.add('show');
 
     // Close dropdown when clicking outside
@@ -216,6 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const dropdown = document.getElementById('themeDropdown');
     dropdown.classList.remove('show');
     document.removeEventListener('click', handleClickOutside);
+    themeMenuState.current = 'main';
   }
 
   // Handle clicks outside dropdown
@@ -226,37 +227,57 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Populate all theme options in dropdown
-  function populateAllThemeOptions() {
+  // State to track which menu is open
+  let themeMenuState = {
+    current: 'main', // 'main', 'dark', 'light'
+  };
+
+  function populateThemeMenu() {
     const container = document.getElementById('themeOptions');
     container.innerHTML = '';
+    if (themeMenuState.current === 'main') {
+      // Main menu: show two options with chevron SVGs
+      const darkBtn = document.createElement('button');
+      darkBtn.className = 'theme-menu-btn';
+      darkBtn.innerHTML = `
+        <span>Dark Themes</span>
+        <span style="margin-left:auto;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M7 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      `;
+      darkBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenuState.current = 'dark';
+        populateThemeMenu();
+      });
+      container.appendChild(darkBtn);
 
-    // Add dark themes section
-    const darkSection = document.createElement('div');
-    darkSection.className = 'theme-section';
-    darkSection.innerHTML = '<div class="theme-section-header">Dark Themes</div>';
-
-    Object.entries(themeSchemes.dark).forEach(([schemeId, schemeData]) => {
-      const option = createThemeOption('dark', schemeId, schemeData);
-      darkSection.appendChild(option);
-    });
-
-    container.appendChild(darkSection);
-
-    // Add light themes section
-    const lightSection = document.createElement('div');
-    lightSection.className = 'theme-section';
-    lightSection.innerHTML = '<div class="theme-section-header">Light Themes</div>';
-
-    Object.entries(themeSchemes.light).forEach(([schemeId, schemeData]) => {
-      const option = createThemeOption('light', schemeId, schemeData);
-      lightSection.appendChild(option);
-    });
-
-    container.appendChild(lightSection);
+      const lightBtn = document.createElement('button');
+      lightBtn.className = 'theme-menu-btn';
+      lightBtn.innerHTML = `
+        <span>Light Themes</span>
+        <span style="margin-left:auto;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M7 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      `;
+      lightBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenuState.current = 'light';
+        populateThemeMenu();
+      });
+      container.appendChild(lightBtn);
+    } else {
+      // Submenu: show themes for selected mode (no Back button)
+      const mode = themeMenuState.current;
+      const schemes = themeSchemes[mode];
+      Object.entries(schemes).forEach(([schemeId, schemeData]) => {
+        const option = createThemeOption(mode, schemeId, schemeData);
+        container.appendChild(option);
+      });
+    }
   }
 
-  // Create a theme option element
+  // Update createThemeOption to work for submenu
   function createThemeOption(themeType, schemeId, schemeData) {
     const option = document.createElement('button');
     const isActive = themeState.currentTheme === themeType &&
@@ -269,7 +290,8 @@ document.addEventListener("DOMContentLoaded", function () {
       <span class="theme-name">${schemeData.name}</span>
     `;
 
-    option.addEventListener('click', () => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
       selectThemeScheme(themeType, schemeId);
     });
 
@@ -345,6 +367,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (newMode === 'on') {
       // Ensure voices are loaded before starting the heartbeat
       ensureVoicesLoaded().then(() => {
+        // Initialize synth if needed
+        if (!synth && 'speechSynthesis' in window) {
+          synth = window.speechSynthesis;
+        }
+        // Speak 'Audio ducking enabled' once, using default voice
+        if (synth) {
+          const utterance = new SpeechSynthesisUtterance('Audio ducking enabled');
+          utterance.lang = (navigator.language || navigator.userLanguage || 'en-US');
+          utterance.volume = 1.0;
+          synth.speak(utterance);
+        }
         startDuckingHeartbeat();
       });
     } else {
@@ -406,6 +439,267 @@ document.addEventListener("DOMContentLoaded", function () {
   const executeBtn = document.getElementById("executeBtn");
   const loadBtn = document.getElementById("loadBtn");
   const saveBtn = document.getElementById("saveBtn");
+  const heartBtn = document.getElementById("heartBtn");
+  const favoritesDropdown = document.getElementById("favoritesDropdown");
+
+  // --- Favorites Dropdown Functionality ---
+  const favoritesLoadMenuItem = document.getElementById("favoritesLoadMenuItem");
+  const favoritesSaveMenuItem = document.getElementById("favoritesSaveMenuItem");
+  const favoritesRemoveMenuItem = document.getElementById("favoritesRemoveMenuItem");
+  
+  // Enable the buttons
+  if (favoritesLoadMenuItem) favoritesLoadMenuItem.disabled = false;
+  if (favoritesSaveMenuItem) favoritesSaveMenuItem.disabled = false;
+  if (favoritesRemoveMenuItem) favoritesRemoveMenuItem.disabled = false;
+  
+  // Helper: Get all saved workouts from localStorage
+  function getSavedWorkouts() {
+    const workouts = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('favoriteWorkout:')) {
+        workouts.push({
+          key,
+          name: key.replace('favoriteWorkout:', '')
+        });
+      }
+    }
+    return workouts;
+  }
+  
+  // Helper: Save current workout to localStorage with confirm() for overwrite
+  function saveCurrentWorkoutToFavorites() {
+    if (typeof getWorkoutJSON !== 'function') {
+      alert('Save not available: getWorkoutJSON missing');
+      return;
+    }
+    
+    // Get workout name first, before any other operations
+    const workoutNameInput = document.querySelector('.workout-name');
+    let name = workoutNameInput ? workoutNameInput.value.trim() : '';
+    if (!name) {
+      name = prompt('Enter a name for this favorite workout:', `Workout ${new Date().toLocaleString()}`);
+      if (!name) return;
+    }
+    
+    // Check for existing workout with this name BEFORE getting workout data
+    let key = `favoriteWorkout:${name}`;
+    const existing = localStorage.getItem(key);
+    
+    if (existing) {
+      const ok = confirm('This will update the existing favorite. If you don\'t want to update, rename the workout first and try again.\n\nContinue?');
+      if (!ok) return;
+    }
+    
+
+    
+    // Only get workout data and save if user confirmed (or no existing workout)
+    const workoutData = getWorkoutJSON();
+    localStorage.setItem(key, JSON.stringify(workoutData));
+    
+    // Add glow when workout is successfully saved to favorites
+    addFavoritesGlow(key);
+    alert('Workout saved to favorites!');
+  }
+  
+  // Helper: Load a workout from localStorage
+  function loadFavoriteWorkout(key) {
+    const data = localStorage.getItem(key);
+    if (!data) return alert('Workout not found.');
+    let workout;
+    try {
+      workout = JSON.parse(data);
+    } catch (e) {
+      return alert('Failed to parse workout data.');
+    }
+    if (typeof loadWorkout === 'function') {
+      loadWorkout(workout);
+    } else {
+      alert('Load not available: loadWorkout missing');
+    }
+    addFavoritesGlow(key);
+  }
+  
+  // Helper: Remove a workout from localStorage
+  function removeFavoriteWorkout(key) {
+    localStorage.removeItem(key);
+    // If the removed workout is the currently loaded favorite, remove the glow
+    if (window._favoritesGlowActiveFor === key) {
+      window._favoritesGlowActiveFor = null;
+      removeFavoritesGlow();
+    }
+    alert('Workout removed from favorites.');
+  }
+  
+  // Helper: Attach event listeners to the root favorites menu
+  function attachFavoritesRootMenuListeners() {
+    const loadBtn = document.getElementById("favoritesLoadMenuItem");
+    const saveBtn = document.getElementById("favoritesSaveMenuItem");
+    const removeBtn = document.getElementById("favoritesRemoveMenuItem");
+    
+    // Remove existing event listeners to prevent duplicates
+    if (saveBtn) {
+      const newSaveBtn = saveBtn.cloneNode(true);
+      saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    }
+    if (loadBtn) {
+      const newLoadBtn = loadBtn.cloneNode(true);
+      loadBtn.parentNode.replaceChild(newLoadBtn, loadBtn);
+    }
+    if (removeBtn) {
+      const newRemoveBtn = removeBtn.cloneNode(true);
+      removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+    }
+    
+    // Get fresh references after cloning
+    const freshSaveBtn = document.getElementById("favoritesSaveMenuItem");
+    const freshLoadBtn = document.getElementById("favoritesLoadMenuItem");
+    const freshRemoveBtn = document.getElementById("favoritesRemoveMenuItem");
+    
+    // Get the current workout name
+    const workoutNameInput = document.querySelector('.workout-name');
+    let name = workoutNameInput ? workoutNameInput.value.trim() : '';
+    let key = name ? `favoriteWorkout:${name}` : null;
+    
+    // Check if current workout has user changes (same logic as glow removal)
+    function hasWorkoutUserChanges() {
+      // Check if there are any non-default settings in patterns, shots, messages, or global config
+      const patterns = document.querySelectorAll('.pattern-instance');
+      const shots = document.querySelectorAll('.shot-msg-instance');
+      const globalConfig = document.querySelector('.global-config');
+      const workoutName = document.querySelector('.workout-name');
+      
+      // Check patterns for non-default settings
+      for (const pattern of patterns) {
+        if (hasNonDefaultSettings(pattern)) {
+          return true;
+        }
+      }
+      
+      // Check shots and messages for non-default settings
+      for (const shot of shots) {
+        if (hasNonDefaultSettings(shot)) {
+          return true;
+        }
+      }
+      
+      // Check global config for non-default settings
+      if (globalConfig && hasNonDefaultSettings(globalConfig)) {
+        return true;
+      }
+      
+      // Check if workout name has been changed from default
+      if (workoutName && workoutName.value.trim() !== '') {
+        return true;
+      }
+      
+      return false;
+    }
+    
+    const hasUserChanges = hasWorkoutUserChanges();
+    
+    // Show/hide Save option based on user changes
+    // Show/hide Save option based on whether workout has user changes AND favorites limit
+    if (freshSaveBtn) {
+      const currentFavorites = getSavedWorkouts();
+      const isAtLimit = currentFavorites.length >= 8;
+      const isExistingFavorite = key && localStorage.getItem(key);
+      
+      // Show Save option only if:
+      // 1. Workout has user changes, AND
+      // 2. Either not at limit OR this is updating an existing favorite
+      if (hasUserChanges && (!isAtLimit || isExistingFavorite)) {
+        freshSaveBtn.style.display = 'block';
+        freshSaveBtn.disabled = false;
+      } else {
+        freshSaveBtn.style.display = 'none';
+        freshSaveBtn.disabled = true;
+      }
+    }
+    
+    // Show/hide Remove option based on whether workout exists in favorites
+    if (freshRemoveBtn) {
+      if (key && localStorage.getItem(key)) {
+        freshRemoveBtn.style.display = 'block';
+        freshRemoveBtn.disabled = false;
+      } else {
+        freshRemoveBtn.style.display = 'none';
+        freshRemoveBtn.disabled = true;
+      }
+    }
+    
+    // Load option is always available
+    if (freshLoadBtn) freshLoadBtn.disabled = false;
+    if (freshSaveBtn) {
+      freshSaveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveCurrentWorkoutToFavorites();
+        favoritesDropdown.classList.remove('active');
+      });
+    }
+    if (freshLoadBtn) {
+      freshLoadBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // No Back button, just the list
+        const workouts = getSavedWorkouts();
+        let html = '';
+        if (workouts.length === 0) {
+          html += '<div style="padding: 0.75rem 1rem; color: #888;">No saved workouts</div>';
+        } else {
+          workouts.forEach(({key, name}) => {
+            html += `<button class=\"favorites-dropdown-item favorites-load-item\" data-key=\"${key}\">${name}</button>`;
+          });
+        }
+        favoritesDropdown.innerHTML = html;
+        favoritesDropdown.classList.add('favorites-load-listing');
+        // Add event listeners for each workout
+        document.querySelectorAll('.favorites-load-item').forEach(btn => {
+          btn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            const key = btn.getAttribute('data-key');
+            loadFavoriteWorkout(key);
+            addFavoritesGlow(key);
+            favoritesDropdown.classList.remove('active');
+            favoritesDropdown.classList.remove('favorites-load-listing');
+          });
+        });
+      });
+    }
+    if (freshRemoveBtn) {
+      freshRemoveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!key) return;
+        if (!localStorage.getItem(key)) return;
+        if (confirm(`Remove "${name}" from favorites?`)) {
+          removeFavoriteWorkout(key);
+        }
+        favoritesDropdown.classList.remove('active');
+      });
+    }
+  }
+
+  if (heartBtn && favoritesDropdown) {
+    heartBtn.addEventListener("click", function(event) {
+      event.stopPropagation();
+      // Always restore the root menu before showing
+      if (favoritesDropdown._originalMenu) {
+        favoritesDropdown.innerHTML = favoritesDropdown._originalMenu;
+        attachFavoritesRootMenuListeners();
+      } else {
+        favoritesDropdown._originalMenu = favoritesDropdown.innerHTML;
+        attachFavoritesRootMenuListeners();
+      }
+      favoritesDropdown.classList.remove('favorites-load-listing');
+      const isActive = favoritesDropdown.classList.contains("active");
+      closeAllDropdowns(favoritesDropdown);
+      if (!isActive) {
+        favoritesDropdown.classList.add("active");
+      }
+    });
+  }
+
+  // Attach listeners on initial load
+  attachFavoritesRootMenuListeners();
 
   // Chevron toggle functionality
   if (chevronBtn) {
@@ -750,14 +1044,16 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeBtn"),
       document.getElementById("editorBtn"),
       document.getElementById("loadBtn"),
-      document.getElementById("saveBtn")
+      document.getElementById("saveBtn"),
+      document.getElementById("heartBtn")
     ];
 
     const toolbarDropdowns = [
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     let clickedOnDropdownOrButton = false;
@@ -815,7 +1111,8 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     let focusedInDropdown = false;
@@ -2077,6 +2374,11 @@ document.addEventListener("DOMContentLoaded", function () {
    * Clears the current workout and resets to empty state.
    */
   function clearWorkout() {
+    // Always remove favorites glow when clearing the workout
+    // Clear the tracking variable since no favorite is loaded
+    window._favoritesGlowActiveFor = null;
+    removeFavoritesGlow();
+    
     // Reset workout name to default
     const workoutNameInput = document.querySelector(".workout-name");
     if (workoutNameInput) {
@@ -2140,6 +2442,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const rateValue =
         config.speechRate === 1.0 ? "auto-scale" : config.speechRate.toString();
       defaultVoiceRateSelect.value = rateValue;
+    }
+
+    // Set workout-level interval slider and value
+    if (defaultShotIntervalSlider && config.interval) {
+      defaultShotIntervalSlider.value = config.interval;
+      if (defaultShotIntervalValue) {
+        defaultShotIntervalValue.textContent = `${parseFloat(config.interval).toFixed(1)}s`;
+      }
     }
   }
 
@@ -2293,6 +2603,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (config.splitStepSpeed !== undefined) {
         markPropertyAsCustomized(newPattern, 'splitStepSpeed');
+      }
+    }
+
+    // Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      // Only set if not customized at this level
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(newPattern, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && newPattern.querySelector(propConfig.selector)) {
+          const el = newPattern.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            // Update display spans if present
+            if (prop === 'interval') {
+              const valSpan = newPattern.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = newPattern.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
       }
     }
 
@@ -2468,6 +2812,38 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(shotElement, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && shotElement.querySelector(propConfig.selector)) {
+          const el = shotElement.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            if (prop === 'interval') {
+              const valSpan = shotElement.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = shotElement.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
+    }
+
     // Update UI states
     updatePositionLockButton(shotElement);
     updateLinkWithPreviousButton(shotElement);
@@ -2619,6 +2995,12 @@ document.addEventListener("DOMContentLoaded", function () {
    * Loads a workout synchronously (original behavior for small workouts)
    */
   function loadWorkoutSync(workoutData) {
+    // Only remove favorites glow if this is not a favorite being loaded
+    // (favorites will set their own glow after loading)
+    if (!window._favoritesGlowActiveFor) {
+      removeFavoritesGlow();
+    }
+    
     // Clear existing workout
     clearWorkout();
 
@@ -3123,6 +3505,40 @@ document.addEventListener("DOMContentLoaded", function () {
       if (config.splitStepSpeed !== undefined) markPropertyAsCustomized(newPattern, 'splitStepSpeed');
     }
 
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      // Only set if not customized at this level
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(newPattern, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && newPattern.querySelector(propConfig.selector)) {
+          const el = newPattern.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            // Update display spans if present
+            if (prop === 'interval') {
+              const valSpan = newPattern.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = newPattern.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
+    }
+
     // Remove default shot that gets created automatically
     const defaultShots = newPattern.querySelectorAll(".shot-msg-instance");
     defaultShots.forEach((shot) => shot.remove());
@@ -3273,6 +3689,38 @@ document.addEventListener("DOMContentLoaded", function () {
       if (config.splitStepSpeed !== undefined) markPropertyAsCustomized(shotElement, 'splitStepSpeed');
     }
 
+    // NEW: Set UI controls to show effective inherited values for all inheritable properties
+    const inheritableProps = [
+      'interval',
+      'shotAnnouncementLeadTime',
+      'voice',
+      'speechRate',
+      'intervalOffsetType',
+      'splitStepSpeed'
+    ];
+    for (const prop of inheritableProps) {
+      if (!config || config[prop] === undefined) {
+        const effectiveValue = getEffectiveValueForProperty(shotElement, prop);
+        const propConfig = INHERITABLE_PROPERTIES[prop];
+        if (propConfig && shotElement.querySelector(propConfig.selector)) {
+          const el = shotElement.querySelector(propConfig.selector);
+          if (el.type === 'checkbox') {
+            el.checked = !!effectiveValue;
+          } else if (effectiveValue !== null && effectiveValue !== undefined) {
+            el.value = effectiveValue;
+            if (prop === 'interval') {
+              const valSpan = shotElement.querySelector('.shot-interval-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+            if (prop === 'shotAnnouncementLeadTime') {
+              const valSpan = shotElement.querySelector('.lead-time-value');
+              if (valSpan) valSpan.textContent = `${parseFloat(effectiveValue).toFixed(1)}s`;
+            }
+          }
+        }
+      }
+    }
+
     return shotElement;
   }
 
@@ -3396,6 +3844,12 @@ document.addEventListener("DOMContentLoaded", function () {
    * Completes the workout loading process after all patterns are created
    */
   function finishWorkoutLoading() {
+    // Only remove favorites glow if this is not a favorite being loaded
+    // (favorites will set their own glow after loading)
+    if (!window._favoritesGlowActiveFor) {
+      removeFavoritesGlow();
+    }
+    
     updateLoadingProgress(100, 100, "Finalizing...");
 
     // Use setTimeout to allow the "Finalizing..." message to be displayed
@@ -3625,7 +4079,8 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("executeDropdown"),
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
-      document.getElementById("saveDropdown")
+      document.getElementById("saveDropdown"),
+      document.getElementById("favoritesDropdown")
     ];
 
     toolbarDropdowns.forEach(dropdown => {
@@ -9091,7 +9546,9 @@ document.addEventListener("DOMContentLoaded", function () {
            // Progress meter ascends from 0% to 100%
            progressPercentage = Math.min(Math.max(prepareProgress * 100, 0), 100);
 
-           // No glow effect in preparing phase anymore
+           // Reset fade state for new shot
+           workoutExecution.fadeTriggered = false;
+           workoutExecution.glowTriggered = false;
 
            progressText = ""; // Remove smaller text
            progressPhase = "preparing";
@@ -9113,6 +9570,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
            const timeSinceBeep = currentTime - shot.beepTime;
            const pauseDuration = 0.2; // 0.2 second pause at 100%
+
+           // Ensure shot title is visible at start of execution
+           if (timeSinceBeep <= 0.05) {
+             ensureTextVisible();
+           }
 
            if (timeSinceBeep <= pauseDuration) {
              // Pause at 100% for 0.2 seconds
@@ -9332,59 +9794,69 @@ document.addEventListener("DOMContentLoaded", function () {
     const shots = [];
     const messages = [];
 
-    // Group events by entry to understand relationships
-    const eventsByEntry = new Map();
+    // Sort all events by time to process chronologically
+    const sortedEvents = [...soundEvents].sort((a, b) => a.time - b.time);
 
-    soundEvents.forEach(event => {
-      if (!event.entry) return;
+    // Process shot events: find TTS+beep pairs for each shot occurrence
+    const processedEvents = new Set();
 
-      const entryId = event.entry.id || `${event.entry.type}_${event.time}`;
-      if (!eventsByEntry.has(entryId)) {
-        eventsByEntry.set(entryId, {
-          entry: event.entry,
-          events: []
-        });
-      }
-      eventsByEntry.get(entryId).events.push(event);
-    });
+    sortedEvents.forEach(event => {
+      if (processedEvents.has(event) || !event.entry) return;
 
-    // Process each entry to create timeline segments
-    eventsByEntry.forEach((data, entryId) => {
-      const { entry, events } = data;
+      if (event.entry.type === 'Shot' && event.type === 'tts') {
+        // Look for the corresponding beep event for this shot occurrence
+        const maxLookAhead = 3.0; // Look ahead max 3 seconds for the beep
+        const correspondingBeep = sortedEvents.find(otherEvent =>
+          !processedEvents.has(otherEvent) &&
+          otherEvent.entry &&
+          otherEvent.entry.id === event.entry.id &&
+          otherEvent.type === 'beep' &&
+          otherEvent.time > event.time &&
+          otherEvent.time <= event.time + maxLookAhead
+        );
 
-      if (entry.type === 'Shot') {
-        const ttsEvent = events.find(e => e.type === 'tts');
-        const beepEvent = events.find(e => e.type === 'beep');
-
-        if (ttsEvent && beepEvent) {
+        if (correspondingBeep) {
           shots.push({
-            name: entry.name,
-            ttsTime: ttsEvent.time,
-            beepTime: beepEvent.time,
-            endTime: beepEvent.time + 3.0, // 3 seconds after beep
-            entry: entry,
-            ttsEvent: ttsEvent,
-            beepEvent: beepEvent
+            name: event.entry.name,
+            ttsTime: event.time,
+            beepTime: correspondingBeep.time,
+            endTime: correspondingBeep.time + 3.0, // 3 seconds after beep
+            entry: event.entry,
+            ttsEvent: event,
+            beepEvent: correspondingBeep
           });
-        }
-      } else if (entry.type === 'Message') {
-        const mainTTS = events.find(e => e.type === 'tts' && !e.isCountdown);
-        const countdownEvents = events.filter(e => e.type === 'tts' && e.isCountdown);
 
-        if (mainTTS) {
-          const messageDuration = calculateMessageDuration(mainTTS.entryConfig);
-          const ttsDuration = estimateTTSDuration(mainTTS.text, mainTTS.entryConfig?.speechRate || 1.0);
-
-          messages.push({
-            text: mainTTS.text,
-            startTime: mainTTS.time,
-            ttsEndTime: mainTTS.time + ttsDuration,
-            endTime: mainTTS.time + messageDuration,
-            countdownEvents: countdownEvents.sort((a, b) => a.time - b.time),
-            entry: entry,
-            mainTTS: mainTTS
-          });
+          processedEvents.add(event);
+          processedEvents.add(correspondingBeep);
         }
+      } else if (event.entry.type === 'Message' && event.type === 'tts' && !event.isCountdown) {
+        // Process message TTS events
+        const messageDuration = calculateMessageDuration(event.entryConfig);
+        const ttsDuration = estimateTTSDuration(event.text, event.entryConfig?.speechRate || 1.0);
+
+        // Find any countdown events for this message
+        const countdownEvents = sortedEvents.filter(otherEvent =>
+          !processedEvents.has(otherEvent) &&
+          otherEvent.entry &&
+          otherEvent.entry.id === event.entry.id &&
+          otherEvent.type === 'tts' &&
+          otherEvent.isCountdown &&
+          otherEvent.time > event.time &&
+          otherEvent.time <= event.time + messageDuration
+        );
+
+        messages.push({
+          text: event.text,
+          startTime: event.time,
+          ttsEndTime: event.time + ttsDuration,
+          endTime: event.time + messageDuration,
+          countdownEvents: countdownEvents.sort((a, b) => a.time - b.time),
+          entry: event.entry,
+          mainTTS: event
+        });
+
+        processedEvents.add(event);
+        countdownEvents.forEach(ce => processedEvents.add(ce));
       }
     });
 
@@ -9452,7 +9924,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function ensureTextVisible() {
     // Helper function to ensure shot text is visible (remove fade-out)
     const shotTitleElement = document.getElementById("workoutShotTitle");
-    if (shotTitleElement && shotTitleElement.classList.contains("fade-out")) {
+    if (shotTitleElement) {
       shotTitleElement.classList.remove("fade-out");
       workoutExecution.fadeTriggered = false;
     }
@@ -10424,6 +10896,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateRocketIndicator(element);
   }
 
+
   /**
    * Updates the rocket indicator for an element based on its settings.
    * @param {Element} element - The element to update
@@ -11121,5 +11594,79 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
   }
+
+  // Add red glow to heart icon after loading a favorite
+  function addFavoritesGlow(favoriteKey) {
+    const heartBtn = document.getElementById('heartBtn');
+    if (heartBtn) {
+      const svg = heartBtn.querySelector('svg');
+      if (svg) {
+        svg.classList.add('favorites-glow');
+        // Track which favorite is currently loaded
+        window._favoritesGlowActiveFor = favoriteKey;
+      }
+    }
+  }
+  function removeFavoritesGlow(e) {
+    const heartBtn = document.getElementById('heartBtn');
+    if (heartBtn) {
+      const svg = heartBtn.querySelector('svg');
+      if (svg && svg.classList.contains('favorites-glow')) {
+        svg.classList.remove('favorites-glow');
+        // Clear the tracking variable
+        window._favoritesGlowActiveFor = null;
+      }
+    }
+  }
+
+          // Remove glow if any setting is changed (only for user-initiated events that actually modify the workout)
+        if (mainContainer) {
+          mainContainer.addEventListener('input', function(e) {
+            // Only remove glow for workout-related inputs, not file inputs or other UI elements
+            if (e.isTrusted && e.target.matches('input:not([type="file"]), select, textarea')) {
+              // Check if this is actually a workout setting change
+              const target = e.target;
+              if (target.closest('.pattern-instance, .shot-msg-instance') || 
+                  target.closest('.global-config') ||
+                  target.matches('.workout-name')) {
+                // Clear the tracking variable and remove glow when user changes a setting
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+          mainContainer.addEventListener('change', function(e) {
+            // Only remove glow for workout-related changes, not file inputs or other UI elements
+            if (e.isTrusted && e.target.matches('input:not([type="file"]), select, textarea')) {
+              // Check if this is actually a workout setting change
+              const target = e.target;
+              if (target.closest('.pattern-instance, .shot-msg-instance') || 
+                  target.closest('.global-config') ||
+                  target.matches('.workout-name')) {
+                // Clear the tracking variable and remove glow when user changes a setting
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+          mainContainer.addEventListener('click', function(e) {
+            // Remove glow for user button clicks that modify workout settings
+            if (e.isTrusted && e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT')) {
+              const target = e.target;
+              // Don't remove glow for file input buttons, theme buttons, or other UI buttons
+              if (!target.closest('#workoutFileInput') && 
+                  !target.closest('.theme-toggle') &&
+                  !target.closest('.rocket-toggle') &&
+                  !target.closest('.duck-toggle') &&
+                  !target.closest('.toolbar-icon-btn') &&
+                  !target.closest('.favorites-dropdown') &&
+                  !target.closest('#heartBtn')) {
+                // Clear the tracking variable and remove glow when user clicks workout-modifying buttons
+                window._favoritesGlowActiveFor = null;
+                removeFavoritesGlow(e);
+              }
+            }
+          }, true);
+        }
 
 });
