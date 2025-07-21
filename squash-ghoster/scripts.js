@@ -343,15 +343,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Apply or remove constant ducking based on mode
     if (newMode === 'on') {
-      // Ensure voices are loaded before speaking and starting the heartbeat
+      // Ensure voices are loaded before starting the heartbeat
       ensureVoicesLoaded().then(() => {
-        // Announce that audio ducking is enabled (default voice)
-        if (synth && !synth.speaking && !synth.pending) {
-          const announceUtterance = new SpeechSynthesisUtterance('Audio ducking enabled');
-          announceUtterance.lang = 'en-US';
-          announceUtterance.volume = 1.0;
-          synth.speak(announceUtterance);
-        }
         startDuckingHeartbeat();
       });
     } else {
