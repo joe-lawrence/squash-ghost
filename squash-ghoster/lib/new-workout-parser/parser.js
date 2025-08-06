@@ -49,7 +49,37 @@ export function calculateWorkoutStats(workoutData, isConfigLocked = false, worko
     if (!result.success) {
       return { totalTime: 0, totalShots: 0, totalShotsExecuted: 0 };
     }
-    const timeline = generateWorkoutTimeline(result.workout);
+    
+    // If config is locked, we need to modify the workout to use the default interval
+    let workout = result.workout;
+    if (isConfigLocked) {
+      // Create a deep copy of the workout to avoid modifying the original
+      workout = JSON.parse(JSON.stringify(workout));
+      
+      // Apply the default interval to all patterns and entries
+      if (workout.patterns) {
+        workout.patterns.forEach(pattern => {
+          if (pattern.config) {
+            pattern.config.interval = workoutDefaultInterval;
+          }
+          if (pattern.entries) {
+            pattern.entries.forEach(entry => {
+              if (entry.config) {
+                entry.config.interval = workoutDefaultInterval;
+              }
+            });
+          }
+        });
+      }
+      
+      // Reload the modified workout
+      const modifiedResult = loadWorkoutFromJsonWithValidation(workout);
+      if (modifiedResult.success) {
+        workout = modifiedResult.workout;
+      }
+    }
+    
+    const timeline = generateWorkoutTimeline(workout);
     const stats = calculateWorkoutStatsFromTimeline(timeline);
     return {
       totalTime: stats.totalDuration,
@@ -152,9 +182,10 @@ export function generatePreviewHtml(data) {
     const workRestRatio = calculateWorkRestRatio(timeline);
     const workoutSummary = generateWorkoutSummary(timeline, workout);
     
-    // Calculate reps per minute
-    const totalDurationInSeconds = timeline.length > 0 ? Math.max(...timeline.map(e => e.endTime)) : 0;
-    const repsPerMinute = totalDurationInSeconds > 0 ? (totalShots / totalDurationInSeconds * 60).toFixed(1) : '0.0';
+    // Calculate reps per minute using only work time (excluding message/rest time)
+    const workRestData = calculateWorkRestRatio(timeline);
+    const workTimeInSeconds = workRestData.workTime;
+    const repsPerMinute = workTimeInSeconds > 0 ? (totalShots / workTimeInSeconds * 60).toFixed(1) : '0.0';
     
     // Calculate superset structure using metadata from timeline events
     function detectSupersets(timeline, workout) {
@@ -1260,11 +1291,17 @@ function applyPositionalConstraints(candidates, patternState) {
   // Check for linked elements first
   const lastPlayed = patternState.lastPlayedEntry;
   if (lastPlayed && lastPlayed.positionType === 'normal') {
-    // Look for linked elements
-    const linkedCandidates = candidates.filter(c => c.positionType === 'linked');
-    if (linkedCandidates.length > 0) {
-      return linkedCandidates;
-    }
+    // Look for linked elements that are actually linked to the last played element
+    // In the current implementation, we can't directly determine which linked element
+    // belongs to which normal element, so we need to rely on the initial ordering
+    // from getOrderedEntries() which already handles this correctly.
+    // Therefore, we should NOT override the ordering here.
+    // 
+    // The bug was that this code was prioritizing ANY linked element after ANY normal element,
+    // which could cause linked elements to be played out of order.
+    // 
+    // Instead, we should trust the initial ordering from getOrderedEntries() and only
+    // apply constraints for position locks, not for linked elements.
   }
 
   // Check for position locks
@@ -1348,7 +1385,46 @@ function isLastEntryInWorkout(entry, patternState, workout, generatorState) {
     }
   }
 
-  // For time-limit or other cases, we don't know if this is truly the last entry
+  if (limitType === 'time-limit') {
+    // For time-limit, check if adding this entry would exceed the time limit
+    const limitValue = limits.value || '00:00';
+    const limitSeconds = timeStrToSeconds(limitValue);
+    
+    // Calculate the duration of this entry
+    let entryDuration = 0;
+    if (entry.type === 'Shot') {
+      const effectiveConfig = getEffectiveConfig(
+        workout.config || {},
+        pattern.config || {},
+        entry.config || {}
+      );
+      entryDuration = effectiveConfig.interval || 5.0;
+    } else if (entry.type === 'Message') {
+      const effectiveConfig = getEffectiveConfig(
+        workout.config || {},
+        pattern.config || {},
+        entry.config || {}
+      );
+      const messageText = entry.config?.message || '';
+      const speechRate = effectiveConfig.speechRate || 1.0;
+      const ttsDuration = estimateTTSDuration(messageText, speechRate);
+      const intervalType = effectiveConfig.intervalType || 'fixed';
+      const baseInterval = effectiveConfig.interval || 5.0;
+      
+      if (intervalType === 'fixed') {
+        entryDuration = Math.max(ttsDuration, baseInterval);
+      } else {
+        entryDuration = ttsDuration + baseInterval;
+      }
+    }
+    
+    // If adding this entry would exceed the time limit, it's the last entry
+    if (generatorState.workoutTotalTime + entryDuration >= limitSeconds) {
+      return true;
+    }
+  }
+
+  // For other cases, we don't know if this is truly the last entry
   // because there might be supersets
   return false;
 }
@@ -1439,6 +1515,16 @@ function getNextEntry(workout, patternState, generatorState) {
         }
       } else if (workoutLimits.type === 'all-shots') {
         // For all-shots, check if this is the last entry in the workout
+        if (isLastEntryInWorkout(selectedEntry, patternState, workout, generatorState)) {
+          // Skip this message because it's the last entry
+          const entryIndex = patternState.availableEntries.indexOf(selectedEntry);
+          if (entryIndex > -1) {
+            patternState.availableEntries.splice(entryIndex, 1);
+          }
+          continue;
+        }
+      } else if (workoutLimits.type === 'time-limit') {
+        // For time-limit, check if this is the last entry in the workout
         if (isLastEntryInWorkout(selectedEntry, patternState, workout, generatorState)) {
           // Skip this message because it's the last entry
           const entryIndex = patternState.availableEntries.indexOf(selectedEntry);
@@ -1726,9 +1812,45 @@ export function shouldSkipMessageAtEnd(message, config, workoutContext) {
     return false;
   }
 
-  // If this is the last message in the last pattern repeat, skip it
-  // This is a simpler and more accurate approach than the old webapp's complex logic
-  return workoutContext.isLastMessageInLastPattern;
+  // Use the same logic as isLastEntryInWorkout to determine if this is the last entry
+  const workout = workoutContext?.workout;
+  const generatorState = workoutContext?.generatorState;
+  
+  if (!workout || !generatorState) {
+    return false;
+  }
+
+  // For time-limit workouts, check if adding this message would exceed the time limit
+  const limits = workout.config?.limits || {};
+  const limitType = limits.type;
+
+  if (limitType === 'time-limit') {
+    const limitValue = limits.value || '00:00';
+    const limitSeconds = timeStrToSeconds(limitValue);
+    
+    // Calculate the duration of this message
+    const messageText = message.config?.message || '';
+    const speechRate = config.speechRate || 1.0;
+    const ttsDuration = estimateTTSDuration(messageText, speechRate);
+    const intervalType = config.intervalType || 'fixed';
+    const baseInterval = config.interval || 5.0;
+    
+    let messageDuration;
+    if (intervalType === 'fixed') {
+      messageDuration = Math.max(ttsDuration, baseInterval);
+    } else {
+      messageDuration = ttsDuration + baseInterval;
+    }
+    
+    // If adding this message would exceed or equal the time limit, skip it
+    if (generatorState.workoutTotalTime + messageDuration >= limitSeconds) {
+      return true;
+    }
+  }
+
+  // For other limit types, we don't have enough context here to determine
+  // if this is the last message, so we'll rely on the getNextEntry logic
+  return false;
 }
 
 /**
@@ -2200,11 +2322,11 @@ function generateWorkoutSummary(timeline, workout) {
   const totalDurationInSeconds = timeline.length > 0 ? Math.max(...timeline.map(e => e.endTime)) : 0;
   const totalShots = timeline.filter(e => e.type === 'Shot').length;
 
-  // Calculate repetitions (ghosts) per minute
+  // Calculate repetitions (ghosts) per minute using only work time (excluding message/rest time)
   // Avoid division by zero if workout is very short
   let repsPerMinute = 0;
-  if (totalDurationInSeconds > 0) {
-    repsPerMinute = (totalShots / totalDurationInSeconds) * 60;
+  if (workTime > 0) {
+    repsPerMinute = (totalShots / workTime) * 60;
   }
 
   //--------------------------------------------------------------------------

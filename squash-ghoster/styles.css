@@ -1500,28 +1500,9 @@ input:checked ~ .toggle-dot {
     -webkit-backdrop-filter: blur(8px);
 }
 
-/* Chevron button spin animation */
-@keyframes spin-clockwise {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes spin-counter-clockwise {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(-360deg);
-    }
-}
-
-/* Chevron button active state with spin animation */
+/* Chevron button active state - no animation */
 #chevronBtn.active svg {
-    animation: spin-clockwise 1s ease-in-out;
+    /* No animation - just visual state */
 }
 
 #chevronBtn.active:hover svg {
@@ -1529,61 +1510,50 @@ input:checked ~ .toggle-dot {
 }
 
 [data-theme="dark"] #chevronBtn.active svg {
-    animation: spin-clockwise 1s ease-in-out;
+    /* No animation - just visual state */
 }
 
 [data-theme="dark"] #chevronBtn.active:hover svg {
     /* No color change on hover */
 }
 
-/* Chevron button collapse state with counter-clockwise spin */
-#chevronBtn:not(.active) svg {
-    animation: spin-counter-clockwise 1s ease-in-out;
-}
-
-/* Smooth toolbar animation */
+/* Simple toolbar show/hide */
 .fixed.top-4.left-4 > div:last-child {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-origin: left center;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-/* Landscape mode expansion animation */
+/* Responsive toolbar layout */
+.fixed.top-4.left-4 {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Portrait mode: vertical layout */
+@media (orientation: portrait) {
+    .fixed.top-4.left-4 {
+        flex-direction: column;
+    }
+    
+    .fixed.top-4.left-4 > div:last-child {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Landscape mode: horizontal layout */
 @media (orientation: landscape) {
-  .fixed.top-4.left-4 > div:last-child {
-    animation: expand-left-to-right 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  .fixed.top-4.left-4 > div:last-child.collapsing {
-    animation: collapse-right-to-left 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
+    .fixed.top-4.left-4 {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    
+    .fixed.top-4.left-4 > div:last-child {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
 }
 
-@keyframes expand-left-to-right {
-  from {
-    transform: scaleX(0);
-    opacity: 0;
-  }
-  to {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-}
 
-@keyframes collapse-right-to-left {
-  from {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-  to {
-    transform: scaleX(0);
-    opacity: 0;
-  }
-}
-
-/* Ensure animation resets properly */
-#chevronBtn svg {
-    transform-origin: center;
-}
 
 .theme-toggle:hover, .rocket-toggle:hover, .duck-toggle:hover, .toolbar-icon-btn:hover {
     background-color: var(--color-gray-200);
@@ -3502,25 +3472,25 @@ datalist {
 
 @keyframes shot-title-glow {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
   25% {
     text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.8),
-      0 0 20px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.4);
+      0 0 10px var(--glow-color, rgba(255, 255, 255, 0.8)),
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 0.6)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.4));
     transform: scale(1.05);
   }
   75% {
     text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.8),
-      0 0 20px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.4);
+      0 0 10px var(--glow-color, rgba(255, 255, 255, 0.8)),
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 0.6)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.4));
     transform: scale(1.05);
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
 }
@@ -3528,25 +3498,25 @@ datalist {
 /* Light mode glow animation */
 @keyframes shot-title-glow-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
   25% {
     text-shadow:
-      0 0 10px rgba(239, 68, 68, 0.8),
-      0 0 20px rgba(239, 68, 68, 0.6),
-      0 0 30px rgba(239, 68, 68, 0.4);
+      0 0 10px var(--glow-color, rgba(239, 68, 68, 0.8)),
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 0.6)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.4));
     transform: scale(1.05);
   }
   75% {
     text-shadow:
-      0 0 10px rgba(239, 68, 68, 0.8),
-      0 0 20px rgba(239, 68, 68, 0.6),
-      0 0 30px rgba(239, 68, 68, 0.4);
+      0 0 10px var(--glow-color, rgba(239, 68, 68, 0.8)),
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 0.6)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.4));
     transform: scale(1.05);
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
 }
@@ -3564,18 +3534,18 @@ datalist {
 
 @keyframes countdown-pulse {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
   50% {
     text-shadow:
-      0 0 15px rgba(255, 255, 255, 0.9),
-      0 0 25px rgba(255, 255, 255, 0.7),
-      0 0 35px rgba(255, 255, 255, 0.5);
+      0 0 15px var(--glow-color, rgba(255, 255, 255, 0.9)),
+      0 0 25px var(--glow-color, rgba(255, 255, 255, 0.7)),
+      0 0 35px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1.1);
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
 }
@@ -3588,18 +3558,18 @@ datalist {
 
 @keyframes countdown-pulse-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
   50% {
     text-shadow:
-      0 0 15px rgba(239, 68, 68, 0.9),
-      0 0 25px rgba(239, 68, 68, 0.7),
-      0 0 35px rgba(239, 68, 68, 0.5);
+      0 0 15px var(--glow-color, rgba(239, 68, 68, 0.9)),
+      0 0 25px var(--glow-color, rgba(239, 68, 68, 0.7)),
+      0 0 35px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1.1);
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
 }
@@ -3611,20 +3581,20 @@ datalist {
 
 @keyframes countdown-flash {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
     opacity: 1;
   }
   50% {
     text-shadow:
-      0 0 20px rgba(255, 255, 255, 1),
-      0 0 30px rgba(255, 255, 255, 0.9),
-      0 0 40px rgba(255, 255, 255, 0.7);
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 1)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.9)),
+      0 0 40px var(--glow-color, rgba(255, 255, 255, 0.7));
     transform: scale(1.2);
     opacity: 0.8;
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
     opacity: 1;
   }
@@ -3638,20 +3608,20 @@ datalist {
 
 @keyframes countdown-flash-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
     opacity: 1;
   }
   50% {
     text-shadow:
-      0 0 20px rgba(239, 68, 68, 1),
-      0 0 30px rgba(239, 68, 68, 0.9),
-      0 0 40px rgba(239, 68, 68, 0.7);
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 1)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.9)),
+      0 0 40px var(--glow-color, rgba(239, 68, 68, 0.7));
     transform: scale(1.2);
     opacity: 0.8;
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
     opacity: 1;
   }
@@ -3706,11 +3676,158 @@ datalist {
 
 @keyframes workout-flash-effect {
   0% {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 185, 129, 0.3) 100%);
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.3)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.4)) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.4)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.5)) 100%);
   }
   100% {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   }
+}
+
+/* Enhanced flash effect for portrait orientation */
+@media (orientation: portrait) {
+  .workout-flash {
+    animation: workout-flash-effect-portrait 0.3s ease-out;
+  }
+}
+
+@keyframes workout-flash-effect-portrait {
+  0% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.4)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.5)) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.5)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.6)) 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+}
+
+/* Theme-specific flash colors */
+/* Dark themes */
+[data-theme="dark"][data-color-scheme="blue-ocean"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(168, 85, 247, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(34, 197, 94, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(20, 184, 166, 0.4);
+}
+
+/* Light themes */
+[data-theme="light"][data-color-scheme="cloud-silver"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(5, 150, 105, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(234, 88, 12, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(22, 163, 74, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(236, 72, 153, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(2, 132, 199, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(147, 51, 234, 0.4);
+}
+
+/* Default fallbacks */
+[data-theme="dark"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(16, 185, 129, 0.4);
+}
+
+/* Theme-specific glow colors for workout shot title */
+/* Dark themes */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .workout-shot-title {
+  --glow-color: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .workout-shot-title {
+  --glow-color: rgba(147, 51, 234, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .workout-shot-title {
+  --glow-color: rgba(34, 197, 94, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .workout-shot-title {
+  --glow-color: rgba(239, 68, 68, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .workout-shot-title {
+  --glow-color: rgba(20, 184, 166, 0.6);
+}
+
+/* Light themes */
+[data-theme="light"][data-color-scheme="cloud-silver"] .workout-shot-title {
+  --glow-color: rgba(100, 116, 139, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .workout-shot-title {
+  --glow-color: rgba(249, 115, 22, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .workout-shot-title {
+  --glow-color: rgba(34, 197, 94, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .workout-shot-title {
+  --glow-color: rgba(236, 72, 153, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .workout-shot-title {
+  --glow-color: rgba(6, 182, 212, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .workout-shot-title {
+  --glow-color: rgba(168, 85, 247, 0.6);
+}
+
+/* Default fallbacks for workout shot title */
+[data-theme="dark"] .workout-shot-title {
+  --glow-color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .workout-shot-title {
+  --glow-color: rgba(239, 68, 68, 0.6);
+}
+
+[data-theme="light"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(239, 68, 68, 0.4);
 }
 
 /* Responsive Design */
@@ -5509,7 +5626,7 @@ datalist {
   }
 }
 
-/* Backdrop blur effect for dropdown menus */
+/* Backdrop blur effect for toolbar */
 .dropdown-backdrop {
   position: fixed;
   top: 0;
@@ -5546,11 +5663,104 @@ datalist {
   pointer-events: auto;
 }
 
-/* Apply blur to main content when dropdowns are active */
+/* Apply blur to background content when toolbar is active */
 .webapp-container.dropdown-active {
   filter: blur(2px);
   -webkit-filter: blur(2px);
   transition: filter 0.2s ease, -webkit-filter 0.2s ease;
+}
+
+/* Ensure toolbar and dropdowns remain sharp */
+.fixed.top-4.left-4,
+.fixed.top-4.left-4 *,
+.editor-dropdown,
+.execute-dropdown,
+.load-dropdown,
+.save-dropdown,
+.favorites-dropdown,
+.theme-selector-container,
+.theme-dropdown {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Icon glow effect - theme-based */
+.glow-effect {
+  box-shadow:
+    0 0 10px var(--glow-color, rgba(59, 130, 246, 0.4)),
+    0 0 20px var(--glow-color, rgba(59, 130, 246, 0.2)),
+    0 0 30px var(--glow-color, rgba(59, 130, 246, 0.1)) !important;
+  transition: box-shadow 0.3s ease !important;
+}
+
+/* Remove glow from collapsed state */
+#chevronBtn:not(.active) {
+  box-shadow: none !important;
+}
+
+/* Hover effect enhancement - theme-based */
+.theme-toggle:hover, .rocket-toggle:hover, .duck-toggle:hover, .toolbar-icon-btn:hover {
+  box-shadow:
+    0 0 15px var(--glow-color-hover, rgba(59, 130, 246, 0.6)),
+    0 0 30px var(--glow-color-hover, rgba(59, 130, 246, 0.3)),
+    0 0 45px var(--glow-color-hover, rgba(59, 130, 246, 0.2)) !important;
+}
+
+/* Theme-specific glow colors */
+[data-color-scheme="blue-ocean"] .glow-effect {
+  --glow-color: rgba(59, 130, 246, 0.6);
+  --glow-color-hover: rgba(59, 130, 246, 0.8);
+}
+
+[data-color-scheme="purple-nebula"] .glow-effect {
+  --glow-color: rgba(147, 51, 234, 0.6);
+  --glow-color-hover: rgba(147, 51, 234, 0.8);
+}
+
+[data-color-scheme="fresh-mint"] .glow-effect {
+  --glow-color: rgba(34, 197, 94, 0.6);
+  --glow-color-hover: rgba(34, 197, 94, 0.8);
+}
+
+[data-color-scheme="warm-sunset"] .glow-effect {
+  --glow-color: rgba(249, 115, 22, 0.6);
+  --glow-color-hover: rgba(249, 115, 22, 0.8);
+}
+
+[data-color-scheme="rose-gold"] .glow-effect {
+  --glow-color: rgba(236, 72, 153, 0.6);
+  --glow-color-hover: rgba(236, 72, 153, 0.8);
+}
+
+[data-color-scheme="arctic-blue"] .glow-effect {
+  --glow-color: rgba(6, 182, 212, 0.6);
+  --glow-color-hover: rgba(6, 182, 212, 0.8);
+}
+
+[data-color-scheme="lavender-mist"] .glow-effect {
+  --glow-color: rgba(168, 85, 247, 0.6);
+  --glow-color-hover: rgba(168, 85, 247, 0.8);
+}
+
+[data-color-scheme="cloud-silver"] .glow-effect {
+  --glow-color: rgba(100, 116, 139, 0.6);
+  --glow-color-hover: rgba(100, 116, 139, 0.8);
+}
+
+/* Dark theme variants */
+[data-color-scheme="forest-night"] .glow-effect {
+  --glow-color: rgba(34, 197, 94, 0.6);
+  --glow-color-hover: rgba(34, 197, 94, 0.8);
+}
+
+[data-color-scheme="crimson-shadow"] .glow-effect {
+  --glow-color: rgba(239, 68, 68, 0.6);
+  --glow-color-hover: rgba(239, 68, 68, 0.8);
+}
+
+[data-color-scheme="midnight-teal"] .glow-effect {
+  --glow-color: rgba(20, 184, 166, 0.6);
+  --glow-color-hover: rgba(20, 184, 166, 0.8);
 }
 
 /* iOS Safari fallback for content blur */
@@ -5558,6 +5768,42 @@ datalist {
   .webapp-container.dropdown-active {
     opacity: 0.7;
   }
+}
+
+/* Wheel animation and states */
+#chevronBtn svg {
+  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+}
+
+#chevronBtn.active svg {
+  transform: rotate(180deg);
+  filter: brightness(1.2) saturate(1.2);
+  opacity: 1;
+}
+
+#chevronBtn:not(.active) svg {
+  transform: rotate(0deg);
+  filter: grayscale(1) brightness(0.4) saturate(0.3) contrast(0.7);
+  opacity: 0.6;
+}
+
+/* Wheel animation keyframes */
+@keyframes spin-clockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
+
+@keyframes spin-counter-clockwise {
+  from { transform: rotate(180deg); }
+  to { transform: rotate(0deg); }
+}
+
+#chevronBtn.active svg {
+  animation: spin-clockwise 0.3s ease forwards;
+}
+
+#chevronBtn:not(.active) svg {
+  animation: spin-counter-clockwise 0.3s ease forwards;
 }
 
 /* Ensure dropdowns remain sharp when backdrop is active */

@@ -1,6 +1,9 @@
 // Build ID: 2025-07-28-13-00-BUILD-005
 console.log('Squash Ghost Webapp loaded - Build ID: 2025-07-28-13-00-BUILD-005', new Date().toISOString());
 
+// Global flag to prevent dropdown closing during opening process
+window.isOpeningDropdown = false;
+
 // Import movement utilities
 import {
   getSiblings,
@@ -430,6 +433,27 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize duck mode on load
   initializeDuckMode();
 
+  // Initialize toolbar to collapsed state
+  const initialButtonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+  const initialChevronBtn = document.getElementById("chevronBtn");
+  
+  if (initialButtonGroup && initialChevronBtn) {
+    // Ensure toolbar starts collapsed
+    initialButtonGroup.style.display = 'none';
+    initialButtonGroup.style.visibility = 'hidden';
+    initialButtonGroup.style.opacity = '0';
+    
+    // Ensure chevron starts inactive
+    initialChevronBtn.classList.remove('active');
+    initialChevronBtn.setAttribute('title', 'Show toolbar');
+    
+    // Remove any glow effects
+    const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
+    toolbarButtons.forEach(button => {
+      button.classList.remove('glow-effect');
+    });
+  }
+
   // Initialize theme system
   loadThemePreferences();
 
@@ -699,8 +723,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const isActive = favoritesDropdown.classList.contains("active");
       closeAllDropdowns(favoritesDropdown);
       if (!isActive) {
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         favoritesDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+        }, 200);
       }
     });
   }
@@ -708,98 +740,154 @@ document.addEventListener("DOMContentLoaded", function () {
   // Attach listeners on initial load
   attachFavoritesRootMenuListeners();
 
-  // Chevron toggle functionality
+  // Chevron toggle functionality - simplified
   if (chevronBtn) {
     chevronBtn.addEventListener("click", function() {
       const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-      const chevronIcon = chevronBtn.querySelector('svg');
 
       if (buttonGroup) {
-        // More robust check for hidden state
+        // Check if toolbar is currently visible
         const computedStyle = window.getComputedStyle(buttonGroup);
-        const isHidden = buttonGroup.style.display === 'none' || 
-                        computedStyle.display === 'none' || 
-                        buttonGroup.style.visibility === 'hidden' ||
-                        computedStyle.visibility === 'hidden';
+        const isVisible = buttonGroup.style.display !== 'none' && 
+                         computedStyle.display !== 'none' && 
+                         buttonGroup.style.visibility !== 'hidden' &&
+                         computedStyle.visibility !== 'hidden';
 
-        console.log("Chevron clicked - buttonGroup display:", buttonGroup.style.display);
-        console.log("Chevron clicked - computed display:", computedStyle.display);
-        console.log("Chevron clicked - isHidden:", isHidden);
-
-        if (isHidden) {
-          // Show buttons with smooth animation
-          buttonGroup.style.display = 'flex';
-          buttonGroup.classList.remove('collapsing');
-          buttonGroup.style.opacity = '0';
-          buttonGroup.style.transform = 'translateY(-20px)';
-
-          // Trigger clockwise spin animation
-          chevronBtn.classList.remove('active');
-          setTimeout(() => {
-            chevronBtn.classList.add('active');
-          }, 10);
-
-          // Animate toolbar in
-          setTimeout(() => {
-            buttonGroup.style.opacity = '1';
-            buttonGroup.style.transform = 'translateY(0)';
-          }, 50);
-
-          chevronBtn.setAttribute('title', 'Hide toolbar');
-          // Set the current scroll position as the focused spot when opening chevron
-          lastFocusedScrollY = window.scrollY;
-          setToolbarIconsOpacity('1');
-          updateBackdropState();
-          
-          // Ensure the button group is actually visible
+        if (!isVisible) {
+          // Show toolbar
           buttonGroup.style.display = 'flex';
           buttonGroup.style.visibility = 'visible';
+          buttonGroup.style.opacity = '1';
+          buttonGroup.style.transform = 'none';
           
-          // Add glow effect to icon buttons when they're revealed
+          // Activate chevron
+          chevronBtn.classList.add('active');
+          chevronBtn.setAttribute('title', 'Hide toolbar');
+          
+          // Add glow effect to toolbar buttons
           const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
           toolbarButtons.forEach(button => {
             button.classList.add('glow-effect');
           });
+          
+          // Update backdrop state
+          updateBackdropState();
+          
+          // Add event listeners for deactivation
+          addToolbarDeactivationListeners();
         } else {
-          // Clear backdrop immediately when collapse is initiated
-          forceClearBackdrop();
-          
-          // Hide buttons with smooth animation
-          // Add collapsing class for right-to-left animation in landscape mode
-          buttonGroup.classList.add('collapsing');
-
-          // Trigger counter-clockwise spin animation
-          chevronBtn.classList.remove('active');
-          chevronBtn.setAttribute('title', 'Show toolbar');
-          chevronBtn.blur();
-          
-          // Add glow effect to icon buttons when they start disappearing
-          const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-          toolbarButtons.forEach(button => {
-            button.classList.add('glow-effect');
-          });
-
-          // Hide toolbar after animation
-          setTimeout(() => {
-            buttonGroup.style.display = 'none';
-            buttonGroup.style.visibility = 'hidden';
-            buttonGroup.classList.remove('collapsing');
-            
-            // Remove glow effect when toolbar is fully hidden
-            const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-            toolbarButtons.forEach(button => {
-              button.classList.remove('glow-effect');
-            });
-
-          }, 500);
-
-          // Fade out all toolbars when manually closed - sync with rotation animation
-          setTimeout(() => {
-            setToolbarIconsOpacity('0.3');
-          }, 500);
+          // Hide toolbar
+          hideToolbar();
         }
       }
     });
+  }
+
+  // Helper function to hide toolbar
+  function hideToolbar() {
+    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+    const chevronBtn = document.getElementById("chevronBtn");
+    
+    if (buttonGroup && chevronBtn) {
+      // Hide toolbar
+      buttonGroup.style.display = 'none';
+      buttonGroup.style.visibility = 'hidden';
+      buttonGroup.style.opacity = '0';
+      
+      // Deactivate chevron
+      chevronBtn.classList.remove('active');
+      chevronBtn.setAttribute('title', 'Show toolbar');
+      chevronBtn.blur();
+      
+      // Remove glow effect from toolbar buttons
+      const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
+      toolbarButtons.forEach(button => {
+        button.classList.remove('glow-effect');
+      });
+      
+      // Update backdrop state
+      updateBackdropState();
+      
+      // Remove deactivation listeners
+      removeToolbarDeactivationListeners();
+    }
+  }
+
+  // Helper function to add deactivation listeners
+  function addToolbarDeactivationListeners() {
+    // Click outside listener
+    document.addEventListener('click', handleToolbarClickOutside);
+    
+    // Focus loss listener
+    document.addEventListener('focusin', handleToolbarFocusLoss);
+    
+    // Scroll listener
+    window.addEventListener('scroll', handleToolbarScroll, { passive: true });
+  }
+
+  // Helper function to remove deactivation listeners
+  function removeToolbarDeactivationListeners() {
+    document.removeEventListener('click', handleToolbarClickOutside);
+    document.removeEventListener('focusin', handleToolbarFocusLoss);
+    window.removeEventListener('scroll', handleToolbarScroll);
+  }
+
+  // Handle click outside toolbar
+  function handleToolbarClickOutside(event) {
+    const leftToolbar = document.querySelector('.fixed.top-4.left-4');
+    if (leftToolbar && !leftToolbar.contains(event.target)) {
+      // Check if the click target is a dropdown item - if so, don't close the toolbar
+      const isDropdownItem = event.target.closest('.execute-dropdown-item, .editor-dropdown-item, .load-dropdown-item, .save-dropdown-item, .favorites-dropdown-item, .rocket-indicator-dropdown-item');
+      if (isDropdownItem) {
+        return; // Don't close toolbar when clicking dropdown items
+      }
+      
+      // Check if any dropdowns are active - if so, don't close the toolbar
+      const activeDropdowns = document.querySelectorAll('.execute-dropdown.active, .editor-dropdown.active, .load-dropdown.active, .save-dropdown.active, .favorites-dropdown.active, .rocket-indicator-dropdown.active');
+      if (activeDropdowns.length > 0) {
+        return; // Don't close toolbar if dropdowns are open
+      }
+      
+      // Add a small delay to prevent immediate closure when clicking dropdown items
+      setTimeout(() => {
+        // Check if the click target is still outside the toolbar after the delay
+        if (!leftToolbar.contains(event.target)) {
+          hideToolbar();
+        }
+      }, 100);
+    }
+  }
+
+  // Handle focus loss from toolbar
+  function handleToolbarFocusLoss(event) {
+    const leftToolbar = document.querySelector('.fixed.top-4.left-4');
+    if (leftToolbar && !leftToolbar.contains(event.target)) {
+      // Check if the click target is a dropdown item - if so, don't close the toolbar
+      const isDropdownItem = event.target.closest('.execute-dropdown-item, .editor-dropdown-item, .load-dropdown-item, .save-dropdown-item, .favorites-dropdown-item, .rocket-indicator-dropdown-item');
+      if (isDropdownItem) {
+        return; // Don't close toolbar when clicking dropdown items
+      }
+      
+      // Check if any dropdowns are active - if so, don't close the toolbar
+      const activeDropdowns = document.querySelectorAll('.execute-dropdown.active, .editor-dropdown.active, .load-dropdown.active, .save-dropdown.active, .favorites-dropdown.active, .rocket-indicator-dropdown.active');
+      if (activeDropdowns.length > 0) {
+        return; // Don't close toolbar if dropdowns are open
+      }
+      
+      // Add a small delay to prevent immediate closure when clicking dropdown items
+      setTimeout(() => {
+        // Check if the toolbar is still focused after the delay
+        const activeElement = document.activeElement;
+        if (!leftToolbar.contains(activeElement)) {
+          hideToolbar();
+        }
+      }, 100);
+    }
+  }
+
+  // Handle scroll to hide toolbar
+  function handleToolbarScroll() {
+    hideToolbar();
   }
 
   if (editorBtn) {
@@ -852,12 +940,30 @@ document.addEventListener("DOMContentLoaded", function () {
     executeBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = executeDropdown.classList.contains("active");
-      closeAllDropdowns(executeDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(executeDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         executeDropdown.classList.add("active");
         prepTimeMenuState.current = 'main';
         showExecuteMainMenu();
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(executeDropdown);
       }
     });
 
@@ -1028,10 +1134,28 @@ document.addEventListener("DOMContentLoaded", function () {
     editorBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = editorDropdown.classList.contains("active");
-      closeAllDropdowns(editorDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(editorDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         editorDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(editorDropdown);
       }
     });
 
@@ -1115,10 +1239,28 @@ document.addEventListener("DOMContentLoaded", function () {
     loadBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = loadDropdown.classList.contains("active");
-      closeAllDropdowns(loadDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(loadDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         loadDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(loadDropdown);
       }
     });
 
@@ -1158,10 +1300,28 @@ document.addEventListener("DOMContentLoaded", function () {
     saveBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = saveDropdown.classList.contains("active");
-      closeAllDropdowns(saveDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(saveDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         saveDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(saveDropdown);
       }
     });
 
@@ -1251,9 +1411,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // If click was outside all dropdowns and buttons, close all dropdowns
-    if (!clickedOnDropdownOrButton) {
+    // Don't close dropdowns if we're in the process of opening one
+    if (!clickedOnDropdownOrButton && !window.isOpeningDropdown) {
       closeAllDropdowns();
-      forceClearBackdrop(); // Clear backdrop immediately
     }
   });
 
@@ -1318,7 +1478,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         });
 
-        if (!stillFocusedInDropdown) {
+        if (!stillFocusedInDropdown && !window.isOpeningDropdown) {
           closeAllDropdowns();
         }
       }, 50);
@@ -1328,151 +1488,24 @@ document.addEventListener("DOMContentLoaded", function () {
   // Close all dropdowns when the window loses focus
   window.addEventListener("blur", function() {
     closeAllDropdowns();
-    forceClearBackdrop(); // Clear backdrop immediately
   });
 
   // Close all dropdowns on escape key
   document.addEventListener("keydown", function(event) {
     if (event.key === "Escape") {
       closeAllDropdowns();
-      forceClearBackdrop(); // Clear backdrop immediately
     }
   });
 
   // --- Distance-based Toolbar Fade Effect ---
-  let isToolbarHovered = false;
-  let lastFocusedScrollY = 0; // Track the scroll position where toolbar was last fully visible
-  let currentScrollOpacity = 1;
-  let fadeDistance = 100; // Distance in pixels to fade from focused spot
 
-  function setToolbarIconsOpacity(opacity) {
-    const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-    toolbarButtons.forEach(button => {
-      button.style.transition = 'opacity 0.3s ease';
-      button.style.opacity = opacity;
-    });
-  }
 
-  function updateToolbarOpacity() {
-    const scrollY = window.scrollY;
 
-    // Special case: Full opacity when at the very top of the window
-    if (scrollY === 0) {
-      lastFocusedScrollY = 0; // Set the top as the focused spot
-      currentScrollOpacity = 1;
-      if (!isToolbarHovered) {
-        setToolbarIconsOpacity(1);
-      }
-      return;
-    }
 
-    const distanceFromFocused = Math.abs(scrollY - lastFocusedScrollY);
-
-    // Calculate opacity based on distance from focused spot
-    let opacity = 1;
-    if (distanceFromFocused > 0) {
-      opacity = Math.max(0.3, 1 - (distanceFromFocused / fadeDistance));
-    }
-    currentScrollOpacity = opacity;
-
-    // Apply opacity to all toolbar buttons (unless hovered)
-    if (!isToolbarHovered) {
-      setToolbarIconsOpacity(opacity);
-    }
-
-    // Auto-collapse chevron and fade out toolbars when scrolled away from focused spot
-    const chevronBtn = document.getElementById("chevronBtn");
-    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-
-    if (chevronBtn && buttonGroup && distanceFromFocused > 20) { // Collapse after 20px from focused spot
-      const computedStyle = window.getComputedStyle(buttonGroup);
-      const isVisible = buttonGroup.style.display !== 'none' && 
-                       computedStyle.display !== 'none' && 
-                       buttonGroup.style.visibility !== 'hidden' &&
-                       computedStyle.visibility !== 'hidden';
-      
-      if (isVisible) {
-        // Clear backdrop immediately when auto-collapse is initiated
-        forceClearBackdrop();
-        
-        // Hide buttons with smooth animation
-        buttonGroup.style.opacity = '0';
-        buttonGroup.style.transform = 'translateY(-20px)';
-
-        // Trigger counter-clockwise spin animation for auto-collapse
-        chevronBtn.classList.remove('active');
-        chevronBtn.setAttribute('title', 'Show toolbar');
-        chevronBtn.blur();
-        
-        // Add glow effect to icon buttons when they start disappearing
-        const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-        toolbarButtons.forEach(button => {
-          button.classList.add('glow-effect');
-        });
-
-        // Hide toolbar after animation
-        setTimeout(() => {
-          buttonGroup.style.display = 'none';
-          
-          // Remove glow effect when toolbar is fully hidden
-          const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-          toolbarButtons.forEach(button => {
-            button.classList.remove('glow-effect');
-          });
-
-        }, 1000);
-
-        // Fade out all toolbars when auto-collapsed - sync with rotation animation
-        setTimeout(() => {
-          setToolbarIconsOpacity('0.3');
-        }, 1000);
-      }
-    }
-  }
-
-  // Add scroll event listener
+  // Simplified scroll handling - just update backdrop state
   window.addEventListener('scroll', () => {
-    // Clear backdrop immediately on any scroll
-    forceClearBackdrop();
-    updateToolbarOpacity();
-  });
-
-  // Add hover/focus effects for toolbar containers
-  const leftToolbar = document.querySelector('.fixed.top-4.left-4');
-  const rightToolbar = document.querySelector('.fixed.top-4.right-4');
-
-  function handleToolbarEnter() {
-    isToolbarHovered = true;
-    // Set the current scroll position as the focused spot when hovering
-    lastFocusedScrollY = window.scrollY;
-    setToolbarIconsOpacity('1');
     updateBackdropState();
-  }
-
-  function handleToolbarLeave() {
-    isToolbarHovered = false;
-    // Clear backdrop immediately when mouse leaves toolbar
-    forceClearBackdrop();
-    // Update opacity based on distance from the focused spot
-    updateToolbarOpacity();
-  }
-
-  if (leftToolbar) {
-    leftToolbar.addEventListener('mouseenter', handleToolbarEnter);
-    leftToolbar.addEventListener('mouseleave', handleToolbarLeave);
-    leftToolbar.addEventListener('focusin', handleToolbarEnter);
-    leftToolbar.addEventListener('focusout', handleToolbarLeave);
-  }
-
-  if (rightToolbar) {
-    rightToolbar.addEventListener('mouseenter', handleToolbarEnter);
-    rightToolbar.addEventListener('mouseleave', handleToolbarLeave);
-    rightToolbar.addEventListener('focusin', handleToolbarEnter);
-    rightToolbar.addEventListener('focusout', handleToolbarLeave);
-  }
-
-  // Initialize opacity on page load
-  updateToolbarOpacity();
+  });
 
   // iOS Safari detection and fallback setup
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -1484,9 +1517,14 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add('ios-safari');
   }
 
-  // Clear backdrop immediately when clicking anywhere on the page
+  // Collapse toolbar when clicking outside (blur will automatically follow)
   document.addEventListener('click', function(event) {
-    // Don't clear if clicking on toolbar elements
+    // Don't collapse if we're in the process of opening a dropdown
+    if (window.isOpeningDropdown) {
+      return;
+    }
+    
+    // Don't collapse if clicking on toolbar elements
     const toolbarElements = document.querySelectorAll('.fixed.top-4.left-4, .fixed.top-4.right-4');
     let clickedOnToolbar = false;
     
@@ -1497,31 +1535,24 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     if (!clickedOnToolbar) {
-      forceClearBackdrop();
+      // Collapse the toolbar if it's expanded
+      const chevronBtn = document.getElementById("chevronBtn");
+      const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+      
+      if (chevronBtn && buttonGroup) {
+        const computedStyle = window.getComputedStyle(buttonGroup);
+        const isExpanded = computedStyle.display !== 'none' && 
+                          computedStyle.visibility !== 'hidden';
+        
+        if (isExpanded) {
+          // Trigger the chevron click to collapse the toolbar
+          chevronBtn.click();
+        }
+      }
     }
   });
 
-  // Periodic safety check to ensure backdrop is cleared when toolbar is collapsed
-  setInterval(() => {
-    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-    const backdrop = document.getElementById("dropdownBackdrop");
-    
-    if (backdrop && backdrop.classList.contains("active")) {
-      let isToolbarExpanded = false;
-      if (buttonGroup) {
-        const computedStyle = window.getComputedStyle(buttonGroup);
-        isToolbarExpanded = buttonGroup.style.display !== 'none' && 
-                           computedStyle.display !== 'none' && 
-                           buttonGroup.style.visibility !== 'hidden' &&
-                           computedStyle.visibility !== 'hidden';
-      }
-      
-      if (!isToolbarExpanded) {
-        console.log("Safety check: Clearing backdrop - toolbar not expanded");
-        forceClearBackdrop();
-      }
-    }
-  }, 1000); // Check every second
+
 
   // Listen for system theme changes (only if no user preference is saved)
   window
@@ -1965,6 +1996,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const skipAtEnd = skipAtEndCheckbox
       ? skipAtEndCheckbox.checked
       : false;
+    // Always include skipAtEndOfWorkout when it's explicitly set, regardless of inheritance
     config.skipAtEndOfWorkout = skipAtEnd;
 
     // Preserve original data for properties not exposed in UI
@@ -2257,6 +2289,12 @@ document.addEventListener("DOMContentLoaded", function () {
           delete cleanedConfig[key];
         }
       });
+    }
+
+    // Special handling for skipAtEndOfWorkout
+    // Always preserve skipAtEndOfWorkout when it's explicitly set, regardless of inheritance
+    if (config.skipAtEndOfWorkout !== undefined) {
+      cleanedConfig.skipAtEndOfWorkout = config.skipAtEndOfWorkout;
     }
 
     // Remove repeatCount if it's 1 (default)
@@ -4170,6 +4208,13 @@ document.addEventListener("DOMContentLoaded", function () {
             ? "Skip at end of workout"
             : "Always play message";
         }
+        
+        // Mark the property as customized since it has an explicit value
+        const messageElement = skipCheckbox.closest('.message-instance');
+        if (messageElement) {
+          // Mark it as customized regardless of the state to ensure it's saved
+          markPropertyAsCustomized(messageElement, 'skipAtEndOfWorkout');
+        }
       });
 
     // Update all position lock buttons
@@ -4243,60 +4288,39 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Updates the backdrop blur state based on toolbar expansion.
+   * Updates the backdrop blur state based on toolbar visibility.
+   * Applies blur to background content when toolbar icons are visible.
    */
   function updateBackdropState() {
-    console.log("updateBackdropState() called");
     const backdrop = document.getElementById("dropdownBackdrop");
     const webappContainer = document.querySelector(".webapp-container");
+    const chevronBtn = document.getElementById("chevronBtn");
     
-    if (!backdrop || !webappContainer) {
-      console.log("Backdrop or webapp container not found");
+    if (!backdrop || !webappContainer || !chevronBtn) {
       return;
     }
     
-    // Check if toolbar is expanded (button group is visible)
+    // Check if toolbar icons are visible
     const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-    let isToolbarExpanded = false;
+    let iconsVisible = false;
     
     if (buttonGroup) {
       const computedStyle = window.getComputedStyle(buttonGroup);
-      isToolbarExpanded = buttonGroup.style.display !== 'none' && 
-                         computedStyle.display !== 'none' && 
-                         buttonGroup.style.visibility !== 'hidden' &&
-                         computedStyle.visibility !== 'hidden';
+      iconsVisible = computedStyle.display !== 'none' && 
+                    computedStyle.visibility !== 'hidden';
     }
     
-    console.log("Toolbar expanded:", isToolbarExpanded);
-    
-    if (isToolbarExpanded) {
+    // Apply blur to background when icons are visible
+    if (iconsVisible) {
       backdrop.classList.add("active");
       webappContainer.classList.add("dropdown-active");
-      console.log("Backdrop activated - toolbar expanded");
     } else {
       backdrop.classList.remove("active");
       webappContainer.classList.remove("dropdown-active");
-      console.log("Backdrop deactivated - toolbar collapsed");
     }
   }
 
-  /**
-   * Force clears the backdrop blur effect.
-   * This is a safety function to ensure backdrop is always cleared when needed.
-   */
-  function forceClearBackdrop() {
-    console.log("forceClearBackdrop() called");
-    const backdrop = document.getElementById("dropdownBackdrop");
-    const webappContainer = document.querySelector(".webapp-container");
-    
-    if (backdrop) {
-      backdrop.classList.remove("active");
-    }
-    if (webappContainer) {
-      webappContainer.classList.remove("dropdown-active");
-    }
-    console.log("Backdrop force cleared");
-  }
+
 
 
 
@@ -6328,6 +6352,9 @@ document.addEventListener("DOMContentLoaded", function () {
             ? "Skip at end of workout"
             : "Always play message";
         }
+        
+        // Mark this message as having customized the skipAtEndOfWorkout setting
+        markPropertyAsCustomized(instanceElement, 'skipAtEndOfWorkout');
       });
     }
 
@@ -11378,6 +11405,43 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Get the theme-appropriate flash color based on current theme and color scheme
+  function getThemeFlashColor() {
+    const theme = document.documentElement.getAttribute("data-theme");
+    const colorScheme = document.documentElement.getAttribute("data-color-scheme");
+    
+    // Theme color mapping based on the color schemes used in the app
+    const themeColors = {
+      // Dark themes
+      'dark': {
+        'blue-ocean': 'rgba(16, 185, 129, 0.8)',      // Green/teal
+        'purple-nebula': 'rgba(168, 85, 247, 0.8)',   // Purple
+        'forest-night': 'rgba(34, 197, 94, 0.8)',     // Green
+        'crimson-shadow': 'rgba(239, 68, 68, 0.8)',   // Red
+        'midnight-teal': 'rgba(20, 184, 166, 0.8)',   // Teal
+        // Default for dark theme
+        'default': 'rgba(255, 255, 255, 0.8)'
+      },
+      // Light themes
+      'light': {
+        'cloud-silver': 'rgba(5, 150, 105, 0.8)',     // Green
+        'warm-sunset': 'rgba(234, 88, 12, 0.8)',      // Orange
+        'fresh-mint': 'rgba(22, 163, 74, 0.8)',       // Green
+        'rose-gold': 'rgba(236, 72, 153, 0.8)',       // Pink
+        'arctic-blue': 'rgba(2, 132, 199, 0.8)',      // Blue
+        'lavender-mist': 'rgba(147, 51, 234, 0.8)',   // Purple
+        // Default for light theme
+        'default': 'rgba(239, 68, 68, 0.8)'
+      }
+    };
+    
+    // Get the appropriate color for the current theme and color scheme
+    const themeColorMap = themeColors[theme] || themeColors.light;
+    const flashColor = themeColorMap[colorScheme] || themeColorMap.default;
+    
+    return flashColor;
+  }
+
   function triggerWorkoutFlash() {
     const mainContent = document.querySelector('#workoutModal .flex-1');
     if (mainContent) {
@@ -11387,42 +11451,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 300);
     }
 
-    // Add mobile-specific background flash effect (copied from squash-ghost app)
-    if (isMobileDevice()) {
-      // Get theme-aware glow color (same as text glow)
-      const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
-      const glowColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+    // Add full-screen background flash effect for all devices and orientations
+    // This ensures the flash is visible in portrait orientation on all devices
+    // Use theme-appropriate flash color instead of generic white/red
+    const glowColor = getThemeFlashColor();
 
-      // Create a bright flash overlay that covers the entire screen (like squash-ghost app)
-      const flashOverlay = document.createElement('div');
-      flashOverlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: ${glowColor};
-        z-index: 99999;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.1s ease-out;
-      `;
+    // Create a bright flash overlay that covers the entire screen
+    const flashOverlay = document.createElement('div');
+    flashOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: ${glowColor};
+      z-index: 99999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease-out;
+    `;
 
-      document.body.appendChild(flashOverlay);
+    document.body.appendChild(flashOverlay);
 
-      // Trigger the flash effect - simple fade in/out like squash-ghost app
-      requestAnimationFrame(() => {
-        flashOverlay.style.opacity = '1';
+    // Trigger the flash effect - simple fade in/out
+    requestAnimationFrame(() => {
+      flashOverlay.style.opacity = '1';
+      setTimeout(() => {
+        flashOverlay.style.opacity = '0';
         setTimeout(() => {
-          flashOverlay.style.opacity = '0';
-          setTimeout(() => {
-            if (flashOverlay.parentNode) {
-              flashOverlay.parentNode.removeChild(flashOverlay);
-            }
-          }, 100);
+          if (flashOverlay.parentNode) {
+            flashOverlay.parentNode.removeChild(flashOverlay);
+          }
         }, 100);
-      });
-    }
+      }, 100);
+    });
   }
 
   // --- Page Visibility Handling ---
