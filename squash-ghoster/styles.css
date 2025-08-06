@@ -243,7 +243,6 @@ input[type="range"] {
     height: 8px;
     background: var(--color-gray-300);
     outline: none;
-    opacity: 0.7;
     -webkit-transition: .2s;
     transition: opacity .2s;
     border-radius: 4px;
@@ -1083,6 +1082,34 @@ input:checked ~ .toggle-dot {
     color: #f0fdfa;
 }
 
+/* About Modal Dark Theme Support */
+[data-theme="dark"] #aboutModal .modal-content {
+    background-color: var(--color-gray-100) !important;
+    border-color: var(--color-gray-400) !important;
+    color: #E5E7EB !important;
+}
+
+[data-theme="dark"] #aboutModal h3,
+[data-theme="dark"] #aboutModal h4 {
+    color: #F3F4F6 !important;
+}
+
+[data-theme="dark"] #aboutModal .bg-gray-50 {
+    background-color: #374151 !important;
+}
+
+[data-theme="dark"] #aboutModal .text-gray-700 {
+    color: #D1D5DB !important;
+}
+
+[data-theme="dark"] #aboutModal .text-gray-600 {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] #aboutModal .text-gray-800 {
+    color: #E5E7EB !important;
+}
+
 /* Light Mode Preview Schemes */
 [data-theme="light"][data-color-scheme="cloud-silver"] #previewModal .modal-content,
 [data-theme="light"]:not([data-color-scheme]) #previewModal .modal-content {
@@ -1281,8 +1308,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"][data-color-scheme="blue-ocean"] #workoutPauseBtn,
 [data-theme="dark"][data-color-scheme="blue-ocean"] #workoutReplayBtn,
 [data-theme="dark"][data-color-scheme="blue-ocean"] .workout-btn-resume,
-[data-theme="dark"][data-color-scheme="blue-ocean"] #presentBtn,
-[data-theme="dark"][data-color-scheme="blue-ocean"] #exportPreviewBtn {
+[data-theme="dark"][data-color-scheme="blue-ocean"] #presentBtn {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
@@ -1291,8 +1317,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"][data-color-scheme="purple-nebula"] #workoutPauseBtn,
 [data-theme="dark"][data-color-scheme="purple-nebula"] #workoutReplayBtn,
 [data-theme="dark"][data-color-scheme="purple-nebula"] .workout-btn-resume,
-[data-theme="dark"][data-color-scheme="purple-nebula"] #presentBtn,
-[data-theme="dark"][data-color-scheme="purple-nebula"] #exportPreviewBtn {
+[data-theme="dark"][data-color-scheme="purple-nebula"] #presentBtn {
     background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%) !important;
 }
 
@@ -1301,8 +1326,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"][data-color-scheme="forest-night"] #workoutPauseBtn,
 [data-theme="dark"][data-color-scheme="forest-night"] #workoutReplayBtn,
 [data-theme="dark"][data-color-scheme="forest-night"] .workout-btn-resume,
-[data-theme="dark"][data-color-scheme="forest-night"] #presentBtn,
-[data-theme="dark"][data-color-scheme="forest-night"] #exportPreviewBtn {
+[data-theme="dark"][data-color-scheme="forest-night"] #presentBtn {
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
 }
 
@@ -1311,8 +1335,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"][data-color-scheme="crimson-shadow"] #workoutPauseBtn,
 [data-theme="dark"][data-color-scheme="crimson-shadow"] #workoutReplayBtn,
 [data-theme="dark"][data-color-scheme="crimson-shadow"] .workout-btn-resume,
-[data-theme="dark"][data-color-scheme="crimson-shadow"] #presentBtn,
-[data-theme="dark"][data-color-scheme="crimson-shadow"] #exportPreviewBtn {
+[data-theme="dark"][data-color-scheme="crimson-shadow"] #presentBtn {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
 }
 
@@ -1321,8 +1344,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"][data-color-scheme="midnight-teal"] #workoutPauseBtn,
 [data-theme="dark"][data-color-scheme="midnight-teal"] #workoutReplayBtn,
 [data-theme="dark"][data-color-scheme="midnight-teal"] .workout-btn-resume,
-[data-theme="dark"][data-color-scheme="midnight-teal"] #presentBtn,
-[data-theme="dark"][data-color-scheme="midnight-teal"] #exportPreviewBtn {
+[data-theme="dark"][data-color-scheme="midnight-teal"] #presentBtn {
     background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
 }
 
@@ -1331,8 +1353,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="cloud-silver"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="cloud-silver"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="cloud-silver"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="cloud-silver"] #presentBtn,
-[data-theme="light"][data-color-scheme="cloud-silver"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="cloud-silver"] #presentBtn {
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
@@ -1341,8 +1362,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="warm-sunset"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="warm-sunset"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="warm-sunset"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="warm-sunset"] #presentBtn,
-[data-theme="light"][data-color-scheme="warm-sunset"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="warm-sunset"] #presentBtn {
     background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
 }
 
@@ -1351,8 +1371,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="fresh-mint"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="fresh-mint"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="fresh-mint"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="fresh-mint"] #presentBtn,
-[data-theme="light"][data-color-scheme="fresh-mint"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="fresh-mint"] #presentBtn {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
 }
 
@@ -1361,8 +1380,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="rose-gold"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="rose-gold"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="rose-gold"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="rose-gold"] #presentBtn,
-[data-theme="light"][data-color-scheme="rose-gold"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="rose-gold"] #presentBtn {
     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
 }
 
@@ -1371,8 +1389,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="arctic-blue"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="arctic-blue"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="arctic-blue"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="arctic-blue"] #presentBtn,
-[data-theme="light"][data-color-scheme="arctic-blue"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="arctic-blue"] #presentBtn {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
 }
 
@@ -1381,8 +1398,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"][data-color-scheme="lavender-mist"] #workoutPauseBtn,
 [data-theme="light"][data-color-scheme="lavender-mist"] #workoutReplayBtn,
 [data-theme="light"][data-color-scheme="lavender-mist"] .workout-btn-resume,
-[data-theme="light"][data-color-scheme="lavender-mist"] #presentBtn,
-[data-theme="light"][data-color-scheme="lavender-mist"] #exportPreviewBtn {
+[data-theme="light"][data-color-scheme="lavender-mist"] #presentBtn {
     background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%) !important;
 }
 
@@ -1392,8 +1408,7 @@ input:checked ~ .toggle-dot {
 [data-theme="dark"]:not([data-color-scheme]) #workoutPauseBtn,
 [data-theme="dark"]:not([data-color-scheme]) #workoutReplayBtn,
 [data-theme="dark"]:not([data-color-scheme]) .workout-btn-resume,
-[data-theme="dark"]:not([data-color-scheme]) #presentBtn,
-[data-theme="dark"]:not([data-color-scheme]) #exportPreviewBtn {
+[data-theme="dark"]:not([data-color-scheme]) #presentBtn {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
@@ -1402,8 +1417,7 @@ input:checked ~ .toggle-dot {
 [data-theme="light"]:not([data-color-scheme]) #workoutPauseBtn,
 [data-theme="light"]:not([data-color-scheme]) #workoutReplayBtn,
 [data-theme="light"]:not([data-color-scheme]) .workout-btn-resume,
-[data-theme="light"]:not([data-color-scheme]) #presentBtn,
-[data-theme="light"]:not([data-color-scheme]) #exportPreviewBtn {
+[data-theme="light"]:not([data-color-scheme]) #presentBtn {
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
@@ -1412,8 +1426,7 @@ input:checked ~ .toggle-dot {
 :root:not([data-theme="dark"]):not([data-color-scheme]) #workoutPauseBtn,
 :root:not([data-theme="dark"]):not([data-color-scheme]) #workoutReplayBtn,
 :root:not([data-theme="dark"]):not([data-color-scheme]) .workout-btn-resume,
-:root:not([data-theme="dark"]):not([data-color-scheme]) #presentBtn,
-:root:not([data-theme="dark"]):not([data-color-scheme]) #exportPreviewBtn {
+:root:not([data-theme="dark"]):not([data-color-scheme]) #presentBtn {
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
@@ -1500,28 +1513,9 @@ input:checked ~ .toggle-dot {
     -webkit-backdrop-filter: blur(8px);
 }
 
-/* Chevron button spin animation */
-@keyframes spin-clockwise {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes spin-counter-clockwise {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(-360deg);
-    }
-}
-
-/* Chevron button active state with spin animation */
+/* Chevron button active state - no animation */
 #chevronBtn.active svg {
-    animation: spin-clockwise 1s ease-in-out;
+    /* No animation - just visual state */
 }
 
 #chevronBtn.active:hover svg {
@@ -1529,61 +1523,50 @@ input:checked ~ .toggle-dot {
 }
 
 [data-theme="dark"] #chevronBtn.active svg {
-    animation: spin-clockwise 1s ease-in-out;
+    /* No animation - just visual state */
 }
 
 [data-theme="dark"] #chevronBtn.active:hover svg {
     /* No color change on hover */
 }
 
-/* Chevron button collapse state with counter-clockwise spin */
-#chevronBtn:not(.active) svg {
-    animation: spin-counter-clockwise 1s ease-in-out;
-}
-
-/* Smooth toolbar animation */
+/* Simple toolbar show/hide */
 .fixed.top-4.left-4 > div:last-child {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-origin: left center;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-/* Landscape mode expansion animation */
+/* Responsive toolbar layout */
+.fixed.top-4.left-4 {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Portrait mode: vertical layout */
+@media (orientation: portrait) {
+    .fixed.top-4.left-4 {
+        flex-direction: column;
+    }
+    
+    .fixed.top-4.left-4 > div:last-child {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Landscape mode: horizontal layout */
 @media (orientation: landscape) {
-  .fixed.top-4.left-4 > div:last-child {
-    animation: expand-left-to-right 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  .fixed.top-4.left-4 > div:last-child.collapsing {
-    animation: collapse-right-to-left 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
+    .fixed.top-4.left-4 {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    
+    .fixed.top-4.left-4 > div:last-child {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
 }
 
-@keyframes expand-left-to-right {
-  from {
-    transform: scaleX(0);
-    opacity: 0;
-  }
-  to {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-}
 
-@keyframes collapse-right-to-left {
-  from {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-  to {
-    transform: scaleX(0);
-    opacity: 0;
-  }
-}
-
-/* Ensure animation resets properly */
-#chevronBtn svg {
-    transform-origin: center;
-}
 
 .theme-toggle:hover, .rocket-toggle:hover, .duck-toggle:hover, .toolbar-icon-btn:hover {
     background-color: var(--color-gray-200);
@@ -1652,7 +1635,7 @@ input:checked ~ .toggle-dot {
 
 /* Rocket mode styles */
 [data-rocket-mode="off"] .rocket-toggle {
-    opacity: 0.75;
+    opacity: 1;
 }
 
 [data-rocket-mode="off"] .rocket-toggle:hover {
@@ -2443,6 +2426,26 @@ svg, svg path {
   color: #E5E7EB !important;
 }
 
+/* Fix blue buttons in dark mode */
+[data-theme="dark"] .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+[data-theme="dark"] .bg-blue-600:hover,
+[data-theme="dark"] .hover\\:bg-blue-700:hover {
+  background-color: #1d4ed8 !important;
+}
+
+[data-theme="dark"] .dark\\:hover\\:bg-blue-500:hover {
+  background-color: #3b82f6 !important;
+}
+
+/* Ensure white text on blue buttons */
+[data-theme="dark"] .bg-blue-600,
+[data-theme="dark"] .bg-blue-600:hover {
+  color: white !important;
+}
+
 [data-theme="dark"] #autoCompleteModal #defaultsAutoCompleteBtn,
 [data-theme="dark"] #autoCompleteModal #defaultsAutoCompleteBtn.text-gray-700,
 [data-theme="dark"] #autoCompleteModal #defaultsAutoCompleteBtn.bg-gray-100 {
@@ -2687,6 +2690,8 @@ datalist {
 /* Shot title input auto-complete styles */
 .shot-title {
   position: relative;
+  width: calc(100% - 30px) !important; /* Reserve space for chevron and delete button */
+  max-width: calc(100% - 30px) !important;
 }
 
 .shot-title:focus {
@@ -2704,6 +2709,32 @@ datalist {
 [data-theme="dark"] .shot-title:focus {
   border-color: var(--color-indigo-500);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+}
+
+/* Message title input auto-complete styles */
+.message-title {
+  position: relative;
+  width: calc(100% - 30px) !important; /* Reserve space for chevron and delete button */
+  max-width: calc(100% - 30px) !important;
+}
+
+/* Dark mode styles for message title auto-complete */
+[data-theme="dark"] .message-title {
+  background-color: transparent;
+  color: var(--color-gray-700);
+}
+
+/* Pattern panel title input styles */
+.pattern-panel-title {
+  position: relative;
+  width: calc(100% - 30px) !important; /* Reserve space for chevron and delete button */
+  max-width: calc(100% - 30px) !important;
+}
+
+/* Dark mode styles for pattern panel title */
+[data-theme="dark"] .pattern-panel-title {
+  background-color: transparent;
+  color: var(--color-gray-700);
 }
 
 /* Timeline Playback Styles */
@@ -3104,31 +3135,7 @@ datalist {
 }
 
 /* Preview Export Button */
-.preview-btn-export {
-  background: linear-gradient(135deg, var(--color-btn-export-start, #6b7280) 0%, var(--color-btn-export-end, #4b5563) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-}
 
-.preview-btn-export:hover {
-  background: linear-gradient(135deg, var(--color-btn-export-start-hover, #9ca3af) 0%, var(--color-btn-export-end-hover, #6b7280) 100%);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
-}
-
-.preview-btn-export:active {
-  background: linear-gradient(135deg, var(--color-btn-export-start-active, #4b5563) 0%, var(--color-btn-export-end-active, #374151) 100%);
-  transform: translateY(1px);
-}
 
 
 
@@ -3491,6 +3498,195 @@ datalist {
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
+/* Rocket Mode Timing Tick Marks */
+.workout-timing-ticks {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 0 4px;
+  position: relative;
+}
+
+/* Ensure hidden class overrides display property for timing ticks */
+.workout-timing-ticks.hidden {
+  display: none !important;
+}
+
+.timing-tick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  left: var(--tick-position, 0%);
+  transform: translateX(-50%);
+  min-width: 60px;
+}
+
+.tick-line {
+  width: 3px;
+  height: 16px;
+  background: #ffffff;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.tick-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  text-align: center;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+.tick-time {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Roboto Mono', monospace;
+  text-align: center;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+  .tick-line {
+    background: #000000;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  }
+  
+  .tick-label {
+    color: #000000;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  }
+  
+  .tick-time {
+    color: #000000;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Rocket Mode Timing Tick Marks - HIGH VISIBILITY VERSION */
+.workout-timing-ticks {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 4px;
+  position: relative;
+  background: transparent;
+  border-radius: 4px;
+  height: 60px;
+}
+
+/* Ensure hidden class overrides display property for high visibility timing ticks */
+.workout-timing-ticks.hidden {
+  display: none !important;
+}
+
+.tick-line {
+  width: 2px;
+  height: 16px;
+  background: #dc2626;
+  margin-bottom: 8px;
+  border-radius: 1px;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.tick-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  text-align: center;
+  text-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.tick-time {
+  font-size: 10px;
+  font-weight: 500;
+  color: #dc2626;
+  font-family: 'Roboto Mono', monospace;
+  text-align: center;
+  text-shadow: none;
+  transition: all 0.3s ease;
+}
+
+/* Glow effects when progress passes tick */
+.tick-line.active {
+  width: 5px;
+  height: 22px;
+  background: #dc2626;
+  border-radius: 2.5px;
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.9);
+  border: 1px solid #ffffff;
+}
+
+.tick-label.active {
+  font-size: 13px;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.9);
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.tick-time.active {
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.9);
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+  .tick-line {
+    background: #dc2626;
+    box-shadow: none;
+  }
+  
+  .tick-label {
+    color: #dc2626;
+    text-shadow: none;
+  }
+  
+  .tick-time {
+    color: #dc2626;
+    text-shadow: none;
+  }
+  
+  .tick-line.active {
+    width: 5px;
+    height: 22px;
+    background: #dc2626;
+    border-radius: 2.5px;
+    box-shadow: 0 0 15px rgba(220, 38, 38, 0.9);
+    border: 1px solid #ffffff;
+  }
+  
+  .tick-label.active {
+    font-size: 13px;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(220, 38, 38, 0.9);
+    color: #dc2626;
+    transform: scale(1.1);
+  }
+  
+  .tick-time.active {
+    font-size: 12px;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(220, 38, 38, 0.9);
+    color: #dc2626;
+    transform: scale(1.1);
+  }
+}
+
 /* Shot title glow and fade effects */
 .workout-shot-title.glow-pulse {
   animation: shot-title-glow 0.25s ease-out;
@@ -3502,25 +3698,25 @@ datalist {
 
 @keyframes shot-title-glow {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
   25% {
     text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.8),
-      0 0 20px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.4);
+      0 0 10px var(--glow-color, rgba(255, 255, 255, 0.8)),
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 0.6)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.4));
     transform: scale(1.05);
   }
   75% {
     text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.8),
-      0 0 20px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.4);
+      0 0 10px var(--glow-color, rgba(255, 255, 255, 0.8)),
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 0.6)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.4));
     transform: scale(1.05);
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
 }
@@ -3528,25 +3724,25 @@ datalist {
 /* Light mode glow animation */
 @keyframes shot-title-glow-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
   25% {
     text-shadow:
-      0 0 10px rgba(239, 68, 68, 0.8),
-      0 0 20px rgba(239, 68, 68, 0.6),
-      0 0 30px rgba(239, 68, 68, 0.4);
+      0 0 10px var(--glow-color, rgba(239, 68, 68, 0.8)),
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 0.6)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.4));
     transform: scale(1.05);
   }
   75% {
     text-shadow:
-      0 0 10px rgba(239, 68, 68, 0.8),
-      0 0 20px rgba(239, 68, 68, 0.6),
-      0 0 30px rgba(239, 68, 68, 0.4);
+      0 0 10px var(--glow-color, rgba(239, 68, 68, 0.8)),
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 0.6)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.4));
     transform: scale(1.05);
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
 }
@@ -3564,18 +3760,18 @@ datalist {
 
 @keyframes countdown-pulse {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
   50% {
     text-shadow:
-      0 0 15px rgba(255, 255, 255, 0.9),
-      0 0 25px rgba(255, 255, 255, 0.7),
-      0 0 35px rgba(255, 255, 255, 0.5);
+      0 0 15px var(--glow-color, rgba(255, 255, 255, 0.9)),
+      0 0 25px var(--glow-color, rgba(255, 255, 255, 0.7)),
+      0 0 35px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1.1);
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
   }
 }
@@ -3588,18 +3784,18 @@ datalist {
 
 @keyframes countdown-pulse-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
   50% {
     text-shadow:
-      0 0 15px rgba(239, 68, 68, 0.9),
-      0 0 25px rgba(239, 68, 68, 0.7),
-      0 0 35px rgba(239, 68, 68, 0.5);
+      0 0 15px var(--glow-color, rgba(239, 68, 68, 0.9)),
+      0 0 25px var(--glow-color, rgba(239, 68, 68, 0.7)),
+      0 0 35px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1.1);
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
   }
 }
@@ -3611,20 +3807,20 @@ datalist {
 
 @keyframes countdown-flash {
   0% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
     opacity: 1;
   }
   50% {
     text-shadow:
-      0 0 20px rgba(255, 255, 255, 1),
-      0 0 30px rgba(255, 255, 255, 0.9),
-      0 0 40px rgba(255, 255, 255, 0.7);
+      0 0 20px var(--glow-color, rgba(255, 255, 255, 1)),
+      0 0 30px var(--glow-color, rgba(255, 255, 255, 0.9)),
+      0 0 40px var(--glow-color, rgba(255, 255, 255, 0.7));
     transform: scale(1.2);
     opacity: 0.8;
   }
   100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(255, 255, 255, 0.5));
     transform: scale(1);
     opacity: 1;
   }
@@ -3638,20 +3834,20 @@ datalist {
 
 @keyframes countdown-flash-light {
   0% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
     opacity: 1;
   }
   50% {
     text-shadow:
-      0 0 20px rgba(239, 68, 68, 1),
-      0 0 30px rgba(239, 68, 68, 0.9),
-      0 0 40px rgba(239, 68, 68, 0.7);
+      0 0 20px var(--glow-color, rgba(239, 68, 68, 1)),
+      0 0 30px var(--glow-color, rgba(239, 68, 68, 0.9)),
+      0 0 40px var(--glow-color, rgba(239, 68, 68, 0.7));
     transform: scale(1.2);
     opacity: 0.8;
   }
   100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 5px var(--glow-color, rgba(239, 68, 68, 0.5));
     transform: scale(1);
     opacity: 1;
   }
@@ -3706,11 +3902,158 @@ datalist {
 
 @keyframes workout-flash-effect {
   0% {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 185, 129, 0.3) 100%);
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.3)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.4)) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.4)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.5)) 100%);
   }
   100% {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   }
+}
+
+/* Enhanced flash effect for portrait orientation */
+@media (orientation: portrait) {
+  .workout-flash {
+    animation: workout-flash-effect-portrait 0.3s ease-out;
+  }
+}
+
+@keyframes workout-flash-effect-portrait {
+  0% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.4)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.5)) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, var(--flash-color-primary, rgba(255, 255, 255, 0.5)) 0%, var(--flash-color-secondary, rgba(16, 185, 129, 0.6)) 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+}
+
+/* Theme-specific flash colors */
+/* Dark themes */
+[data-theme="dark"][data-color-scheme="blue-ocean"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(168, 85, 247, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(34, 197, 94, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(20, 184, 166, 0.4);
+}
+
+/* Light themes */
+[data-theme="light"][data-color-scheme="cloud-silver"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(5, 150, 105, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(234, 88, 12, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(22, 163, 74, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(236, 72, 153, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(2, 132, 199, 0.4);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(147, 51, 234, 0.4);
+}
+
+/* Default fallbacks */
+[data-theme="dark"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(16, 185, 129, 0.4);
+}
+
+/* Theme-specific glow colors for workout shot title */
+/* Dark themes */
+[data-theme="dark"][data-color-scheme="blue-ocean"] .workout-shot-title {
+  --glow-color: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="purple-nebula"] .workout-shot-title {
+  --glow-color: rgba(147, 51, 234, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="forest-night"] .workout-shot-title {
+  --glow-color: rgba(34, 197, 94, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="crimson-shadow"] .workout-shot-title {
+  --glow-color: rgba(239, 68, 68, 0.6);
+}
+
+[data-theme="dark"][data-color-scheme="midnight-teal"] .workout-shot-title {
+  --glow-color: rgba(20, 184, 166, 0.6);
+}
+
+/* Light themes */
+[data-theme="light"][data-color-scheme="cloud-silver"] .workout-shot-title {
+  --glow-color: rgba(100, 116, 139, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="warm-sunset"] .workout-shot-title {
+  --glow-color: rgba(249, 115, 22, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="fresh-mint"] .workout-shot-title {
+  --glow-color: rgba(34, 197, 94, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="rose-gold"] .workout-shot-title {
+  --glow-color: rgba(236, 72, 153, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="arctic-blue"] .workout-shot-title {
+  --glow-color: rgba(6, 182, 212, 0.6);
+}
+
+[data-theme="light"][data-color-scheme="lavender-mist"] .workout-shot-title {
+  --glow-color: rgba(168, 85, 247, 0.6);
+}
+
+/* Default fallbacks for workout shot title */
+[data-theme="dark"] .workout-shot-title {
+  --glow-color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .workout-shot-title {
+  --glow-color: rgba(239, 68, 68, 0.6);
+}
+
+[data-theme="light"] {
+  --flash-color-primary: rgba(255, 255, 255, 0.3);
+  --flash-color-secondary: rgba(239, 68, 68, 0.4);
 }
 
 /* Responsive Design */
@@ -4292,7 +4635,7 @@ datalist {
   top: 100%;
   right: 0;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0;
   box-shadow: var(--shadow-lg);
   min-width: 180px;
@@ -4304,12 +4647,12 @@ datalist {
 }
 
 [data-theme="dark"] .theme-dropdown {
-  background-color: var(--color-gray-50);
+  background-color: var(--color-gray-100);
   border-color: var(--color-gray-400);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 10px 20px -5px rgba(0, 0, 0, 0.8);
 }
 
-.theme-dropdown.show {
+.theme-dropdown.active {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -4334,7 +4677,7 @@ datalist {
     transform: translateX(-10px);
   }
 
-  .theme-dropdown.show {
+  .theme-dropdown.active {
     transform: translateX(0);
   }
 }
@@ -4356,6 +4699,7 @@ datalist {
   .execute-dropdown,
   .load-dropdown,
   .save-dropdown,
+  .help-dropdown,
   .theme-dropdown {
     top: 100%;
     left: 0;
@@ -4369,14 +4713,15 @@ datalist {
   .execute-dropdown.active,
   .load-dropdown.active,
   .save-dropdown.active,
-  .theme-dropdown.show {
+  .help-dropdown.active,
+  .theme-dropdown.active {
     transform: translateY(0);
   }
 }
 
 /* Theme sections */
 .theme-section {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-200);
 }
 
 .theme-section:last-child {
@@ -4387,21 +4732,21 @@ datalist {
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-500);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
 }
 
 [data-theme="dark"] .theme-section-header {
-  color: #9ca3af;
-  background-color: #374151;
-  border-bottom-color: #4b5563;
+  color: var(--color-gray-400);
+  background-color: var(--color-gray-700);
+  border-bottom-color: var(--color-gray-600);
 }
 
 [data-theme="dark"] .theme-section {
-  border-bottom-color: #4b5563;
+  border-bottom-color: var(--color-gray-600);
 }
 
 .theme-option {
@@ -4414,7 +4759,7 @@ datalist {
   border: none;
   width: 100%;
   background: none;
-  color: #374151;
+  color: var(--color-gray-700);
   font-size: 14px;
 }
 
@@ -4423,8 +4768,8 @@ datalist {
 }
 
 .theme-option:hover {
-  background: #f9fafb;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 [data-theme="dark"] .theme-option:hover {
@@ -4441,7 +4786,7 @@ datalist {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
@@ -5316,7 +5661,7 @@ datalist {
   gap: 8px;
 }
 .theme-menu-btn:hover, .theme-menu-btn:focus {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   color: #111827;
 }
 [data-theme="dark"] .theme-menu-btn {
@@ -5509,7 +5854,7 @@ datalist {
   }
 }
 
-/* Backdrop blur effect for dropdown menus */
+/* Backdrop blur effect for toolbar */
 .dropdown-backdrop {
   position: fixed;
   top: 0;
@@ -5546,11 +5891,104 @@ datalist {
   pointer-events: auto;
 }
 
-/* Apply blur to main content when dropdowns are active */
+/* Apply blur to background content when toolbar is active */
 .webapp-container.dropdown-active {
   filter: blur(2px);
   -webkit-filter: blur(2px);
   transition: filter 0.2s ease, -webkit-filter 0.2s ease;
+}
+
+/* Ensure toolbar and dropdowns remain sharp */
+.fixed.top-4.left-4,
+.fixed.top-4.left-4 *,
+.editor-dropdown,
+.execute-dropdown,
+.load-dropdown,
+.save-dropdown,
+.favorites-dropdown,
+.theme-selector-container,
+.theme-dropdown {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Icon glow effect - theme-based */
+.glow-effect {
+  box-shadow:
+    0 0 10px var(--glow-color, rgba(59, 130, 246, 0.4)),
+    0 0 20px var(--glow-color, rgba(59, 130, 246, 0.2)),
+    0 0 30px var(--glow-color, rgba(59, 130, 246, 0.1)) !important;
+  transition: box-shadow 0.3s ease !important;
+}
+
+/* Remove glow from collapsed state */
+#chevronBtn:not(.active) {
+  box-shadow: none !important;
+}
+
+/* Hover effect enhancement - theme-based */
+.theme-toggle:hover, .rocket-toggle:hover, .duck-toggle:hover, .toolbar-icon-btn:hover {
+  box-shadow:
+    0 0 15px var(--glow-color-hover, rgba(59, 130, 246, 0.6)),
+    0 0 30px var(--glow-color-hover, rgba(59, 130, 246, 0.3)),
+    0 0 45px var(--glow-color-hover, rgba(59, 130, 246, 0.2)) !important;
+}
+
+/* Theme-specific glow colors */
+[data-color-scheme="blue-ocean"] .glow-effect {
+  --glow-color: rgba(59, 130, 246, 0.6);
+  --glow-color-hover: rgba(59, 130, 246, 0.8);
+}
+
+[data-color-scheme="purple-nebula"] .glow-effect {
+  --glow-color: rgba(147, 51, 234, 0.6);
+  --glow-color-hover: rgba(147, 51, 234, 0.8);
+}
+
+[data-color-scheme="fresh-mint"] .glow-effect {
+  --glow-color: rgba(34, 197, 94, 0.6);
+  --glow-color-hover: rgba(34, 197, 94, 0.8);
+}
+
+[data-color-scheme="warm-sunset"] .glow-effect {
+  --glow-color: rgba(249, 115, 22, 0.6);
+  --glow-color-hover: rgba(249, 115, 22, 0.8);
+}
+
+[data-color-scheme="rose-gold"] .glow-effect {
+  --glow-color: rgba(236, 72, 153, 0.6);
+  --glow-color-hover: rgba(236, 72, 153, 0.8);
+}
+
+[data-color-scheme="arctic-blue"] .glow-effect {
+  --glow-color: rgba(6, 182, 212, 0.6);
+  --glow-color-hover: rgba(6, 182, 212, 0.8);
+}
+
+[data-color-scheme="lavender-mist"] .glow-effect {
+  --glow-color: rgba(168, 85, 247, 0.6);
+  --glow-color-hover: rgba(168, 85, 247, 0.8);
+}
+
+[data-color-scheme="cloud-silver"] .glow-effect {
+  --glow-color: rgba(100, 116, 139, 0.6);
+  --glow-color-hover: rgba(100, 116, 139, 0.8);
+}
+
+/* Dark theme variants */
+[data-color-scheme="forest-night"] .glow-effect {
+  --glow-color: rgba(34, 197, 94, 0.6);
+  --glow-color-hover: rgba(34, 197, 94, 0.8);
+}
+
+[data-color-scheme="crimson-shadow"] .glow-effect {
+  --glow-color: rgba(239, 68, 68, 0.6);
+  --glow-color-hover: rgba(239, 68, 68, 0.8);
+}
+
+[data-color-scheme="midnight-teal"] .glow-effect {
+  --glow-color: rgba(20, 184, 166, 0.6);
+  --glow-color-hover: rgba(20, 184, 166, 0.8);
 }
 
 /* iOS Safari fallback for content blur */
@@ -5558,6 +5996,42 @@ datalist {
   .webapp-container.dropdown-active {
     opacity: 0.7;
   }
+}
+
+/* Wheel animation and states */
+#chevronBtn svg {
+  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+}
+
+#chevronBtn.active svg {
+  transform: rotate(180deg);
+  filter: brightness(1.2) saturate(1.2);
+  opacity: 1;
+}
+
+#chevronBtn:not(.active) svg {
+  transform: rotate(0deg);
+  filter: grayscale(1) brightness(0.4) saturate(0.3) contrast(0.7);
+  opacity: 0.6;
+}
+
+/* Wheel animation keyframes */
+@keyframes spin-clockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
+
+@keyframes spin-counter-clockwise {
+  from { transform: rotate(180deg); }
+  to { transform: rotate(0deg); }
+}
+
+#chevronBtn.active svg {
+  animation: spin-clockwise 0.3s ease forwards;
+}
+
+#chevronBtn:not(.active) svg {
+  animation: spin-counter-clockwise 0.3s ease forwards;
 }
 
 /* Ensure dropdowns remain sharp when backdrop is active */
@@ -5672,4 +6146,172 @@ datalist {
   opacity: 0.6;
 }
 
+/* Styles for div-based range slider */
 
+/* Inset the container to constrain the thumb's travel path */
+.repeat-slider-container {
+    padding: 0 10px;
+}
+
+/* Align dual range slider visuals with single range inputs */
+.repeat-range-track {
+  background: var(--color-gray-300) !important; /* match single slider track */
+  height: 8px;
+  border-radius: 4px;
+}
+
+.repeat-range-fill {
+  background: var(--color-blue-500);
+  opacity: 0.4; /* subtle like single slider visuals */
+  height: 8px;
+  border-radius: 4px;
+}
+
+.repeat-slider-container .repeat-min-thumb,
+.repeat-slider-container .repeat-max-thumb {
+  width: 20px;  /* match single slider thumb size */
+  height: 20px; /* match single slider thumb size */
+  background: var(--color-blue-500);
+  border: none; /* override any border utility classes */
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+
+.repeat-slider-container .repeat-min-thumb:focus,
+.repeat-slider-container .repeat-max-thumb:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35); /* softer like standard focus */
+}
+
+[data-theme="dark"] .repeat-range-track {
+  background: var(--color-gray-400) !important;
+}
+
+/* Help button container - establish positioning context */
+.help-btn-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Help button dropdown menu */
+.help-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 140px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+
+.help-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.help-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0;
+}
+
+.help-dropdown-item:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+
+/* Light mode - ensure proper styling */
+.help-dropdown {
+  background-color: var(--color-white) !important;
+  border-color: var(--color-gray-300) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.help-dropdown .help-dropdown-item {
+  color: var(--color-gray-700) !important;
+  background-color: transparent !important;
+}
+
+.help-dropdown .help-dropdown-item:hover {
+  background-color: var(--color-gray-100) !important;
+  color: var(--color-gray-900) !important;
+}
+
+/* Dark mode - super specific selectors to override any other styles */
+[data-theme="dark"] .help-dropdown {
+  background-color: var(--color-gray-100) !important;
+  border-color: var(--color-gray-400) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 10px 20px -5px rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-theme="dark"] .help-dropdown .help-dropdown-item,
+[data-theme="dark"] .help-dropdown .help-dropdown-item > div,
+[data-theme="dark"] .help-dropdown .help-dropdown-item span,
+[data-theme="dark"] .help-dropdown div,
+[data-theme="dark"] .help-dropdown span,
+[data-theme="dark"] .help-dropdown button {
+  color: #E5E7EB !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .help-dropdown .help-dropdown-item:hover {
+  background-color: #374151 !important;
+  color: #F3F4F6 !important;
+}
+
+[data-theme="dark"] .help-dropdown .help-dropdown-item:hover *,
+[data-theme="dark"] .help-dropdown .help-dropdown-item:hover span,
+[data-theme="dark"] .help-dropdown .help-dropdown-item:hover div {
+  color: #F3F4F6 !important;
+}
+
+/* Responsive positioning for Help dropdown */
+@media (orientation: portrait) {
+  /* In portrait mode, position help dropdown to the right of the button */
+  .help-dropdown {
+    top: 0;
+    left: 100%;
+    right: auto;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    transform: translateX(-10px);
+  }
+
+  .help-dropdown.active {
+    transform: translateX(0);
+  }
+}
+
+@media (orientation: landscape) {
+  /* In landscape mode, position help dropdown below the button */
+  .help-dropdown {
+    top: 100%;
+    left: 0;
+    right: auto;
+    margin-left: 0;
+    margin-top: 0.5rem;
+    transform: translateY(-10px);
+  }
+
+  .help-dropdown.active {
+    transform: translateY(0);
+  }
+}
