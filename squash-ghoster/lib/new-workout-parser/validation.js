@@ -236,7 +236,7 @@ export function validateWorkoutConfig(config) {
  */
 export function validatePatternConfig(config) {
   const errors = [];
-
+  
   if (!config) {
     return errors;
   }
@@ -258,17 +258,97 @@ export function validatePatternConfig(config) {
     const limitErrors = validateLimitsConfig(config.limits);
     errors.push(...limitErrors);
   }
-
-  // Validate repeat count
-  if (config.repeatCount !== undefined) {
-    if (!Number.isInteger(config.repeatCount) || config.repeatCount < 1) {
-      errors.push(
-        new ValidationError({
-          field: 'repeatCount',
-          message: 'Repeat count must be a positive integer',
-          value: config.repeatCount,
-        }),
-      );
+  
+  if (config.repeatCount !== undefined && config.repeatCount !== null) {
+    if (typeof config.repeatCount === 'object') {
+      // Validate repeat count object with type field
+      if (config.repeatCount.type === 'random') {
+        // Random repeat validation
+        if (!Number.isInteger(config.repeatCount.min) || config.repeatCount.min < 0) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.min',
+              message: 'Repeat count min must be a non-negative integer',
+              value: config.repeatCount.min,
+            }),
+          );
+        }
+        
+        if (!Number.isInteger(config.repeatCount.max) || config.repeatCount.max < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.max',
+              message: 'Repeat count max must be a positive integer',
+              value: config.repeatCount.max,
+            }),
+          );
+        }
+        
+        if (Number.isInteger(config.repeatCount.min) && Number.isInteger(config.repeatCount.max) && 
+            config.repeatCount.max < config.repeatCount.min) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount',
+              message: 'Repeat count max must be greater than or equal to min',
+              value: config.repeatCount,
+            }),
+          );
+        }
+      } else if (config.repeatCount.type === 'fixed') {
+        // Fixed repeat validation
+        if (!Number.isInteger(config.repeatCount.count) || config.repeatCount.count < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.count',
+              message: 'Fixed repeat count must be a positive integer',
+              value: config.repeatCount.count,
+            }),
+          );
+        }
+      } else {
+        // Legacy support: if it's an object but no type, assume it's random
+        if (!Number.isInteger(config.repeatCount.min) || config.repeatCount.min < 0) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.min',
+              message: 'Repeat count min must be a non-negative integer',
+              value: config.repeatCount.min,
+            }),
+          );
+        }
+        
+        if (!Number.isInteger(config.repeatCount.max) || config.repeatCount.max < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.max',
+              message: 'Repeat count max must be a positive integer',
+              value: config.repeatCount.max,
+            }),
+          );
+        }
+        
+        if (Number.isInteger(config.repeatCount.min) && Number.isInteger(config.repeatCount.max) && 
+            config.repeatCount.max < config.repeatCount.min) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount',
+              message: 'Repeat count max must be greater than or equal to min',
+              value: config.repeatCount,
+            }),
+          );
+        }
+      }
+    } else {
+      // Legacy support: if it's a number, treat as fixed
+      if (!Number.isInteger(config.repeatCount) || config.repeatCount < 1) {
+        errors.push(
+          new ValidationError({
+            field: 'repeatCount',
+            message: 'Repeat count must be a positive integer',
+            value: config.repeatCount,
+          }),
+        );
+      }
     }
   }
 
@@ -284,21 +364,102 @@ export function validatePatternConfig(config) {
  */
 export function validateShotConfig(config) {
   const errors = [];
-
+  
   if (!config) {
     return errors;
   }
 
-  // Validate repeat count
-  if (config.repeatCount !== undefined) {
-    if (!Number.isInteger(config.repeatCount) || config.repeatCount < 1) {
-      errors.push(
-        new ValidationError({
-          field: 'repeatCount',
-          message: 'Repeat count must be a positive integer',
-          value: config.repeatCount,
-        }),
-      );
+  // Validate repeat count (fixed or random)
+  if (config.repeatCount !== undefined && config.repeatCount !== null) {
+    if (typeof config.repeatCount === 'object') {
+      // Validate repeat count object with type field
+      if (config.repeatCount.type === 'random') {
+        // Random repeat validation
+        if (!Number.isInteger(config.repeatCount.min) || config.repeatCount.min < 0) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.min',
+              message: 'Repeat count min must be a non-negative integer',
+              value: config.repeatCount.min,
+            }),
+          );
+        }
+        
+        if (!Number.isInteger(config.repeatCount.max) || config.repeatCount.max < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.max',
+              message: 'Repeat count max must be a positive integer',
+              value: config.repeatCount.max,
+            }),
+          );
+        }
+        
+        if (Number.isInteger(config.repeatCount.min) && Number.isInteger(config.repeatCount.max) && 
+            config.repeatCount.max < config.repeatCount.min) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount',
+              message: 'Repeat count max must be greater than or equal to min',
+              value: config.repeatCount,
+            }),
+          );
+        }
+      } else if (config.repeatCount.type === 'fixed') {
+        // Fixed repeat validation
+        if (!Number.isInteger(config.repeatCount.count) || config.repeatCount.count < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.count',
+              message: 'Fixed repeat count must be a positive integer',
+              value: config.repeatCount.count,
+            }),
+          );
+        }
+      } else {
+        // Legacy support: if it's an object but no type, assume it's random
+        if (!Number.isInteger(config.repeatCount.min) || config.repeatCount.min < 0) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.min',
+              message: 'Repeat count min must be a non-negative integer',
+              value: config.repeatCount.min,
+            }),
+          );
+        }
+        
+        if (!Number.isInteger(config.repeatCount.max) || config.repeatCount.max < 1) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount.max',
+              message: 'Repeat count max must be a positive integer',
+              value: config.repeatCount.max,
+            }),
+          );
+        }
+        
+        if (Number.isInteger(config.repeatCount.min) && Number.isInteger(config.repeatCount.max) && 
+            config.repeatCount.max < config.repeatCount.min) {
+          errors.push(
+            new ValidationError({
+              field: 'repeatCount',
+              message: 'Repeat count max must be greater than or equal to min',
+              value: config.repeatCount,
+            }),
+          );
+        }
+      }
+    } else {
+      // Legacy support: if it's a number, treat as fixed
+      if (!Number.isInteger(config.repeatCount) || config.repeatCount < 1) {
+        errors.push(
+          new ValidationError({
+            field: 'repeatCount',
+            message: 'Repeat count must be a positive integer',
+            value: config.repeatCount,
+          }),
+        );
+      }
     }
   }
 
@@ -408,7 +569,7 @@ export function validateBaseConfig(config) {
       errors.push(
         new ValidationError({
           field: 'interval',
-          message: 'Interval must be a non-negative number',
+          message: 'Interval must be a positive number',
           value: config.interval,
         }),
       );
@@ -552,21 +713,21 @@ export function validateLimitsConfig(config) {
 
   // Validate value based on type
   if (config.type === LimitsType.SHOT_LIMIT) {
-    if (!Number.isInteger(config.value) || config.value < 0) {
+    if (!Number.isInteger(config.value) || config.value < 1) {
       errors.push(
         new ValidationError({
           field: 'limits.value',
-          message: 'Shot limit must be a non-negative integer',
+          message: 'Shot limit must be a positive integer',
           value: config.value,
         }),
       );
     }
   } else if (config.type === LimitsType.TIME_LIMIT) {
-    if (typeof config.value !== 'string' && (typeof config.value !== 'number' || config.value < 0)) {
+    if (typeof config.value !== 'string' && (typeof config.value !== 'number' || config.value <= 0)) {
       errors.push(
         new ValidationError({
           field: 'limits.value',
-          message: 'Time limit must be a non-negative number or time string (e.g., "00:00")',
+          message: 'Time limit must be a positive number or time string (e.g., "00:00")',
           value: config.value,
         }),
       );

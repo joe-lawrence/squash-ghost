@@ -240,9 +240,9 @@ export class PatternConfig extends BaseConfig {
     intervalOffsetType = IntervalOffsetType.FIXED,
     intervalOffset = new IntervalOffsetConfig(),
     autoVoiceSplitStep = true,
-    iterationType = null,
+    iterationType = 'in-order',
     limits = null,
-    repeatCount = null,
+    repeatCount = 1,
   } = {}) {
     super({
       voice,
@@ -265,16 +265,70 @@ export class PatternConfig extends BaseConfig {
       result.iterationType = this.iterationType;
     }
     if (this.limits !== null && this.limits !== undefined) {
-      result.limits = this.limits.toDict();
+      result.limits = this.limits;
     }
     if (this.repeatCount !== null && this.repeatCount !== undefined) {
-      result.repeatCount = this.repeatCount;
+      // Handle both fixed and random repeat values with consistent format
+      if (typeof this.repeatCount === 'object') {
+        if (this.repeatCount.type === 'random') {
+          result.repeatCount = {
+            type: 'random',
+            min: this.repeatCount.min,
+            max: this.repeatCount.max
+          };
+        } else if (this.repeatCount.type === 'fixed') {
+          result.repeatCount = {
+            type: 'fixed',
+            count: this.repeatCount.count
+          };
+        } else {
+          // Legacy object without type: preserve as random
+          result.repeatCount = {
+            type: 'random',
+            min: this.repeatCount.min,
+            max: this.repeatCount.max
+          };
+        }
+      } else {
+        // Fixed repeat: use consistent object format
+        result.repeatCount = {
+          type: 'fixed',
+          count: this.repeatCount
+        };
+      }
     }
     return result;
   }
 
   static fromDict(data) {
     const baseConfig = BaseConfig.fromDict(data);
+    let repeatCount = 1;
+    
+    // Handle both fixed and random repeat values with consistent format
+    if (data.repeatCount) {
+      if (typeof data.repeatCount === 'object') {
+        if (data.repeatCount.type === 'random') {
+          repeatCount = {
+            type: 'random',
+            min: data.repeatCount.min !== undefined ? data.repeatCount.min : 1,
+            max: data.repeatCount.max !== undefined ? data.repeatCount.max : 1
+          };
+        } else if (data.repeatCount.type === 'fixed') {
+          repeatCount = data.repeatCount.count !== undefined ? data.repeatCount.count : 1;
+        } else {
+          // Legacy support: if it's an object but no type, assume it's random
+          repeatCount = {
+            type: 'random',
+            min: data.repeatCount.min !== undefined ? data.repeatCount.min : 1,
+            max: data.repeatCount.max !== undefined ? data.repeatCount.max : 1
+          };
+        }
+      } else {
+        // Legacy support: if it's a number, treat as fixed
+        repeatCount = data.repeatCount;
+      }
+    }
+    
     return new PatternConfig({
       voice: baseConfig.voice,
       speechRate: baseConfig.speechRate,
@@ -285,8 +339,8 @@ export class PatternConfig extends BaseConfig {
       intervalOffset: baseConfig.intervalOffset,
       autoVoiceSplitStep: baseConfig.autoVoiceSplitStep,
       iterationType: data.iterationType || null,
-      limits: data.limits ? LimitsConfig.fromDict(data.limits) : null,
-      repeatCount: data.repeatCount || null,
+      limits: data.limits || null,
+      repeatCount,
     });
   }
 }
@@ -322,13 +376,67 @@ export class ShotConfig extends BaseConfig {
   toDict() {
     const result = super.toDict();
     if (this.repeatCount !== null && this.repeatCount !== undefined) {
-      result.repeatCount = this.repeatCount;
+      // Handle both fixed and random repeat values with consistent format
+      if (typeof this.repeatCount === 'object') {
+        if (this.repeatCount.type === 'random') {
+          result.repeatCount = {
+            type: 'random',
+            min: this.repeatCount.min,
+            max: this.repeatCount.max
+          };
+        } else if (this.repeatCount.type === 'fixed') {
+          result.repeatCount = {
+            type: 'fixed',
+            count: this.repeatCount.count
+          };
+        } else {
+          // Legacy object without type: preserve as random
+          result.repeatCount = {
+            type: 'random',
+            min: this.repeatCount.min,
+            max: this.repeatCount.max
+          };
+        }
+      } else {
+        // Fixed repeat: use consistent object format
+        result.repeatCount = {
+          type: 'fixed',
+          count: this.repeatCount
+        };
+      }
     }
     return result;
   }
 
   static fromDict(data) {
     const baseConfig = BaseConfig.fromDict(data);
+    let repeatCount = 1;
+    
+    // Handle both fixed and random repeat values with consistent format
+    if (data.repeatCount) {
+      if (typeof data.repeatCount === 'object') {
+        if (data.repeatCount.type === 'random') {
+          repeatCount = {
+            type: 'random',
+            min: data.repeatCount.min !== undefined ? data.repeatCount.min : 1,
+            max: data.repeatCount.max !== undefined ? data.repeatCount.max : 1
+          };
+        } else if (data.repeatCount.type === 'fixed') {
+          repeatCount = data.repeatCount.count !== undefined ? data.repeatCount.count : 1;
+        } else {
+          // Legacy support: if it's an object but no type, assume it's random
+          repeatCount = {
+            type: 'random',
+            min: data.repeatCount.min !== undefined ? data.repeatCount.min : 1,
+            max: data.repeatCount.max !== undefined ? data.repeatCount.max : 1
+          };
+        }
+      } else {
+        // Legacy support: if it's a number, treat as fixed
+        repeatCount = data.repeatCount;
+      }
+    }
+    
     return new ShotConfig({
       voice: baseConfig.voice,
       speechRate: baseConfig.speechRate,
@@ -338,7 +446,7 @@ export class ShotConfig extends BaseConfig {
       intervalOffsetType: baseConfig.intervalOffsetType,
       intervalOffset: baseConfig.intervalOffset,
       autoVoiceSplitStep: baseConfig.autoVoiceSplitStep,
-      repeatCount: data.repeatCount || 1,
+      repeatCount,
     });
   }
 }

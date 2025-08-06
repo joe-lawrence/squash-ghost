@@ -249,6 +249,7 @@ export class WorkoutGeneratorState {
     totalEventsGenerated = 0,
     maxEvents = 1000,
     pendingEvents = [],
+    workoutSeed = null,
   } = {}) {
     this.currentSuperset = currentSuperset;
     this.patternIndex = patternIndex;
@@ -261,6 +262,7 @@ export class WorkoutGeneratorState {
     this.totalEventsGenerated = totalEventsGenerated;
     this.maxEvents = maxEvents;
     this.pendingEvents = pendingEvents;
+    this.workoutSeed = workoutSeed;
   }
 
   toDict() {
@@ -276,6 +278,7 @@ export class WorkoutGeneratorState {
       totalEventsGenerated: this.totalEventsGenerated,
       maxEvents: this.maxEvents,
       pendingEvents: this.pendingEvents.map(event => event.toDict()),
+      workoutSeed: this.workoutSeed,
     };
   }
 }

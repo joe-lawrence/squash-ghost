@@ -49,7 +49,37 @@ export function calculateWorkoutStats(workoutData, isConfigLocked = false, worko
     if (!result.success) {
       return { totalTime: 0, totalShots: 0, totalShotsExecuted: 0 };
     }
-    const timeline = generateWorkoutTimeline(result.workout);
+    
+    // If config is locked, we need to modify the workout to use the default interval
+    let workout = result.workout;
+    if (isConfigLocked) {
+      // Create a deep copy of the workout to avoid modifying the original
+      workout = JSON.parse(JSON.stringify(workout));
+      
+      // Apply the default interval to all patterns and entries
+      if (workout.patterns) {
+        workout.patterns.forEach(pattern => {
+          if (pattern.config) {
+            pattern.config.interval = workoutDefaultInterval;
+          }
+          if (pattern.entries) {
+            pattern.entries.forEach(entry => {
+              if (entry.config) {
+                entry.config.interval = workoutDefaultInterval;
+              }
+            });
+          }
+        });
+      }
+      
+      // Reload the modified workout
+      const modifiedResult = loadWorkoutFromJsonWithValidation(workout);
+      if (modifiedResult.success) {
+        workout = modifiedResult.workout;
+      }
+    }
+    
+    const timeline = generateWorkoutTimeline(workout);
     const stats = calculateWorkoutStatsFromTimeline(timeline);
     return {
       totalTime: stats.totalDuration,
@@ -152,9 +182,10 @@ export function generatePreviewHtml(data) {
     const workRestRatio = calculateWorkRestRatio(timeline);
     const workoutSummary = generateWorkoutSummary(timeline, workout);
     
-    // Calculate reps per minute
-    const totalDurationInSeconds = timeline.length > 0 ? Math.max(...timeline.map(e => e.endTime)) : 0;
-    const repsPerMinute = totalDurationInSeconds > 0 ? (totalShots / totalDurationInSeconds * 60).toFixed(1) : '0.0';
+    // Calculate reps per minute using only work time (excluding message/rest time)
+    const workRestData = calculateWorkRestRatio(timeline);
+    const workTimeInSeconds = workRestData.workTime;
+    const repsPerMinute = workTimeInSeconds > 0 ? (totalShots / workTimeInSeconds * 60).toFixed(1) : '0.0';
     
     // Calculate superset structure using metadata from timeline events
     function detectSupersets(timeline, workout) {
@@ -263,10 +294,19 @@ export function generatePreviewHtml(data) {
     html += `<div class="text-gray-800">${workoutSummary.intensityStructure}</div>`;
     html += '</div>';
     html += '</div>';
-    html += '<div class="text-sm text-gray-600 mt-3">';
-    html += `<div class="font-semibold text-gray-700 mb-1">Work-Rest Ratio: ${workRestRatio.ratio.toFixed(1)}:1</div>`;
-    html += `<div class="text-xs text-gray-500">Work: ${formatTime(workRestRatio.workTime)} | Rest: ${formatTime(workRestRatio.restTime)} | Reps/min: ${repsPerMinute}</div>`;
-    html += '</div>';
+    // Only show Work-Rest Ratio if there are actual rest elements
+    if (workRestRatio.hasRest) {
+      html += '<div class="text-sm text-gray-600 mt-3">';
+      html += `<div class="font-semibold text-gray-700 mb-1">Work-Rest Ratio: ${workRestRatio.ratio.toFixed(1)}:1</div>`;
+      html += `<div class="text-xs text-gray-500">Work: ${formatTime(workRestRatio.workTime)} | Rest: ${formatTime(workRestRatio.restTime)} | Reps/min: ${repsPerMinute}</div>`;
+      html += '</div>';
+    } else {
+      // Show work time and reps per minute without rest ratio
+      html += '<div class="text-sm text-gray-600 mt-3">';
+      html += `<div class="font-semibold text-gray-700 mb-1">Work Time & Intensity</div>`;
+      html += `<div class="text-xs text-gray-500">Work: ${formatTime(workRestRatio.workTime)} | Reps/min: ${repsPerMinute}</div>`;
+      html += '</div>';
+    }
     html += `<div class="text-sm text-gray-600 mt-2">${workoutSummary.explanation}</div>`;
     html += '</div>';
     
@@ -334,15 +374,14 @@ export function generatePreviewHtml(data) {
         html += '<div class="flex items-center">';
         
         // Check if this pattern repeat is due to limits (Extended Set)
-        const patternRepeatCount = pattern.config?.repeatCount || 1;
         const patternLimits = pattern.config?.limits || {};
         const hasLimits = patternLimits.type === 'shot-limit' || patternLimits.type === 'time-limit';
-        const isExtendedSet = hasLimits && patternRepeatNumber > patternRepeatCount;
+        const isExtendedSet = hasLimits && patternRepeatNumber > totalPatternRepeats;
         
         // For extended sets, show which extended set number this is
         let patternName = pattern.name;
         if (isExtendedSet) {
-          const extendedSetNumber = patternRepeatNumber - patternRepeatCount;
+          const extendedSetNumber = patternRepeatNumber - totalPatternRepeats;
           if (extendedSetNumber === 1) {
             patternName = `${pattern.name} (Extended Set)`;
           } else {
@@ -419,6 +458,8 @@ export function generatePreviewHtml(data) {
           </div>`;
         }
 
+        // Do not add a second random repeat badge; the main repeat badge already covers it
+
         // Pattern position lock badge (only if pattern has position lock)
         if (pattern.positionType && pattern.positionType !== 'normal') {
           let positionText = '';
@@ -462,7 +503,16 @@ export function generatePreviewHtml(data) {
           
           html += `<div class="flex items-center gap-2 py-1 ">`;
           html += `<span class="timing-badge text-xs font-medium ${badgeColorClass} px-1.5 py-0.5 rounded" data-start-time="${event.startTime}" data-end-time="${event.endTime}" title="Click to jump to ${startTimeHighPrec} (when paused)" style="cursor: pointer;">${startTimeStr} - ${endTimeStr}</span>`;
-          html += `<h4 class="text-sm font-medium text-gray-800">${event.name || event.type}</h4>`;
+          // Handle empty shot names gracefully
+          let displayName = event.name;
+          if (event.type === 'Shot' && (!displayName || displayName.trim() === '')) {
+            displayName = 'Shot (unnamed)';
+          } else if (event.type === 'Message' && (!displayName || displayName.trim() === '')) {
+            displayName = 'Message (unnamed)';
+          } else {
+            displayName = displayName || event.type;
+          }
+          html += `<h4 class="text-sm font-medium text-gray-800">${displayName}</h4>`;
           
           // Add link icon for linked elements
           const sourceEntry = pattern.entries.find(entry => 
@@ -500,10 +550,27 @@ export function generatePreviewHtml(data) {
           // Add shot repeat badge for shots with multiple repeats
           const repeatMetadata = event.repeatMetadata || {};
           if (event.type === 'Shot' && repeatMetadata.totalShotRepeats > 1) {
+            // For random repeats, only show the badge if it's not already handled by the random repeat logic
+            const isRandomRepeat = event.entry?.config?.repeatCount?.type === 'random';
+            
+            if (!isRandomRepeat) {
+              html += `<div class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex items-center ml-1">
+                  <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                  </svg>Repeat ${repeatMetadata.shotRepeatNumber}/${repeatMetadata.totalShotRepeats}
+              </div>`;
+            }
+          }
+
+          // Add random repeat badge for shots with random repeats
+          if (event.type === 'Shot' && event.entry?.config?.repeatCount?.type === 'random') {
+            const currentRepeat = repeatMetadata.shotRepeatNumber || 1;
+            const totalRepeats = repeatMetadata.totalShotRepeats || 1;
+            
             html += `<div class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex items-center ml-1">
                 <svg class="w-3 h-3 mr-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                </svg>Repeat ${repeatMetadata.shotRepeatNumber}/${repeatMetadata.totalShotRepeats}
+                </svg>Repeat ${currentRepeat}/${totalRepeats}
             </div>`;
           }
           
@@ -779,7 +846,8 @@ export function generateWorkoutTimeline(workout) {
 
   // Initialize generator state with workout iteration type
   const generatorState = new WorkoutGeneratorState({
-    workoutIterationType: workout.config?.iterationType || 'in-order'
+    workoutIterationType: workout.config?.iterationType || 'in-order',
+    workoutSeed: Date.now(), // Use current timestamp as seed for random repeat generation
   });
 
   // Initialize pattern order for shuffle mode
@@ -794,10 +862,25 @@ export function generateWorkoutTimeline(workout) {
 
   const firstPatternIndex = getNextPatternIndex(generatorState, workout);
   let patternState = createPatternState(workout.patterns[firstPatternIndex], { workout, generatorState });
+  
+  // Check if the first pattern has 0 repeats and should be skipped
+  let resolvedFirstPatternRepeatCount = resolveRepeatCount(patternState.patternInstance.config?.repeatCount, generatorState.workoutSeed, 0);
+  if (resolvedFirstPatternRepeatCount === 0) {
+    // Skip patterns with 0 repeat count
+    patternState = moveToNextPattern(workout, patternState, generatorState);
+    if (patternState === null) {
+      return timeline; // All patterns have 0 repeats
+    }
+  }
 
   // Safety counters to prevent infinite loops
   let totalEventsGenerated = 0;
   const maxEvents = 1000;
+  
+  // Additional safety for time-based workouts to prevent infinite loops
+  let lastEventTime = 0;
+  let noProgressCount = 0;
+  const maxNoProgress = 10;
 
   while (totalEventsGenerated < maxEvents) {
     // Check if workout should terminate due to limits
@@ -807,11 +890,54 @@ export function generateWorkoutTimeline(workout) {
 
     // Check if we have pending events from shot repeats
     if (generatorState.pendingEvents.length > 0) {
+      // Before consuming a pending event, ensure pattern limits are respected.
+      const nextEvent = generatorState.pendingEvents[0];
+
+      // Only pattern-level limits apply here; workout-level limits are checked at loop start.
+      const currentPattern = patternState.patternInstance;
+      const limits = currentPattern?.config?.limits || {};
+      const limitType = limits.type;
+
+      // Enforce mid-repeat truncation for any shot repeats when limits would be exceeded
+      if (nextEvent.type === 'Shot' && limitType) {
+        const eventDuration = Math.max(0, (nextEvent.endTime || 0) - (nextEvent.startTime || 0));
+
+        // Shot-limit check: would consuming this event exceed the shot limit?
+        if (limitType === 'shot-limit') {
+          const limitValue = limits.value || 0;
+          if ((patternState.patternShotsPlayed + 1) > limitValue) {
+            // Reached pattern limit: drop remaining pending events for this pattern and move on
+            generatorState.pendingEvents = [];
+            patternState = moveToNextPattern(workout, patternState, generatorState);
+            if (patternState === null) {
+              break;
+            }
+            continue;
+          }
+        }
+
+        // Time-limit check: would consuming this event exceed the time limit?
+        if (limitType === 'time-limit' && limits.value !== undefined) {
+          const limitSeconds = timeStrToSeconds(limits.value);
+          if ((patternState.patternTimeElapsed + eventDuration) > limitSeconds) {
+            // Reached pattern time limit: drop remaining pending events and move on
+            generatorState.pendingEvents = [];
+            patternState = moveToNextPattern(workout, patternState, generatorState);
+            if (patternState === null) {
+              break;
+            }
+            continue;
+          }
+        }
+      }
+
+      // If we reach here, it's safe to consume the next pending event
       const event = generatorState.pendingEvents.shift();
-      // Update counters for pending events
       if (event.type === 'Shot') {
+        // Update shot counters
         generatorState.workoutTotalShots += 1;
         patternState.patternShotsPlayed += 1;
+        // Do not modify patternTimeElapsed here; time-based limits are enforced when starting entries
       }
       timeline.push(event);
       totalEventsGenerated += 1;
@@ -856,6 +982,14 @@ export function generateWorkoutTimeline(workout) {
         
         if (patternState.patternTimeElapsed + entryInterval > limitSeconds) {
           // Pattern time limit would be exceeded, move to next pattern (which may be extended set)
+          // But first, check if we should continue with extended set
+          const shouldContinueExtendedSet = shouldContinuePatternExtendedSet(patternState, limits, limitType);
+          if (shouldContinueExtendedSet) {
+            // This shouldn't happen if our logic is correct, but let's be safe
+            console.warn('Pattern time limit exceeded but shouldContinueExtendedSet returned true - this may indicate a bug');
+            break;
+          }
+          
           patternState = moveToNextPattern(workout, patternState, generatorState);
           if (patternState === null) {
             break; // No more patterns
@@ -869,8 +1003,29 @@ export function generateWorkoutTimeline(workout) {
 
     // Prepare repeat metadata
     const pattern = patternState.patternInstance;
-    const totalPatternRepeats = pattern.config?.repeatCount || 1;
-    const totalShotRepeats = entry.config?.repeatCount || 1;
+    // Resolve pattern repeat count ONCE per superset, and reuse for all preview/timeline grouping within this superset
+    if (!generatorState._resolvedPatternRepeats) {
+      generatorState._resolvedPatternRepeats = new Map();
+    }
+    const patternKeyForSeed = pattern.id || pattern.name || `pattern_${firstPatternIndex}`;
+    const supersetKey = `${patternKeyForSeed}__superset_${generatorState.currentSuperset}`;
+    let resolvedTotalPatternRepeats;
+    if (generatorState._resolvedPatternRepeats.has(supersetKey)) {
+      resolvedTotalPatternRepeats = generatorState._resolvedPatternRepeats.get(supersetKey);
+    } else {
+      resolvedTotalPatternRepeats = resolveRepeatCount(pattern.config?.repeatCount, generatorState.workoutSeed, generatorState.currentSuperset);
+      generatorState._resolvedPatternRepeats.set(supersetKey, resolvedTotalPatternRepeats);
+    }
+    
+    // For random repeats, we need to resolve the count first to get the actual number
+    let totalShotRepeats;
+    if (entry.config?.repeatCount && typeof entry.config.repeatCount === 'object' && entry.config.repeatCount.type === 'random') {
+      // For random repeats, we'll set this later when we know the actual resolved count
+      totalShotRepeats = 1; // Placeholder, will be updated
+    } else {
+      totalShotRepeats = resolveRepeatCount(entry.config?.repeatCount, generatorState.workoutSeed);
+    }
+    
     const patternRepeatNumber = patternState.patternRunsCompleted + 1;
 
     // Get effective configuration with inheritance
@@ -885,9 +1040,15 @@ export function generateWorkoutTimeline(workout) {
       supersetNumber: generatorState.currentSuperset,
       patternRepeatNumber: patternRepeatNumber,
       shotRepeatNumber: 1,
-      totalPatternRepeats: totalPatternRepeats,
+      totalPatternRepeats: resolvedTotalPatternRepeats,
       totalShotRepeats: totalShotRepeats
     };
+    
+    // For random repeats, we need to update the metadata with the resolved count
+    if (entry.config?.repeatCount && typeof entry.config.repeatCount === 'object' && entry.config.repeatCount.type === 'random') {
+      // We'll update totalShotRepeats later when we know the actual resolved count
+      metadata.totalShotRepeats = 1; // Placeholder
+    }
     
     let event;
     if (entry.type === 'Message') {
@@ -910,49 +1071,105 @@ export function generateWorkoutTimeline(workout) {
     }
 
     // Handle shot repeats
-    const repeatCount = entry.config?.repeatCount || 1;
-
     if (entry.type === 'Shot') {
-      // If this shot has repeats, we need to yield it multiple times
-      if (repeatCount > 1) {
-        // Create a list of events for this shot
-        const events = [];
-        for (let repeatIdx = 0; repeatIdx < repeatCount; repeatIdx++) {
-          const shotMetadata = {
-            ...metadata,
-            shotRepeatNumber: repeatIdx + 1
-          };
-          const shotEvent = createTimelineEventData(
-            entry, 
-            event.startTime + (repeatIdx * event.duration),
-            shotMetadata,
-            effectiveConfig,
-            pattern
-          );
-          events.push(shotEvent);
+      // For random repeats, each time this shot is processed, get a fresh random count
+      if (entry.config?.repeatCount && typeof entry.config.repeatCount === 'object' && entry.config.repeatCount.type === 'random') {
+        // Random repeat: get a fresh random count for this shot instance
+        // Use a combination of workout seed and shot processing count to ensure fresh randomness
+        const shotProcessingCount = generatorState.workoutTotalShots + patternState.patternShotsPlayed;
+        const resolvedRepeatCount = resolveRepeatCount(entry.config.repeatCount, generatorState.workoutSeed, shotProcessingCount);
+        
+        if (resolvedRepeatCount === 0) {
+          // Skip this shot entirely (0 repeats)
+          // Don't update time or add to timeline, just continue to next entry
+        } else if (resolvedRepeatCount > 1) {
+          // Create a list of events for this shot with the fresh random count
+          const events = [];
+          for (let repeatIdx = 0; repeatIdx < resolvedRepeatCount; repeatIdx++) {
+            const shotMetadata = {
+              ...metadata,
+              shotRepeatNumber: repeatIdx + 1,
+              totalShotRepeats: resolvedRepeatCount // Update with the actual resolved count
+            };
+            const shotEvent = createTimelineEventData(
+              entry, 
+              event.startTime + (repeatIdx * event.duration),
+              shotMetadata,
+              effectiveConfig,
+              pattern
+            );
+            events.push(shotEvent);
+          }
+
+          // Update state for the last event
+          generatorState.currentTime = events[events.length - 1].endTime;
+          generatorState.workoutTotalTime = events[events.length - 1].endTime;
+
+          // Return the first event, store the rest for future calls
+          generatorState.pendingEvents.push(...events.slice(1));
+
+          // Increment counters for the first event
+          generatorState.workoutTotalShots += 1;
+          patternState.patternShotsPlayed += 1;
+          patternState.patternTimeElapsed += event.duration;
+
+          timeline.push(events[0]);
+        } else {
+          // Single shot (resolvedRepeatCount === 1), update state normally
+          generatorState.currentTime = event.endTime;
+          generatorState.workoutTotalTime = event.endTime;
+          generatorState.workoutTotalShots += 1;
+          patternState.patternShotsPlayed += 1;
+          patternState.patternTimeElapsed += event.duration;
+          timeline.push(event);
         }
-
-        // Update state for the last event
-        generatorState.currentTime = events[events.length - 1].endTime;
-        generatorState.workoutTotalTime = events[events.length - 1].endTime;
-
-        // Return the first event, store the rest for future calls
-        generatorState.pendingEvents.push(...events.slice(1));
-
-        // Increment counters for the first event
-        generatorState.workoutTotalShots += 1;
-        patternState.patternShotsPlayed += 1;
-        patternState.patternTimeElapsed += event.duration;
-
-        timeline.push(events[0]);
       } else {
-        // Single shot, update state normally
-        generatorState.currentTime = event.endTime;
-        generatorState.workoutTotalTime = event.endTime;
-        generatorState.workoutTotalShots += 1;
-        patternState.patternShotsPlayed += 1;
-        patternState.patternTimeElapsed += event.duration;
-        timeline.push(event);
+        // Fixed repeat: use the existing logic
+        const resolvedRepeatCount = resolveRepeatCount(entry.config?.repeatCount, generatorState.workoutSeed);
+        
+        if (resolvedRepeatCount === 0) {
+          // Skip this shot entirely (0 repeats)
+          // Don't update time or add to timeline, just continue to next entry
+        } else if (resolvedRepeatCount > 1) {
+          // Create a list of events for this shot
+          const events = [];
+          for (let repeatIdx = 0; repeatIdx < resolvedRepeatCount; repeatIdx++) {
+            const shotMetadata = {
+              ...metadata,
+              shotRepeatNumber: repeatIdx + 1
+            };
+            const shotEvent = createTimelineEventData(
+              entry, 
+              event.startTime + (repeatIdx * event.duration),
+              shotMetadata,
+              effectiveConfig,
+              pattern
+            );
+            events.push(shotEvent);
+          }
+
+          // Update state for the last event
+          generatorState.currentTime = events[events.length - 1].endTime;
+          generatorState.workoutTotalTime = events[events.length - 1].endTime;
+
+          // Return the first event, store the rest for future calls
+          generatorState.pendingEvents.push(...events.slice(1));
+
+          // Increment counters for the first event
+          generatorState.workoutTotalShots += 1;
+          patternState.patternShotsPlayed += 1;
+          patternState.patternTimeElapsed += event.duration;
+
+          timeline.push(events[0]);
+        } else {
+          // Single shot (resolvedRepeatCount === 1), update state normally
+          generatorState.currentTime = event.endTime;
+          generatorState.workoutTotalTime = event.endTime;
+          generatorState.workoutTotalShots += 1;
+          patternState.patternShotsPlayed += 1;
+          patternState.patternTimeElapsed += event.duration;
+          timeline.push(event);
+        }
       }
     } else {
       // Message or other entry type
@@ -963,6 +1180,18 @@ export function generateWorkoutTimeline(workout) {
     }
 
     totalEventsGenerated += 1;
+    
+    // Check for progress to prevent infinite loops in time-based workouts
+    if (generatorState.currentTime > lastEventTime) {
+      lastEventTime = generatorState.currentTime;
+      noProgressCount = 0;
+    } else {
+      noProgressCount++;
+      if (noProgressCount >= maxNoProgress) {
+        console.warn(`No time progress for ${maxNoProgress} events, stopping to prevent infinite loop`);
+        break;
+      }
+    }
   }
 
   if (totalEventsGenerated >= maxEvents) {
@@ -1139,8 +1368,34 @@ function shouldContinuePatternExtendedSet(patternState, limits, limitType) {
     const limitSeconds = timeStrToSeconds(limitValue);
     const currentTime = patternState.patternTimeElapsed;
     
-    // Continue with extended set if we haven't reached the time limit yet
-    return currentTime < limitSeconds;
+    // For time limits, we need to be more careful about continuing
+    // Only continue if there's enough time left to add at least one more shot
+    // This prevents infinite loops where we keep trying to add shots that exceed the limit
+    
+    // Get the minimum shot duration from the pattern
+    const pattern = patternState.patternInstance;
+    if (pattern && pattern.entries && pattern.entries.length > 0) {
+      // Find the minimum interval among all shots in the pattern
+      let minInterval = Infinity;
+      pattern.entries.forEach(entry => {
+        if (entry.type === 'Shot' && entry.config && entry.config.interval) {
+          minInterval = Math.min(minInterval, entry.config.interval);
+        }
+      });
+      
+      // If we can't determine a minimum interval, use a default
+      if (minInterval === Infinity) {
+        minInterval = 5.0; // Default interval
+      }
+      
+      // Only continue if there's enough time for at least one more shot
+      // Also add a small buffer to prevent floating point precision issues
+      const buffer = 0.1; // 100ms buffer
+      return (currentTime + minInterval) <= (limitSeconds + buffer);
+    }
+    
+    // Fallback: don't continue if we can't determine timing
+    return false;
   }
   
   return false;
@@ -1177,7 +1432,17 @@ function moveToNextPattern(workout, patternState, generatorState) {
   // Check if current pattern needs to repeat
   if (patternState) {
     const pattern = patternState.patternInstance;
-    const repeatCount = pattern.config?.repeatCount || 1;
+    // Reuse superset-resolved pattern repeat count for moveToNextPattern decisions as well
+    const patternKeyForSeed2 = patternState.patternInstance.id || patternState.patternInstance.name || 'pattern';
+    const supersetKey2 = `${patternKeyForSeed2}__superset_${generatorState.currentSuperset}`;
+    let resolvedRepeatCount;
+    if (generatorState._resolvedPatternRepeats && generatorState._resolvedPatternRepeats.has(supersetKey2)) {
+      resolvedRepeatCount = generatorState._resolvedPatternRepeats.get(supersetKey2);
+    } else {
+      resolvedRepeatCount = resolveRepeatCount(pattern.config?.repeatCount, generatorState.workoutSeed, generatorState.currentSuperset);
+      if (!generatorState._resolvedPatternRepeats) generatorState._resolvedPatternRepeats = new Map();
+      generatorState._resolvedPatternRepeats.set(supersetKey2, resolvedRepeatCount);
+    }
     const limits = pattern.config?.limits || {};
 
     // Check if pattern should continue with extended set due to limits
@@ -1191,7 +1456,7 @@ function moveToNextPattern(workout, patternState, generatorState) {
     }
 
     // Check normal pattern repeats
-    if (patternState.patternRunsCompleted < repeatCount - 1) {
+    if (patternState.patternRunsCompleted < resolvedRepeatCount - 1) {
       // Pattern needs to run again
       const newPatternState = resetPatternState(patternState, { workout, generatorState });
       newPatternState.patternRunsCompleted += 1;
@@ -1246,7 +1511,16 @@ function moveToNextPattern(workout, patternState, generatorState) {
   const nextPatternIndex = getNextPatternIndex(generatorState, workout);
   if (nextPatternIndex < workout.patterns.length) {
     const newPattern = workout.patterns[nextPatternIndex];
-    return createPatternState(newPattern, { workout, generatorState });
+    const newPatternState = createPatternState(newPattern, { workout, generatorState });
+    
+    // Check if this pattern has 0 repeats and should be skipped
+    const resolvedPatternRepeatCount = resolveRepeatCount(newPattern.config?.repeatCount, generatorState.workoutSeed, generatorState.currentSuperset);
+    if (resolvedPatternRepeatCount === 0) {
+      // Skip this pattern and move to the next one recursively
+      return moveToNextPattern(workout, newPatternState, generatorState);
+    }
+    
+    return newPatternState;
   }
 
   return null;
@@ -1260,11 +1534,17 @@ function applyPositionalConstraints(candidates, patternState) {
   // Check for linked elements first
   const lastPlayed = patternState.lastPlayedEntry;
   if (lastPlayed && lastPlayed.positionType === 'normal') {
-    // Look for linked elements
-    const linkedCandidates = candidates.filter(c => c.positionType === 'linked');
-    if (linkedCandidates.length > 0) {
-      return linkedCandidates;
-    }
+    // Look for linked elements that are actually linked to the last played element
+    // In the current implementation, we can't directly determine which linked element
+    // belongs to which normal element, so we need to rely on the initial ordering
+    // from getOrderedEntries() which already handles this correctly.
+    // Therefore, we should NOT override the ordering here.
+    // 
+    // The bug was that this code was prioritizing ANY linked element after ANY normal element,
+    // which could cause linked elements to be played out of order.
+    // 
+    // Instead, we should trust the initial ordering from getOrderedEntries() and only
+    // apply constraints for position locks, not for linked elements.
   }
 
   // Check for position locks
@@ -1326,8 +1606,12 @@ function isLastEntryInWorkout(entry, patternState, workout, generatorState) {
 
   // Check if the current pattern has more repeats
   const pattern = patternState.patternInstance;
-  const repeatCount = pattern.config?.repeatCount || 1;
-  if (patternState.patternRunsCompleted < repeatCount - 1) {
+    // Use superset-scoped resolved count
+    const patternKeyForSeed3 = patternState.patternInstance.id || patternState.patternInstance.name || 'pattern';
+    const supersetKey3 = `${patternKeyForSeed3}__superset_${generatorState.currentSuperset}`;
+    const resolvedRepeatCount = (generatorState._resolvedPatternRepeats && generatorState._resolvedPatternRepeats.get(supersetKey3))
+      || resolveRepeatCount(pattern.config?.repeatCount, generatorState.workoutSeed, generatorState.currentSuperset);
+  if (patternState.patternRunsCompleted < resolvedRepeatCount - 1) {
     return false;
   }
 
@@ -1348,7 +1632,46 @@ function isLastEntryInWorkout(entry, patternState, workout, generatorState) {
     }
   }
 
-  // For time-limit or other cases, we don't know if this is truly the last entry
+  if (limitType === 'time-limit') {
+    // For time-limit, check if adding this entry would exceed the time limit
+    const limitValue = limits.value || '00:00';
+    const limitSeconds = timeStrToSeconds(limitValue);
+    
+    // Calculate the duration of this entry
+    let entryDuration = 0;
+    if (entry.type === 'Shot') {
+      const effectiveConfig = getEffectiveConfig(
+        workout.config || {},
+        pattern.config || {},
+        entry.config || {}
+      );
+      entryDuration = effectiveConfig.interval || 5.0;
+    } else if (entry.type === 'Message') {
+      const effectiveConfig = getEffectiveConfig(
+        workout.config || {},
+        pattern.config || {},
+        entry.config || {}
+      );
+      const messageText = entry.config?.message || '';
+      const speechRate = effectiveConfig.speechRate || 1.0;
+      const ttsDuration = estimateTTSDuration(messageText, speechRate);
+      const intervalType = effectiveConfig.intervalType || 'fixed';
+      const baseInterval = effectiveConfig.interval || 5.0;
+      
+      if (intervalType === 'fixed') {
+        entryDuration = Math.max(ttsDuration, baseInterval);
+      } else {
+        entryDuration = ttsDuration + baseInterval;
+      }
+    }
+    
+    // If adding this entry would exceed the time limit, it's the last entry
+    if (generatorState.workoutTotalTime + entryDuration >= limitSeconds) {
+      return true;
+    }
+  }
+
+  // For other cases, we don't know if this is truly the last entry
   // because there might be supersets
   return false;
 }
@@ -1447,6 +1770,16 @@ function getNextEntry(workout, patternState, generatorState) {
           }
           continue;
         }
+      } else if (workoutLimits.type === 'time-limit') {
+        // For time-limit, check if this is the last entry in the workout
+        if (isLastEntryInWorkout(selectedEntry, patternState, workout, generatorState)) {
+          // Skip this message because it's the last entry
+          const entryIndex = patternState.availableEntries.indexOf(selectedEntry);
+          if (entryIndex > -1) {
+            patternState.availableEntries.splice(entryIndex, 1);
+          }
+          continue;
+        }
       }
     }
 
@@ -1488,7 +1821,7 @@ function getNextEntry(workout, patternState, generatorState) {
 }
 
 function createTimelineEventData(entry, startTime, metadata = {}, effectiveConfig = null, sourcePattern = null) {
-  const entryName = entry.name || (entry.type === 'Shot' ? 'Shot' : 'Message');
+  const entryName = entry.name || '';
   
   // Use effective config if provided, otherwise fall back to entry config
   const config = effectiveConfig || entry.config || {};
@@ -1648,7 +1981,7 @@ export function generateShotTimeline(shot, config, startTime, workoutContext = n
   const generatorState = workoutContext?.generatorState;
 
   for (let i = 0; i < repeatCount; i++) {
-    const shotName = shot.name || `Shot ${i + 1}`;
+    const shotName = shot.name || '';
     const baseInterval = config.interval || 5.0;
     const leadTime = config.shotAnnouncementLeadTime || 2.5;
 
@@ -1726,9 +2059,45 @@ export function shouldSkipMessageAtEnd(message, config, workoutContext) {
     return false;
   }
 
-  // If this is the last message in the last pattern repeat, skip it
-  // This is a simpler and more accurate approach than the old webapp's complex logic
-  return workoutContext.isLastMessageInLastPattern;
+  // Use the same logic as isLastEntryInWorkout to determine if this is the last entry
+  const workout = workoutContext?.workout;
+  const generatorState = workoutContext?.generatorState;
+  
+  if (!workout || !generatorState) {
+    return false;
+  }
+
+  // For time-limit workouts, check if adding this message would exceed the time limit
+  const limits = workout.config?.limits || {};
+  const limitType = limits.type;
+
+  if (limitType === 'time-limit') {
+    const limitValue = limits.value || '00:00';
+    const limitSeconds = timeStrToSeconds(limitValue);
+    
+    // Calculate the duration of this message
+    const messageText = message.config?.message || '';
+    const speechRate = config.speechRate || 1.0;
+    const ttsDuration = estimateTTSDuration(messageText, speechRate);
+    const intervalType = config.intervalType || 'fixed';
+    const baseInterval = config.interval || 5.0;
+    
+    let messageDuration;
+    if (intervalType === 'fixed') {
+      messageDuration = Math.max(ttsDuration, baseInterval);
+    } else {
+      messageDuration = ttsDuration + baseInterval;
+    }
+    
+    // If adding this message would exceed or equal the time limit, skip it
+    if (generatorState.workoutTotalTime + messageDuration >= limitSeconds) {
+      return true;
+    }
+  }
+
+  // For other limit types, we don't have enough context here to determine
+  // if this is the last message, so we'll rely on the getNextEntry logic
+  return false;
 }
 
 /**
@@ -1737,7 +2106,13 @@ export function shouldSkipMessageAtEnd(message, config, workoutContext) {
 export function generateMessageTimeline(message, config, startTime, workoutContext = null) {
   const timeline = [];
   const messageText = message.config?.message || '';
-  const baseInterval = config.interval || 5.0;
+  
+  // Parse interval - handle both string and number formats
+  let baseInterval = config.interval || 5.0;
+  if (typeof baseInterval === 'string') {
+    baseInterval = parseTimeLimit(baseInterval);
+  }
+  
   const speechRate = config.speechRate || 1.0;
   const generatorState = workoutContext?.generatorState;
 
@@ -2002,20 +2377,23 @@ export function timelineEventsToSoundEvents(timeline) {
         text = event.entry.config.message || event.name;
       }
       
-      // Ensure entryConfig has default values for TTS, using effective config
-      const ttsConfig = {
-        voice: 'Default',
-        speechRate: 1.0,
-        ...effectiveConfig
-      };
-      
-      soundEvents.push({
-        type: 'tts',
-        time: event.subEvents.announced_time,
-        text: text,
-        entryConfig: ttsConfig,
-        entry: event.entry
-      });
+      // Skip TTS for empty shot names - they should be silent
+      if (text && text.trim() !== '') {
+        // Ensure entryConfig has default values for TTS, using effective config
+        const ttsConfig = {
+          voice: 'Default',
+          speechRate: 1.0,
+          ...effectiveConfig
+        };
+        
+        soundEvents.push({
+          type: 'tts',
+          time: event.subEvents.announced_time,
+          text: text,
+          entryConfig: ttsConfig,
+          entry: event.entry
+        });
+      }
     }
     
     // Add TTS events for messages (message_start time)
@@ -2155,7 +2533,7 @@ export function timelineEventsToSoundEvents(timeline) {
  */
 function calculateWorkRestRatio(timeline) {
   if (!timeline || timeline.length === 0) {
-    return { ratio: 1, workTime: 0, restTime: 0 };
+    return { ratio: null, workTime: 0, restTime: 0, hasRest: false };
   }
 
   let totalWorkTime = 0;
@@ -2170,13 +2548,11 @@ function calculateWorkRestRatio(timeline) {
     }
   }
 
-  // If no rest time, assume equal work and rest
-  if (totalRestTime === 0) {
-    totalRestTime = totalWorkTime;
-  }
-
-  const ratio = totalRestTime > 0 ? totalWorkTime / totalRestTime : 1;
-  return { ratio, workTime: totalWorkTime, restTime: totalRestTime };
+  // Only calculate ratio if there are actual rest elements
+  const hasRest = totalRestTime > 0;
+  const ratio = hasRest ? totalWorkTime / totalRestTime : null;
+  
+  return { ratio, workTime: totalWorkTime, restTime: totalRestTime, hasRest };
 }
 
 /**
@@ -2200,11 +2576,11 @@ function generateWorkoutSummary(timeline, workout) {
   const totalDurationInSeconds = timeline.length > 0 ? Math.max(...timeline.map(e => e.endTime)) : 0;
   const totalShots = timeline.filter(e => e.type === 'Shot').length;
 
-  // Calculate repetitions (ghosts) per minute
+  // Calculate repetitions (ghosts) per minute using only work time (excluding message/rest time)
   // Avoid division by zero if workout is very short
   let repsPerMinute = 0;
-  if (totalDurationInSeconds > 0) {
-    repsPerMinute = (totalShots / totalDurationInSeconds) * 60;
+  if (workTime > 0) {
+    repsPerMinute = (totalShots / workTime) * 60;
   }
 
   //--------------------------------------------------------------------------
@@ -2225,6 +2601,29 @@ function generateWorkoutSummary(timeline, workout) {
   // **Secondary Check: Classification by Work-to-Rest Ratio**
   // These ratios are derived directly from "Table 2: Recommended Work-to-Rest Ratios"
   // in the research paper.
+
+  // If there's no work-rest ratio (no rest elements), classify based on work intensity
+  if (workRestRatio === null) {
+    if (repsPerMinute >= 20) {
+      return {
+        primaryFocus: "High-Intensity Continuous",
+        intensityStructure: "Continuous High-Pace Drill",
+        explanation: "This session was performed as a continuous high-intensity drill without structured rest periods, focusing on building cardiovascular endurance and movement speed."
+      };
+    } else if (repsPerMinute >= 12) {
+      return {
+        primaryFocus: "Moderate-Intensity Continuous",
+        intensityStructure: "Continuous Moderate-Pace Drill",
+        explanation: "This session was performed as a continuous moderate-intensity drill without structured rest periods, focusing on building stamina and movement consistency."
+      };
+    } else {
+      return {
+        primaryFocus: "Technical Refinement",
+        intensityStructure: "Continuous Technical Drill",
+        explanation: "This session was performed as a continuous technical drill without structured rest periods, focusing on movement precision and form."
+      };
+    }
+  }
 
   // Case 1: Anaerobic Fitness & Speed (Advanced)
   if (workRestRatio >= 2.0) { // Covers 2:1 and 3:1 ratios
@@ -2261,6 +2660,67 @@ function generateWorkoutSummary(timeline, workout) {
       explanation: "This session was performed as a continuous drill without structured rest periods, focusing on sustained physical effort."
     };
   }
+}
+
+/**
+ * Resolves a repeat count value, handling both fixed integers and random objects.
+ * @param {number|object} repeatCount - The repeat count value (integer, fixed object, or random object)
+ * @param {number} seed - Optional seed for random number generation
+ * @param {number} callCount - Optional call count to ensure fresh randomness
+ * @returns {number} The resolved repeat count
+ */
+function resolveRepeatCount(repeatCount, seed = null, callCount = 0) {
+  if (typeof repeatCount === 'object') {
+    if (repeatCount.type === 'random') {
+      // Generate random repeat count between min and max (inclusive)
+      const min = Math.max(0, repeatCount.min || 0);
+      const max = Math.max(min, repeatCount.max || min);
+      
+      if (seed !== null) {
+        // Use seed + callCount for deterministic but fresh random generation
+        // This ensures each call gets a different random number even with the same seed
+        const random = seedRandom(seed + callCount);
+        return Math.floor(random() * (max - min + 1)) + min;
+      } else {
+        // Use Math.random for non-deterministic generation
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+    } else if (repeatCount.type === 'fixed') {
+      // Fixed repeat: return the count value
+      return repeatCount.count || 1;
+    } else {
+      // Legacy support: if it's an object but no type, assume it's random
+      const min = Math.max(0, repeatCount.min || 0);
+      const max = Math.max(min, repeatCount.max || min);
+      
+      if (seed !== null) {
+        const random = seedRandom(seed + callCount);
+        return Math.floor(random() * (max - min + 1)) + min;
+      } else {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+    }
+  }
+  
+  // Return fixed repeat count (legacy integer format) or default to 1
+  return repeatCount || 1;
+}
+
+/**
+ * Simple seeded random number generator for deterministic workouts.
+ * @param {number} seed - The seed value
+ * @returns {function} A random function that returns values between 0 and 1
+ */
+function seedRandom(seed) {
+  let m = 0x80000000; // 2**31
+  let a = 1103515245;
+  let c = 12345;
+  let state = seed ? seed : Math.floor(Math.random() * (m - 1));
+  
+  return function() {
+    state = (a * state + c) % m;
+    return state / (m - 1);
+  };
 }
 
 

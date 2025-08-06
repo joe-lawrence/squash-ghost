@@ -44,12 +44,9 @@ function formatJSON(data, space = 2) {
   let jsonString = JSON.stringify(sortedData, null, space);
   
   // Post-process the JSON to ensure float values show decimal points
-  // This ensures speechRate, interval, and intervalOffset values are always shown as floats
-  // Use word boundaries to avoid matching numbers that are already part of decimal values
+  // Keep this limited to fields that are always floats to avoid altering integer-only fields
   jsonString = jsonString.replace(/"speechRate": (\d+)(?!\.)/g, '"speechRate": $1.0');
   jsonString = jsonString.replace(/"interval": (\d+)(?!\.)/g, '"interval": $1.0');
-  jsonString = jsonString.replace(/"min": (\d+)(?!\.)/g, '"min": $1.0');
-  jsonString = jsonString.replace(/"max": (\d+)(?!\.)/g, '"max": $1.0');
   jsonString = jsonString.replace(/"shotAnnouncementLeadTime": (\d+)(?!\.)/g, '"shotAnnouncementLeadTime": $1.0');
   
   return jsonString;

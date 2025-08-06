@@ -1,5 +1,8 @@
-// Build ID: 2025-07-28-13-00-BUILD-005
-console.log('Squash Ghost Webapp loaded - Build ID: 2025-07-28-13-00-BUILD-005', new Date().toISOString());
+// Build ID: 2025-08-15-13-58-BUILD-008
+console.log('Squash Ghost Webapp loaded - Build ID: 2025-08-15-13-58-BUILD-008', new Date().toISOString());
+
+// Global flag to prevent dropdown closing during opening process
+window.isOpeningDropdown = false;
 
 // Import movement utilities
 import {
@@ -130,6 +133,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.documentElement.setAttribute("data-rocket-mode", rocketMode);
     localStorage.setItem("rocketMode", rocketMode);
 
+    // Initialize timing tick marks visibility based on rocket mode
+    updateTimingTickMarksVisibility(rocketMode);
+
     // We'll apply the config lock state after all elements are initialized
   }
 
@@ -195,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Toggle theme dropdown
   function toggleThemeDropdown() {
     const dropdown = document.getElementById('themeDropdown');
-    const isVisible = dropdown.classList.contains('show');
+    const isVisible = dropdown.classList.contains('active');
 
     if (isVisible) {
       hideThemeDropdown();
@@ -207,8 +213,12 @@ document.addEventListener("DOMContentLoaded", function () {
   // Show theme dropdown with all options
   function showThemeDropdown() {
     const dropdown = document.getElementById('themeDropdown');
+    
+    // Close other dropdowns first
+    closeAllDropdowns(dropdown);
+    
     populateThemeMenu();
-    dropdown.classList.add('show');
+    dropdown.classList.add('active');
 
     // Close dropdown when clicking outside
     setTimeout(() => {
@@ -219,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Hide theme dropdown
   function hideThemeDropdown() {
     const dropdown = document.getElementById('themeDropdown');
-    dropdown.classList.remove('show');
+    dropdown.classList.remove('active');
     document.removeEventListener('click', handleClickOutside);
     themeMenuState.current = 'main';
   }
@@ -339,6 +349,9 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
+    
+    // Update timing tick marks visibility based on rocket mode
+    updateTimingTickMarksVisibility(newMode);
   }
 
   function enableRocketModeOff() {
@@ -430,6 +443,27 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize duck mode on load
   initializeDuckMode();
 
+  // Initialize toolbar to collapsed state
+  const initialButtonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+  const initialChevronBtn = document.getElementById("chevronBtn");
+  
+  if (initialButtonGroup && initialChevronBtn) {
+    // Ensure toolbar starts collapsed
+    initialButtonGroup.style.display = 'none';
+    initialButtonGroup.style.visibility = 'hidden';
+    initialButtonGroup.style.opacity = '0';
+    
+    // Ensure chevron starts inactive
+    initialChevronBtn.classList.remove('active');
+    initialChevronBtn.setAttribute('title', 'Show toolbar');
+    
+    // Remove any glow effects
+    const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
+    toolbarButtons.forEach(button => {
+      button.classList.remove('glow-effect');
+    });
+  }
+
   // Initialize theme system
   loadThemePreferences();
 
@@ -445,6 +479,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const loadBtn = document.getElementById("loadBtn");
   const saveBtn = document.getElementById("saveBtn");
   const heartBtn = document.getElementById("heartBtn");
+  const helpBtn = document.getElementById("helpBtn");
   const favoritesDropdown = document.getElementById("favoritesDropdown");
 
   // --- Favorites Dropdown Functionality ---
@@ -650,7 +685,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const workouts = getSavedWorkouts();
         let html = '';
         if (workouts.length === 0) {
-          html += '<div style="padding: 0.75rem 1rem; color: #888;">No saved workouts</div>';
+          html += '<div style="padding: 0.75rem 1rem; color: #888; font-size: 0.875rem;">No saved workouts</div>';
         } else {
           workouts.forEach(({key, name}) => {
             html += `<button class=\"favorites-dropdown-item favorites-load-item\" data-key=\"${key}\">${name}</button>`;
@@ -699,107 +734,236 @@ document.addEventListener("DOMContentLoaded", function () {
       const isActive = favoritesDropdown.classList.contains("active");
       closeAllDropdowns(favoritesDropdown);
       if (!isActive) {
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         favoritesDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+        }, 200);
       }
     });
+  }
+
+  // Help button functionality
+  if (helpBtn) {
+    const helpDropdown = document.getElementById("helpDropdown");
+    const quickStartMenuItem = document.getElementById("quickStartMenuItem");
+    const fullHelpMenuItem = document.getElementById("fullHelpMenuItem");
+    const aboutMenuItem = document.getElementById("aboutMenuItem");
+
+    helpBtn.addEventListener("click", function(event) {
+      event.stopPropagation();
+      const isActive = helpDropdown.classList.contains("active");
+      
+      if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(helpDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
+        helpDropdown.classList.add("active");
+        updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(helpDropdown);
+      }
+    });
+
+    // Quick Start menu item click
+    if (quickStartMenuItem) {
+      quickStartMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        helpDropdown.classList.remove("active");
+        // Open Quick Start guide in new tab
+        window.open("doc/quick-start.html", "_blank");
+      });
+    }
+
+    // Full Help menu item click
+    if (fullHelpMenuItem) {
+      fullHelpMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        helpDropdown.classList.remove("active");
+        // TODO: Implement Full Help functionality
+        alert("Full Help - Coming soon!");
+      });
+    }
+
+    // About menu item click
+    if (aboutMenuItem) {
+      aboutMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        helpDropdown.classList.remove("active");
+        showAboutModal();
+      });
+    }
   }
 
   // Attach listeners on initial load
   attachFavoritesRootMenuListeners();
 
-  // Chevron toggle functionality
+  // Chevron toggle functionality - simplified
   if (chevronBtn) {
     chevronBtn.addEventListener("click", function() {
       const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-      const chevronIcon = chevronBtn.querySelector('svg');
 
       if (buttonGroup) {
-        // More robust check for hidden state
+        // Check if toolbar is currently visible
         const computedStyle = window.getComputedStyle(buttonGroup);
-        const isHidden = buttonGroup.style.display === 'none' || 
-                        computedStyle.display === 'none' || 
-                        buttonGroup.style.visibility === 'hidden' ||
-                        computedStyle.visibility === 'hidden';
+        const isVisible = buttonGroup.style.display !== 'none' && 
+                         computedStyle.display !== 'none' && 
+                         buttonGroup.style.visibility !== 'hidden' &&
+                         computedStyle.visibility !== 'hidden';
 
-        console.log("Chevron clicked - buttonGroup display:", buttonGroup.style.display);
-        console.log("Chevron clicked - computed display:", computedStyle.display);
-        console.log("Chevron clicked - isHidden:", isHidden);
-
-        if (isHidden) {
-          // Show buttons with smooth animation
-          buttonGroup.style.display = 'flex';
-          buttonGroup.classList.remove('collapsing');
-          buttonGroup.style.opacity = '0';
-          buttonGroup.style.transform = 'translateY(-20px)';
-
-          // Trigger clockwise spin animation
-          chevronBtn.classList.remove('active');
-          setTimeout(() => {
-            chevronBtn.classList.add('active');
-          }, 10);
-
-          // Animate toolbar in
-          setTimeout(() => {
-            buttonGroup.style.opacity = '1';
-            buttonGroup.style.transform = 'translateY(0)';
-          }, 50);
-
-          chevronBtn.setAttribute('title', 'Hide toolbar');
-          // Set the current scroll position as the focused spot when opening chevron
-          lastFocusedScrollY = window.scrollY;
-          setToolbarIconsOpacity('1');
-          updateBackdropState();
-          
-          // Ensure the button group is actually visible
+        if (!isVisible) {
+          // Show toolbar
           buttonGroup.style.display = 'flex';
           buttonGroup.style.visibility = 'visible';
+          buttonGroup.style.opacity = '1';
+          buttonGroup.style.transform = 'none';
           
-          // Add glow effect to icon buttons when they're revealed
+          // Activate chevron
+          chevronBtn.classList.add('active');
+          chevronBtn.setAttribute('title', 'Hide toolbar');
+          
+          // Add glow effect to toolbar buttons
           const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
           toolbarButtons.forEach(button => {
             button.classList.add('glow-effect');
           });
+          
+          // Update backdrop state
+          updateBackdropState();
+          
+          // Add event listeners for deactivation
+          addToolbarDeactivationListeners();
         } else {
-          // Clear backdrop immediately when collapse is initiated
-          forceClearBackdrop();
-          
-          // Hide buttons with smooth animation
-          // Add collapsing class for right-to-left animation in landscape mode
-          buttonGroup.classList.add('collapsing');
-
-          // Trigger counter-clockwise spin animation
-          chevronBtn.classList.remove('active');
-          chevronBtn.setAttribute('title', 'Show toolbar');
-          chevronBtn.blur();
-          
-          // Add glow effect to icon buttons when they start disappearing
-          const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-          toolbarButtons.forEach(button => {
-            button.classList.add('glow-effect');
-          });
-
-          // Hide toolbar after animation
-          setTimeout(() => {
-            buttonGroup.style.display = 'none';
-            buttonGroup.style.visibility = 'hidden';
-            buttonGroup.classList.remove('collapsing');
-            
-            // Remove glow effect when toolbar is fully hidden
-            const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-            toolbarButtons.forEach(button => {
-              button.classList.remove('glow-effect');
-            });
-
-          }, 500);
-
-          // Fade out all toolbars when manually closed - sync with rotation animation
-          setTimeout(() => {
-            setToolbarIconsOpacity('0.3');
-          }, 500);
+          // Hide toolbar
+          hideToolbar();
         }
       }
     });
+  }
+
+  // Helper function to hide toolbar
+  function hideToolbar() {
+    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+    const chevronBtn = document.getElementById("chevronBtn");
+    
+    if (buttonGroup && chevronBtn) {
+      // Hide toolbar
+      buttonGroup.style.display = 'none';
+      buttonGroup.style.visibility = 'hidden';
+      buttonGroup.style.opacity = '0';
+      
+      // Deactivate chevron
+      chevronBtn.classList.remove('active');
+      chevronBtn.setAttribute('title', 'Show toolbar');
+      chevronBtn.blur();
+      
+      // Remove glow effect from toolbar buttons
+      const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
+      toolbarButtons.forEach(button => {
+        button.classList.remove('glow-effect');
+      });
+      
+      // Update backdrop state
+      updateBackdropState();
+      
+      // Remove deactivation listeners
+      removeToolbarDeactivationListeners();
+    }
+  }
+
+  // Helper function to add deactivation listeners
+  function addToolbarDeactivationListeners() {
+    // Click outside listener
+    document.addEventListener('click', handleToolbarClickOutside);
+    
+    // Focus loss listener
+    document.addEventListener('focusin', handleToolbarFocusLoss);
+    
+    // Scroll listener
+    window.addEventListener('scroll', handleToolbarScroll, { passive: true });
+  }
+
+  // Helper function to remove deactivation listeners
+  function removeToolbarDeactivationListeners() {
+    document.removeEventListener('click', handleToolbarClickOutside);
+    document.removeEventListener('focusin', handleToolbarFocusLoss);
+    window.removeEventListener('scroll', handleToolbarScroll);
+  }
+
+  // Handle click outside toolbar
+  function handleToolbarClickOutside(event) {
+    const leftToolbar = document.querySelector('.fixed.top-4.left-4');
+    if (leftToolbar && !leftToolbar.contains(event.target)) {
+      // Check if the click target is a dropdown item - if so, don't close the toolbar
+      const isDropdownItem = event.target.closest('.execute-dropdown-item, .editor-dropdown-item, .load-dropdown-item, .save-dropdown-item, .favorites-dropdown-item, .rocket-indicator-dropdown-item');
+      if (isDropdownItem) {
+        return; // Don't close toolbar when clicking dropdown items
+      }
+      
+      // Check if any dropdowns are active - if so, don't close the toolbar
+      const activeDropdowns = document.querySelectorAll('.execute-dropdown.active, .editor-dropdown.active, .load-dropdown.active, .save-dropdown.active, .favorites-dropdown.active, .rocket-indicator-dropdown.active');
+      if (activeDropdowns.length > 0) {
+        return; // Don't close toolbar if dropdowns are open
+      }
+      
+      // Add a small delay to prevent immediate closure when clicking dropdown items
+      setTimeout(() => {
+        // Check if the click target is still outside the toolbar after the delay
+        if (!leftToolbar.contains(event.target)) {
+          hideToolbar();
+        }
+      }, 100);
+    }
+  }
+
+  // Handle focus loss from toolbar
+  function handleToolbarFocusLoss(event) {
+    const leftToolbar = document.querySelector('.fixed.top-4.left-4');
+    if (leftToolbar && !leftToolbar.contains(event.target)) {
+      // Check if the click target is a dropdown item - if so, don't close the toolbar
+      const isDropdownItem = event.target.closest('.execute-dropdown-item, .editor-dropdown-item, .load-dropdown-item, .save-dropdown-item, .favorites-dropdown-item, .rocket-indicator-dropdown-item');
+      if (isDropdownItem) {
+        return; // Don't close toolbar when clicking dropdown items
+      }
+      
+      // Check if any dropdowns are active - if so, don't close the toolbar
+      const activeDropdowns = document.querySelectorAll('.execute-dropdown.active, .editor-dropdown.active, .load-dropdown.active, .save-dropdown.active, .favorites-dropdown.active, .rocket-indicator-dropdown.active');
+      if (activeDropdowns.length > 0) {
+        return; // Don't close toolbar if dropdowns are open
+      }
+      
+      // Add a small delay to prevent immediate closure when clicking dropdown items
+      setTimeout(() => {
+        // Check if the toolbar is still focused after the delay
+        const activeElement = document.activeElement;
+        if (!leftToolbar.contains(activeElement)) {
+          hideToolbar();
+        }
+      }, 100);
+    }
+  }
+
+  // Handle scroll to hide toolbar
+  function handleToolbarScroll() {
+    hideToolbar();
   }
 
   if (editorBtn) {
@@ -852,12 +1016,30 @@ document.addEventListener("DOMContentLoaded", function () {
     executeBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = executeDropdown.classList.contains("active");
-      closeAllDropdowns(executeDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(executeDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         executeDropdown.classList.add("active");
         prepTimeMenuState.current = 'main';
         showExecuteMainMenu();
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(executeDropdown);
       }
     });
 
@@ -1028,10 +1210,28 @@ document.addEventListener("DOMContentLoaded", function () {
     editorBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = editorDropdown.classList.contains("active");
-      closeAllDropdowns(editorDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(editorDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         editorDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(editorDropdown);
       }
     });
 
@@ -1041,6 +1241,17 @@ document.addEventListener("DOMContentLoaded", function () {
         event.stopPropagation();
         editorDropdown.classList.remove("active");
         autoCompleteModal.classList.remove("hidden");
+      });
+    }
+
+    // Open Editor menu item click
+    const openEditorMenuItem = document.getElementById("openEditorMenuItem");
+    if (openEditorMenuItem) {
+      openEditorMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        editorDropdown.classList.remove("active");
+        // Navigate to the editor.html page
+        window.location.href = "editor.html";
       });
     }
 
@@ -1115,10 +1326,28 @@ document.addEventListener("DOMContentLoaded", function () {
     loadBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = loadDropdown.classList.contains("active");
-      closeAllDropdowns(loadDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(loadDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         loadDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(loadDropdown);
       }
     });
 
@@ -1146,6 +1375,16 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
+    // Load from URL menu item click
+    const loadUrlMenuItem = document.getElementById("loadUrlMenuItem");
+    if (loadUrlMenuItem) {
+      loadUrlMenuItem.addEventListener("click", function(event) {
+        event.stopPropagation();
+        loadDropdown.classList.remove("active");
+        handleLoadWorkoutFromUrl();
+      });
+    }
+
 
   }
 
@@ -1158,10 +1397,28 @@ document.addEventListener("DOMContentLoaded", function () {
     saveBtn.addEventListener("click", function(event) {
       event.stopPropagation();
       const isActive = saveDropdown.classList.contains("active");
-      closeAllDropdowns(saveDropdown);
+      
       if (!isActive) {
+        // Set flag to prevent global click handler interference FIRST
+        window.isOpeningDropdown = true;
+        
+        // Now close other dropdowns (but not this one)
+        closeAllDropdowns(saveDropdown);
+        
+        // Temporarily disable deactivation listeners to prevent immediate closure
+        removeToolbarDeactivationListeners();
+        
         saveDropdown.classList.add("active");
         updateBackdropState();
+        
+        // Re-enable deactivation listeners after a short delay
+        setTimeout(() => {
+          addToolbarDeactivationListeners();
+          window.isOpeningDropdown = false;
+        }, 200);
+      } else {
+        // If already active, just close it
+        closeAllDropdowns(saveDropdown);
       }
     });
 
@@ -1197,7 +1454,9 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("editorBtn"),
       document.getElementById("loadBtn"),
       document.getElementById("saveBtn"),
-      document.getElementById("heartBtn")
+      document.getElementById("heartBtn"),
+      document.getElementById("helpBtn"),
+      document.getElementById("themeToggle")
     ];
 
     const toolbarDropdowns = [
@@ -1205,7 +1464,9 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
       document.getElementById("saveDropdown"),
-      document.getElementById("favoritesDropdown")
+      document.getElementById("favoritesDropdown"),
+      document.getElementById("helpDropdown"),
+      document.getElementById("themeDropdown")
     ];
 
     let clickedOnDropdownOrButton = false;
@@ -1251,9 +1512,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // If click was outside all dropdowns and buttons, close all dropdowns
-    if (!clickedOnDropdownOrButton) {
+    // Don't close dropdowns if we're in the process of opening one
+    if (!clickedOnDropdownOrButton && !window.isOpeningDropdown) {
       closeAllDropdowns();
-      forceClearBackdrop(); // Clear backdrop immediately
     }
   });
 
@@ -1265,7 +1526,8 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
       document.getElementById("saveDropdown"),
-      document.getElementById("favoritesDropdown")
+      document.getElementById("favoritesDropdown"),
+      document.getElementById("helpDropdown")
     ];
 
     let focusedInDropdown = false;
@@ -1318,7 +1580,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         });
 
-        if (!stillFocusedInDropdown) {
+        if (!stillFocusedInDropdown && !window.isOpeningDropdown) {
           closeAllDropdowns();
         }
       }, 50);
@@ -1328,151 +1590,24 @@ document.addEventListener("DOMContentLoaded", function () {
   // Close all dropdowns when the window loses focus
   window.addEventListener("blur", function() {
     closeAllDropdowns();
-    forceClearBackdrop(); // Clear backdrop immediately
   });
 
   // Close all dropdowns on escape key
   document.addEventListener("keydown", function(event) {
     if (event.key === "Escape") {
       closeAllDropdowns();
-      forceClearBackdrop(); // Clear backdrop immediately
     }
   });
 
   // --- Distance-based Toolbar Fade Effect ---
-  let isToolbarHovered = false;
-  let lastFocusedScrollY = 0; // Track the scroll position where toolbar was last fully visible
-  let currentScrollOpacity = 1;
-  let fadeDistance = 100; // Distance in pixels to fade from focused spot
 
-  function setToolbarIconsOpacity(opacity) {
-    const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-    toolbarButtons.forEach(button => {
-      button.style.transition = 'opacity 0.3s ease';
-      button.style.opacity = opacity;
-    });
-  }
 
-  function updateToolbarOpacity() {
-    const scrollY = window.scrollY;
 
-    // Special case: Full opacity when at the very top of the window
-    if (scrollY === 0) {
-      lastFocusedScrollY = 0; // Set the top as the focused spot
-      currentScrollOpacity = 1;
-      if (!isToolbarHovered) {
-        setToolbarIconsOpacity(1);
-      }
-      return;
-    }
 
-    const distanceFromFocused = Math.abs(scrollY - lastFocusedScrollY);
-
-    // Calculate opacity based on distance from focused spot
-    let opacity = 1;
-    if (distanceFromFocused > 0) {
-      opacity = Math.max(0.3, 1 - (distanceFromFocused / fadeDistance));
-    }
-    currentScrollOpacity = opacity;
-
-    // Apply opacity to all toolbar buttons (unless hovered)
-    if (!isToolbarHovered) {
-      setToolbarIconsOpacity(opacity);
-    }
-
-    // Auto-collapse chevron and fade out toolbars when scrolled away from focused spot
-    const chevronBtn = document.getElementById("chevronBtn");
-    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-
-    if (chevronBtn && buttonGroup && distanceFromFocused > 20) { // Collapse after 20px from focused spot
-      const computedStyle = window.getComputedStyle(buttonGroup);
-      const isVisible = buttonGroup.style.display !== 'none' && 
-                       computedStyle.display !== 'none' && 
-                       buttonGroup.style.visibility !== 'hidden' &&
-                       computedStyle.visibility !== 'hidden';
-      
-      if (isVisible) {
-        // Clear backdrop immediately when auto-collapse is initiated
-        forceClearBackdrop();
-        
-        // Hide buttons with smooth animation
-        buttonGroup.style.opacity = '0';
-        buttonGroup.style.transform = 'translateY(-20px)';
-
-        // Trigger counter-clockwise spin animation for auto-collapse
-        chevronBtn.classList.remove('active');
-        chevronBtn.setAttribute('title', 'Show toolbar');
-        chevronBtn.blur();
-        
-        // Add glow effect to icon buttons when they start disappearing
-        const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-        toolbarButtons.forEach(button => {
-          button.classList.add('glow-effect');
-        });
-
-        // Hide toolbar after animation
-        setTimeout(() => {
-          buttonGroup.style.display = 'none';
-          
-          // Remove glow effect when toolbar is fully hidden
-          const toolbarButtons = document.querySelectorAll('.theme-toggle, .rocket-toggle, .duck-toggle, .toolbar-icon-btn');
-          toolbarButtons.forEach(button => {
-            button.classList.remove('glow-effect');
-          });
-
-        }, 1000);
-
-        // Fade out all toolbars when auto-collapsed - sync with rotation animation
-        setTimeout(() => {
-          setToolbarIconsOpacity('0.3');
-        }, 1000);
-      }
-    }
-  }
-
-  // Add scroll event listener
+  // Simplified scroll handling - just update backdrop state
   window.addEventListener('scroll', () => {
-    // Clear backdrop immediately on any scroll
-    forceClearBackdrop();
-    updateToolbarOpacity();
-  });
-
-  // Add hover/focus effects for toolbar containers
-  const leftToolbar = document.querySelector('.fixed.top-4.left-4');
-  const rightToolbar = document.querySelector('.fixed.top-4.right-4');
-
-  function handleToolbarEnter() {
-    isToolbarHovered = true;
-    // Set the current scroll position as the focused spot when hovering
-    lastFocusedScrollY = window.scrollY;
-    setToolbarIconsOpacity('1');
     updateBackdropState();
-  }
-
-  function handleToolbarLeave() {
-    isToolbarHovered = false;
-    // Clear backdrop immediately when mouse leaves toolbar
-    forceClearBackdrop();
-    // Update opacity based on distance from the focused spot
-    updateToolbarOpacity();
-  }
-
-  if (leftToolbar) {
-    leftToolbar.addEventListener('mouseenter', handleToolbarEnter);
-    leftToolbar.addEventListener('mouseleave', handleToolbarLeave);
-    leftToolbar.addEventListener('focusin', handleToolbarEnter);
-    leftToolbar.addEventListener('focusout', handleToolbarLeave);
-  }
-
-  if (rightToolbar) {
-    rightToolbar.addEventListener('mouseenter', handleToolbarEnter);
-    rightToolbar.addEventListener('mouseleave', handleToolbarLeave);
-    rightToolbar.addEventListener('focusin', handleToolbarEnter);
-    rightToolbar.addEventListener('focusout', handleToolbarLeave);
-  }
-
-  // Initialize opacity on page load
-  updateToolbarOpacity();
+  });
 
   // iOS Safari detection and fallback setup
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -1484,9 +1619,14 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add('ios-safari');
   }
 
-  // Clear backdrop immediately when clicking anywhere on the page
+  // Collapse toolbar when clicking outside (blur will automatically follow)
   document.addEventListener('click', function(event) {
-    // Don't clear if clicking on toolbar elements
+    // Don't collapse if we're in the process of opening a dropdown
+    if (window.isOpeningDropdown) {
+      return;
+    }
+    
+    // Don't collapse if clicking on toolbar elements
     const toolbarElements = document.querySelectorAll('.fixed.top-4.left-4, .fixed.top-4.right-4');
     let clickedOnToolbar = false;
     
@@ -1497,31 +1637,24 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     if (!clickedOnToolbar) {
-      forceClearBackdrop();
+      // Collapse the toolbar if it's expanded
+      const chevronBtn = document.getElementById("chevronBtn");
+      const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
+      
+      if (chevronBtn && buttonGroup) {
+        const computedStyle = window.getComputedStyle(buttonGroup);
+        const isExpanded = computedStyle.display !== 'none' && 
+                          computedStyle.visibility !== 'hidden';
+        
+        if (isExpanded) {
+          // Trigger the chevron click to collapse the toolbar
+          chevronBtn.click();
+        }
+      }
     }
   });
 
-  // Periodic safety check to ensure backdrop is cleared when toolbar is collapsed
-  setInterval(() => {
-    const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-    const backdrop = document.getElementById("dropdownBackdrop");
-    
-    if (backdrop && backdrop.classList.contains("active")) {
-      let isToolbarExpanded = false;
-      if (buttonGroup) {
-        const computedStyle = window.getComputedStyle(buttonGroup);
-        isToolbarExpanded = buttonGroup.style.display !== 'none' && 
-                           computedStyle.display !== 'none' && 
-                           buttonGroup.style.visibility !== 'hidden' &&
-                           computedStyle.visibility !== 'hidden';
-      }
-      
-      if (!isToolbarExpanded) {
-        console.log("Safety check: Clearing backdrop - toolbar not expanded");
-        forceClearBackdrop();
-      }
-    }
-  }, 1000); // Check every second
+
 
   // Listen for system theme changes (only if no user preference is saved)
   window
@@ -1802,17 +1935,40 @@ document.addEventListener("DOMContentLoaded", function () {
     const shotObject = {
       type: "Shot",
       id: shotElement.id || generateUniqueId(),
-      name: titleInput ? titleInput.value : "New shot",
+      name: titleInput ? titleInput.value : "",
       positionType: getPositionType(shotElement),
     };
 
     // Build config object with all values
     const config = {};
     
-    // Include repeatCount
-    const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
-    if (repeatCount > 1) {
-      config.repeatCount = repeatCount;
+    // Include repeatCount (handle both fixed and random)
+    const repeatTypeSelect = shotElement.querySelector(".repeat-type-select");
+    const isRandomRepeat = repeatTypeSelect && repeatTypeSelect.value === "random";
+    
+    if (isRandomRepeat) {
+      // Read from dataset values managed by the custom range slider UI
+      const rawMin = parseInt(shotElement.dataset.minValue || '0');
+      const rawMax = parseInt(shotElement.dataset.maxValue || '3');
+
+      const clampedMin = Math.max(0, Math.min(10, rawMin));
+      const clampedMax = Math.max(Math.max(clampedMin, 1), Math.min(10, rawMax));
+
+      if (clampedMin !== 1 || clampedMax !== 1) {
+        config.repeatCount = {
+          type: "random",
+          min: clampedMin,
+          max: clampedMax
+        };
+      }
+    } else {
+      const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
+      if (repeatCount > 1) {
+        config.repeatCount = {
+          type: "fixed",
+          count: repeatCount
+        };
+      }
     }
 
     // Include interval
@@ -1965,6 +2121,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const skipAtEnd = skipAtEndCheckbox
       ? skipAtEndCheckbox.checked
       : false;
+    // Always include skipAtEndOfWorkout when it's explicitly set, regardless of inheritance
     config.skipAtEndOfWorkout = skipAtEnd;
 
     // Preserve original data for properties not exposed in UI
@@ -2057,10 +2214,33 @@ document.addEventListener("DOMContentLoaded", function () {
     // Build config object with all values
     const config = {};
 
-    // Include repeat count
-    const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
-    if (repeatCount > 1) {
-      config.repeatCount = repeatCount;
+    // Include repeat count (handle both fixed and random)
+    const repeatTypeSelect = patternElement.querySelector(".repeat-type-select");
+    const isRandomRepeat = repeatTypeSelect && repeatTypeSelect.value === "random";
+    
+    if (isRandomRepeat) {
+      // Read from dataset values managed by the custom range slider UI
+      const rawMin = parseInt(patternElement.dataset.minValue || '0');
+      const rawMax = parseInt(patternElement.dataset.maxValue || '3');
+
+      const clampedMin = Math.max(0, Math.min(10, rawMin));
+      const clampedMax = Math.max(Math.max(clampedMin, 1), Math.min(10, rawMax));
+
+      if (clampedMin !== 1 || clampedMax !== 1) {
+        config.repeatCount = {
+          type: "random",
+          min: clampedMin,
+          max: clampedMax
+        };
+      }
+    } else {
+      const repeatCount = repeatSlider ? parseInt(repeatSlider.value) : 1;
+      if (repeatCount > 1) {
+        config.repeatCount = {
+          type: "fixed",
+          count: repeatCount
+        };
+      }
     }
 
     // Include iteration type
@@ -2259,8 +2439,14 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
+    // Special handling for skipAtEndOfWorkout
+    // Always preserve skipAtEndOfWorkout when it's explicitly set, regardless of inheritance
+    if (config.skipAtEndOfWorkout !== undefined) {
+      cleanedConfig.skipAtEndOfWorkout = config.skipAtEndOfWorkout;
+    }
+
     // Remove repeatCount if it's 1 (default)
-    if (cleanedConfig.repeatCount === 1) {
+    if (cleanedConfig.repeatCount && cleanedConfig.repeatCount.type === "fixed" && cleanedConfig.repeatCount.count === 1) {
       delete cleanedConfig.repeatCount;
     }
 
@@ -2631,10 +2817,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const shotLimitSlider = newPattern.querySelector(".shot-limit-slider");
       const timeLimitSlider = newPattern.querySelector(".time-limit-slider");
 
-      if (repeatSlider && config.repeatCount) {
-        repeatSlider.value = config.repeatCount;
-        const repeatValue = newPattern.querySelector(".repeat-value");
-        if (repeatValue) repeatValue.textContent = `${config.repeatCount}x`;
+      if (config.repeatCount) {
+        loadRepeatConfiguration(newPattern, config.repeatCount);
       }
 
       if (iterationSelect && config.iterationType) {
@@ -2822,10 +3006,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const intervalSlider = shotElement.querySelector(".shot-interval-slider");
       const leadTimeSlider = shotElement.querySelector(".lead-time-slider");
 
-      if (repeatSlider && config.repeatCount) {
-        repeatSlider.value = config.repeatCount;
-        const repeatValue = shotElement.querySelector(".repeat-value");
-        if (repeatValue) repeatValue.textContent = `${config.repeatCount}x`;
+      if (config.repeatCount) {
+        loadRepeatConfiguration(shotElement, config.repeatCount);
       }
 
       if (intervalSlider && config.interval) {
@@ -3029,10 +3211,8 @@ document.addEventListener("DOMContentLoaded", function () {
         ".skip-at-end-of-workout",
       );
 
-      if (repeatSlider && config.repeatCount) {
-        repeatSlider.value = config.repeatCount;
-        const repeatValue = messageElement.querySelector(".repeat-value");
-        if (repeatValue) repeatValue.textContent = `${config.repeatCount}x`;
+      if (config.repeatCount) {
+        loadRepeatConfiguration(messageElement, config.repeatCount);
       }
 
       if (messageInput && config.message) {
@@ -3268,9 +3448,9 @@ document.addEventListener("DOMContentLoaded", function () {
       // Must be a shot (not a message)
       if (!entry.classList.contains("shot-instance")) return false;
 
-      // Check shot title
+      // Check shot title - allow empty names as default
       const shotTitle = entry.querySelector(".shot-title");
-      if (shotTitle && shotTitle.value !== "New shot") return false;
+      if (shotTitle && shotTitle.value !== "New shot" && shotTitle.value !== "") return false;
 
       // Check shot repeat count
       const shotRepeat = entry.querySelector(".repeat-slider");
@@ -3369,49 +3549,148 @@ document.addEventListener("DOMContentLoaded", function () {
    * Handles pasting a workout from clipboard.
    */
   async function handlePasteWorkout() {
+    // Detect Firefox for better clipboard handling
+    const isFirefox = navigator.userAgent.includes('Firefox');
+    
+    // For Firefox, skip clipboard API entirely and use manual paste
+    if (isFirefox) {
+      // Create an inline paste form instead of using popup dialogs
+      showManualPasteModal();
+      return;
+    }
+    
+    // For other browsers, try clipboard API first
     try {
-      // Try modern clipboard API first
+      // Use modern clipboard API directly
       if (navigator.clipboard && navigator.clipboard.readText) {
-        try {
-          // Read text from clipboard
-          const clipboardText = await navigator.clipboard.readText();
-
-          if (clipboardText && clipboardText.trim() !== "") {
-            await processClipboardText(clipboardText);
-            return;
-          } else {
-            // Fallback to manual paste if clipboard is empty
-            showManualPasteDialog();
-            return;
+        const clipboardText = await navigator.clipboard.readText();
+        
+        if (clipboardText && clipboardText.trim() !== "") {
+          await processClipboardText(clipboardText);
+        } else {
+          console.log("Clipboard is empty");
+        }
+      } else {
+        console.log("Clipboard API not available");
+      }
+    } catch (error) {
+      console.error("Error reading from clipboard:", error);
+      
+      // Handle permission denied error with user-friendly fallback
+      if (error.name === 'NotAllowedError') {
+        // Chrome/other browsers - show user-friendly message about clipboard access
+        const useManualPaste = confirm(
+          "Browser requires clipboard permission for direct pasting.\n\n" +
+          "Click OK to use manual paste, or Cancel to try clipboard again.\n\n" +
+          "Tip: You can also grant clipboard permission in the browser's address bar."
+        );
+        
+        if (useManualPaste) {
+          // Use the same beautiful modal for all manual paste scenarios
+          showManualPasteModal();
+        } else {
+          // User wants to try clipboard again (maybe they granted permission)
+          try {
+            const clipboardText = await navigator.clipboard.readText();
+            if (clipboardText && clipboardText.trim() !== "") {
+              await processClipboardText(clipboardText);
+              return;
+            }
+          } catch (retryError) {
+            console.log("Clipboard still not accessible, using manual paste");
+            // Use the same beautiful modal for all manual paste scenarios
+            showManualPasteModal();
           }
-        } catch (clipboardError) {
-          console.log("Clipboard API failed, falling back to manual paste:", clipboardError);
-          // Fall through to manual paste fallback
         }
       }
-
-      // Fallback for Safari and other browsers with restricted clipboard access
-      showManualPasteDialog();
-
-    } catch (error) {
-      console.error("Error in handlePasteWorkout:", error);
-      showManualPasteDialog();
     }
   }
 
   /**
-   * Shows a manual paste dialog for Safari and other restricted browsers.
+   * Shows a beautiful modal for manual paste scenarios (used by all browsers).
    */
-  async function showManualPasteDialog() {
-    const pastedText = prompt(
-      "Safari requires manual pasting due to security restrictions.\n\n" +
-      "Please paste your workout JSON below:",
-      ""
-    );
-
-    if (pastedText !== null && pastedText.trim() !== "") {
-      await processClipboardText(pastedText);
+  function showManualPasteModal() {
+    // Remove any existing paste form
+    const existingForm = document.getElementById('manualPasteModal');
+    if (existingForm) {
+      existingForm.remove();
     }
+
+    // Create the modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'manualPasteModal';
+    modalOverlay.className = 'modal-overlay';
+    modalOverlay.style.zIndex = '1000';
+
+    // Create the modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.style.maxWidth = '600px';
+    modalContent.style.width = '90%';
+
+    modalContent.innerHTML = `
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Paste Workout JSON</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Please paste your workout JSON below:
+      </p>
+      <textarea 
+        id="pasteTextarea" 
+        class="w-full h-48 p-3 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm resize-y bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+        placeholder="Paste your workout JSON here..."
+      ></textarea>
+      <div class="flex justify-end space-x-3 mt-4">
+        <button id="submitPaste" class="px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2" style="background-color: #2563eb !important; color: white !important; border: none !important;"
+          onmouseover="this.style.setProperty('background-color', '#1d4ed8', 'important')"
+          onmouseout="this.style.setProperty('background-color', '#2563eb', 'important')"
+          onfocus="this.style.setProperty('background-color', '#2563eb', 'important')"
+          onblur="this.style.setProperty('background-color', '#2563eb', 'important')"
+        >
+          OK
+        </button>
+        <button id="cancelPaste" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+          Cancel
+        </button>
+      </div>
+    `;
+
+    // Add content to overlay
+    modalOverlay.appendChild(modalContent);
+
+    // Add to page
+    document.body.appendChild(modalOverlay);
+
+    // Focus the textarea
+    const textarea = document.getElementById('pasteTextarea');
+    textarea.focus();
+
+    // Handle submit
+    document.getElementById('submitPaste').addEventListener('click', async () => {
+      const text = textarea.value.trim();
+      if (text) {
+        modalOverlay.remove();
+        await processClipboardText(text);
+      }
+    });
+
+    // Handle cancel
+    document.getElementById('cancelPaste').addEventListener('click', () => {
+      modalOverlay.remove();
+    });
+
+    // Handle click outside to close (like other modals)
+    modalOverlay.addEventListener('click', function(e) {
+      if (e.target === modalOverlay) {
+        modalOverlay.remove();
+      }
+    });
+
+    // Handle escape key
+    document.addEventListener('keydown', function escapeHandler(e) {
+      if (e.key === 'Escape') {
+        modalOverlay.remove();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    });
   }
 
   /**
@@ -3449,6 +3728,110 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (parseError) {
       console.error("Error parsing JSON:", parseError);
       alert("Error: The text does not contain valid JSON. Please copy a valid workout JSON first.");
+    }
+  }
+
+  /**
+   * Handles loading a workout from a URL.
+   */
+  async function handleLoadWorkoutFromUrl() {
+    try {
+      // Prompt user for URL
+      const url = prompt(
+        "Enter the URL of the workout to load:\n\n" +
+        "Supported formats:\n" +
+        "• Direct JSON URLs\n" +
+        "• Hastebin links (will be converted to raw format)\n" +
+        "• Any other URL that returns workout JSON",
+        ""
+      );
+
+      if (!url || url.trim() === "") {
+        return; // User cancelled
+      }
+
+      const trimmedUrl = url.trim();
+      
+      // Show loading overlay
+      showLoadingOverlay();
+
+      try {
+        // Convert Hastebin URLs to raw format
+        let fetchUrl = trimmedUrl;
+        if (trimmedUrl.includes('hastebin.com/') && !trimmedUrl.includes('/raw/')) {
+          const key = trimmedUrl.split('/').pop();
+          fetchUrl = `https://hastebin.com/raw/${key}`;
+        }
+
+        // Fetch the workout data
+        const response = await fetch(fetchUrl);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const text = await response.text();
+        
+        // Try to extract JSON from the response
+        let jsonData;
+        try {
+          // First try to parse as direct JSON
+          jsonData = JSON.parse(text);
+        } catch (parseError) {
+          // If that fails, try to extract JSON from commented content
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              jsonData = JSON.parse(jsonMatch[0]);
+            } catch (secondParseError) {
+              throw new Error("Could not extract valid JSON from the response");
+            }
+          } else {
+            throw new Error("No JSON content found in the response");
+          }
+        }
+
+        // If the JSON is an array, take the first element
+        if (Array.isArray(jsonData)) {
+          jsonData = jsonData[0];
+        }
+
+        // Validate the JSON structure
+        const validation = await validateWorkoutJSON(jsonData);
+        if (!validation.success) {
+          const errorMessage =
+            "Invalid workout file:\n\n" + validation.errors.join("\n");
+          alert(errorMessage);
+          console.error("Validation errors:", validation.errors);
+          hideLoadingOverlay();
+          return;
+        }
+
+        // Check if current workout is in default state
+        const isDefault = isWorkoutInDefaultState();
+
+        // Skip confirmation if workout is in default state, otherwise confirm
+        if (
+          isDefault ||
+          confirm(
+            "This will replace your current workout. Are you sure you want to continue?",
+          )
+        ) {
+          loadWorkout(jsonData);
+          console.log("Workout loaded from URL successfully");
+        }
+
+      } catch (fetchError) {
+        console.error("Error fetching workout from URL:", fetchError);
+        alert("Failed to load workout from URL. Please check the URL and try again.\n\nError: " + fetchError.message);
+      } finally {
+        hideLoadingOverlay();
+      }
+
+    } catch (error) {
+      console.error("Error in handleLoadWorkoutFromUrl:", error);
+      hideLoadingOverlay();
+      alert("Error loading workout from URL. Please try again.");
     }
   }
 
@@ -3593,10 +3976,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const shotLimitSlider = newPattern.querySelector(".shot-limit-slider");
       const timeLimitSlider = newPattern.querySelector(".time-limit-slider");
 
-      if (repeatSlider && config.repeatCount) {
-        repeatSlider.value = config.repeatCount;
-        const repeatValue = newPattern.querySelector(".repeat-value");
-        if (repeatValue) repeatValue.textContent = `${config.repeatCount}x`;
+      if (config.repeatCount) {
+        loadRepeatConfiguration(newPattern, config.repeatCount);
       }
 
       if (iterationSelect && config.iterationType) {
@@ -3780,10 +4161,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const intervalSlider = shotElement.querySelector(".shot-interval-slider");
       const leadTimeSlider = shotElement.querySelector(".lead-time-slider");
 
-      if (repeatSlider && config.repeatCount) {
-        repeatSlider.value = config.repeatCount;
-        const repeatValue = shotElement.querySelector(".repeat-value");
-        if (repeatValue) repeatValue.textContent = `${config.repeatCount}x`;
+      if (config.repeatCount) {
+        loadRepeatConfiguration(shotElement, config.repeatCount);
       }
 
       if (intervalSlider && config.interval) {
@@ -3984,7 +4363,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const titleSelector = type === "shot" ? ".shot-title" : ".message-title";
     const titleInput = newInstance.querySelector(titleSelector);
     if (titleInput) {
-      titleInput.value = type === "shot" ? "New shot" : "";
+      titleInput.value = type === "shot" ? "" : "";
     }
 
     // Set basic dataset properties without expensive updates
@@ -4170,6 +4549,13 @@ document.addEventListener("DOMContentLoaded", function () {
             ? "Skip at end of workout"
             : "Always play message";
         }
+        
+        // Mark the property as customized since it has an explicit value
+        const messageElement = skipCheckbox.closest('.message-instance');
+        if (messageElement) {
+          // Mark it as customized regardless of the state to ensure it's saved
+          markPropertyAsCustomized(messageElement, 'skipAtEndOfWorkout');
+        }
       });
 
     // Update all position lock buttons
@@ -4243,60 +4629,39 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Updates the backdrop blur state based on toolbar expansion.
+   * Updates the backdrop blur state based on toolbar visibility.
+   * Applies blur to background content when toolbar icons are visible.
    */
   function updateBackdropState() {
-    console.log("updateBackdropState() called");
     const backdrop = document.getElementById("dropdownBackdrop");
     const webappContainer = document.querySelector(".webapp-container");
+    const chevronBtn = document.getElementById("chevronBtn");
     
-    if (!backdrop || !webappContainer) {
-      console.log("Backdrop or webapp container not found");
+    if (!backdrop || !webappContainer || !chevronBtn) {
       return;
     }
     
-    // Check if toolbar is expanded (button group is visible)
+    // Check if toolbar icons are visible
     const buttonGroup = document.querySelector('.fixed.top-4.left-4 > div:last-child');
-    let isToolbarExpanded = false;
+    let iconsVisible = false;
     
     if (buttonGroup) {
       const computedStyle = window.getComputedStyle(buttonGroup);
-      isToolbarExpanded = buttonGroup.style.display !== 'none' && 
-                         computedStyle.display !== 'none' && 
-                         buttonGroup.style.visibility !== 'hidden' &&
-                         computedStyle.visibility !== 'hidden';
+      iconsVisible = computedStyle.display !== 'none' && 
+                    computedStyle.visibility !== 'hidden';
     }
     
-    console.log("Toolbar expanded:", isToolbarExpanded);
-    
-    if (isToolbarExpanded) {
+    // Apply blur to background when icons are visible
+    if (iconsVisible) {
       backdrop.classList.add("active");
       webappContainer.classList.add("dropdown-active");
-      console.log("Backdrop activated - toolbar expanded");
     } else {
       backdrop.classList.remove("active");
       webappContainer.classList.remove("dropdown-active");
-      console.log("Backdrop deactivated - toolbar collapsed");
     }
   }
 
-  /**
-   * Force clears the backdrop blur effect.
-   * This is a safety function to ensure backdrop is always cleared when needed.
-   */
-  function forceClearBackdrop() {
-    console.log("forceClearBackdrop() called");
-    const backdrop = document.getElementById("dropdownBackdrop");
-    const webappContainer = document.querySelector(".webapp-container");
-    
-    if (backdrop) {
-      backdrop.classList.remove("active");
-    }
-    if (webappContainer) {
-      webappContainer.classList.remove("dropdown-active");
-    }
-    console.log("Backdrop force cleared");
-  }
+
 
 
 
@@ -4312,7 +4677,9 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("editorDropdown"),
       document.getElementById("loadDropdown"),
       document.getElementById("saveDropdown"),
-      document.getElementById("favoritesDropdown")
+      document.getElementById("favoritesDropdown"),
+      document.getElementById("helpDropdown"),
+      document.getElementById("themeDropdown")
     ];
 
     toolbarDropdowns.forEach(dropdown => {
@@ -5964,6 +6331,94 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // --- New Range Slider Logic ---
+  let activeSliderContext = null;
+  
+  function startSliderDrag(e, context) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeSliderContext = context;
+      document.body.classList.add('no-select');
+      document.addEventListener('mousemove', onSliderDrag);
+      document.addEventListener('touchmove', onSliderDrag, { passive: false });
+      document.addEventListener('mouseup', endSliderDrag);
+      document.addEventListener('touchend', endSliderDrag);
+  }
+  
+  function onSliderDrag(e) {
+      if (!activeSliderContext) return;
+      e.preventDefault();
+  
+      const { container, minThumb, maxThumb, min, max, step, gap, instanceElement } = activeSliderContext;
+      const activeThumb = activeSliderContext.activeThumb;
+  
+      // Use the track's dimensions for accurate calculations, accounting for the new padding
+      const trackElement = container.querySelector('.repeat-range-track');
+      if (!trackElement) return;
+      const rect = trackElement.getBoundingClientRect();
+  
+      const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+      let newPixelValue = clientX - rect.left;
+  
+      // Clamp the pixel value within the track's bounds
+      const effectiveWidth = rect.width;
+      newPixelValue = Math.max(0, Math.min(newPixelValue, effectiveWidth));
+  
+      const totalRange = max - min;
+      let newValue = (newPixelValue / effectiveWidth) * totalRange + min;
+      newValue = Math.round(newValue / step) * step;
+  
+      let currentMinVal = parseFloat(instanceElement.dataset.minValue || min);
+      let currentMaxVal = parseFloat(instanceElement.dataset.maxValue || max);
+  
+      if (activeThumb === activeThumb) { // A logic error was corrected here
+          if (activeThumb === minThumb) {
+              newValue = Math.min(newValue, currentMaxVal - gap);
+              currentMinVal = newValue;
+          } else {
+              newValue = Math.max(newValue, currentMinVal + gap);
+              currentMaxVal = newValue;
+          }
+      }
+  
+      currentMinVal = Math.max(min, currentMinVal);
+      currentMaxVal = Math.min(max, currentMaxVal);
+  
+      updateSliderUI({ ...activeSliderContext, minVal: currentMinVal, maxVal: currentMaxVal });
+  }
+  
+  function endSliderDrag() {
+      if (!activeSliderContext) return;
+      document.body.classList.remove('no-select');
+      document.removeEventListener('mousemove', onSliderDrag);
+      document.removeEventListener('touchmove', onSliderDrag);
+      document.removeEventListener('mouseup', endSliderDrag);
+      document.removeEventListener('touchend', endSliderDrag);
+  
+      updateRepeatTypeDisplay(activeSliderContext.instanceElement);
+      updateRocketIndicator(activeSliderContext.instanceElement);
+  
+      activeSliderContext = null;
+  }
+
+  function updateSliderUI(context) {
+      const { minThumb, maxThumb, rangeFill, min, max, minVal, maxVal, instanceElement } = context;
+  
+      instanceElement.dataset.minValue = minVal;
+      instanceElement.dataset.maxValue = maxVal;
+  
+      const minPercent = ((minVal - min) / (max - min)) * 100;
+      const maxPercent = ((maxVal - min) / (max - min)) * 100;
+  
+      minThumb.style.left = `${minPercent}%`;
+      maxThumb.style.left = `${maxPercent}%`;
+  
+      rangeFill.style.left = `${minPercent}%`;
+      rangeFill.style.width = `${maxPercent - minPercent}%`;
+  
+      updateRepeatTypeDisplay(instanceElement);
+  }
+
   /**
    * Switches tabs within a given instance.
    * @param {HTMLElement} instanceContainer The root element of the instance.
@@ -5994,6 +6449,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const repeatSlider = instanceElement.querySelector(".repeat-slider");
     const repeatValueSpan = instanceElement.querySelector(".repeat-value");
+    const repeatTypeSelect = instanceElement.querySelector(".repeat-type-select");
+    const repeatFixedContainer = instanceElement.querySelector(".repeat-fixed-container");
+    const repeatRandomContainer = instanceElement.querySelector(".repeat-random-container");
+    const repeatMinSlider = instanceElement.querySelector(".repeat-min-slider");
+    const repeatMaxSlider = instanceElement.querySelector(".repeat-max-slider");
+    if (repeatRandomContainer) {
+        const sliderContainer = repeatRandomContainer.querySelector('.repeat-slider-container');
+        const minThumb = repeatRandomContainer.querySelector('.repeat-min-thumb');
+        const maxThumb = repeatRandomContainer.querySelector('.repeat-max-thumb');
+        const rangeFill = repeatRandomContainer.querySelector('.repeat-range-fill');
+    
+        if (sliderContainer && minThumb && maxThumb && rangeFill) {
+            const context = {
+                container: sliderContainer,
+                minThumb,
+                maxThumb,
+                rangeFill,
+                min: 0,
+                max: 10,
+                step: 1,
+                gap: 1, // min gap of 1
+                instanceElement: instanceElement
+            };
+    
+            // Set initial values from dataset or defaults
+            const initialMin = parseFloat(instanceElement.dataset.minValue || '0');
+            const initialMax = parseFloat(instanceElement.dataset.maxValue || '3');
+            updateSliderUI({ ...context, minVal: initialMin, maxVal: initialMax });
+    
+            minThumb.addEventListener('mousedown', (e) => startSliderDrag(e, { ...context, activeThumb: minThumb }));
+            minThumb.addEventListener('touchstart', (e) => startSliderDrag(e, { ...context, activeThumb: minThumb }));
+            maxThumb.addEventListener('mousedown', (e) => startSliderDrag(e, { ...context, activeThumb: maxThumb }));
+            maxThumb.addEventListener('touchstart', (e) => startSliderDrag(e, { ...context, activeThumb: maxThumb }));
+        }
+    }
+    const repeatMinValueSpan = instanceElement.querySelector(".repeat-min-value");
+    const repeatMaxValueSpan = instanceElement.querySelector(".repeat-max-value");
     const shotIntervalSlider = instanceElement.querySelector(
       ".shot-interval-slider",
     );
@@ -6164,8 +6656,92 @@ document.addEventListener("DOMContentLoaded", function () {
     if (repeatSlider)
       repeatSlider.addEventListener("input", function () {
         if (repeatValueSpan) repeatValueSpan.textContent = `${this.value}x`;
+        updateRepeatTypeDisplay(instanceElement);
         updateRocketIndicator(instanceElement);
       });
+
+    // Handle repeat type selection
+    if (repeatTypeSelect) {
+      repeatTypeSelect.addEventListener("change", function () {
+        const isRandom = this.value === "random";
+        if (repeatFixedContainer) {
+          repeatFixedContainer.style.display = isRandom ? "none" : "block";
+        }
+        if (repeatRandomContainer) {
+          repeatRandomContainer.style.display = isRandom ? "block" : "none";
+        }
+        updateRepeatTypeDisplay(instanceElement);
+        updateRocketIndicator(instanceElement);
+      });
+    }
+
+    // Handle random repeat range slider
+    if (repeatMinSlider && repeatMaxSlider) {
+      // Update range display and ensure min <= max
+      const updateRangeDisplay = () => {
+        const minValue = parseInt(repeatMinSlider.value);
+        const maxValue = parseInt(repeatMaxSlider.value);
+        
+        // Get final values after constraint enforcement
+        let finalMin = minValue;
+        let finalMax = maxValue;
+        
+        // Ensure max is at least min
+        if (maxValue < minValue) {
+          finalMax = minValue;
+          repeatMaxSlider.value = minValue;
+        }
+        
+        // Update the range value display
+        const rangeValueSpan = instanceElement.querySelector(".repeat-range-value");
+        if (rangeValueSpan) {
+          rangeValueSpan.textContent = `${finalMin} to ${finalMax}`;
+        }
+        
+        // Update the range fill visual
+        const rangeFill = instanceElement.querySelector(".repeat-range-fill");
+        if (rangeFill) {
+          const minPercent = (finalMin / 10) * 100;
+          const maxPercent = (finalMax / 10) * 100;
+          rangeFill.style.left = `${minPercent}%`;
+          rangeFill.style.right = `${100 - maxPercent}%`;
+        }
+        
+        updateRepeatTypeDisplay(instanceElement);
+        updateRocketIndicator(instanceElement);
+      };
+      
+      // Min slider event with constraint
+      repeatMinSlider.addEventListener("input", function () {
+        const minValue = parseInt(this.value);
+        const maxValue = parseInt(repeatMaxSlider.value);
+        
+        // Prevent min from going beyond max
+        if (minValue > maxValue) {
+          this.value = maxValue;
+        }
+        
+        updateRangeDisplay();
+      });
+      
+      // Max slider event with constraint
+      repeatMaxSlider.addEventListener("input", function () {
+        const maxValue = parseInt(this.value);
+        const minValue = parseInt(repeatMinSlider.value);
+        
+        // Prevent max from going below min
+        if (maxValue < minValue) {
+          this.value = minValue;
+        }
+        
+        updateRangeDisplay();
+      });
+      
+
+      
+      // Initial display update
+      updateRangeDisplay();
+    }
 
     if (shotIntervalSlider)
       shotIntervalSlider.addEventListener("input", function () {
@@ -6185,6 +6761,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (messageIntervalSlider)
       messageIntervalSlider.addEventListener("input", function () {
         const totalSeconds = parseInt(this.value);
+        // Validate the interval value for Messages
+        if (totalSeconds < 0 || totalSeconds > 300) {
+          console.warn(`Message interval ${totalSeconds} is outside valid range (0-300 seconds)`);
+          // Clamp to valid range
+          if (totalSeconds < 0) this.value = 0;
+          if (totalSeconds > 300) this.value = 300;
+        }
         const intervalTypeSelect = instanceElement.querySelector(".message-interval-type-select");
         const intervalType = intervalTypeSelect ? intervalTypeSelect.value : "fixed";
         updateMessageIntervalDisplay(instanceElement, totalSeconds, intervalType);
@@ -6196,6 +6779,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (messageIntervalTypeSelect)
       messageIntervalTypeSelect.addEventListener("change", function () {
         const totalSeconds = messageIntervalSlider ? parseInt(messageIntervalSlider.value) : 0;
+        // Validate that the interval is appropriate for the selected type
+        if (this.value === "fixed" && totalSeconds === 0) {
+          console.warn("Fixed interval type requires a non-zero interval value");
+          // Set a reasonable default for fixed intervals
+          if (messageIntervalSlider) {
+            messageIntervalSlider.value = 30; // Default to 30 seconds
+            updateMessageIntervalDisplay(instanceElement, 30, this.value);
+          }
+        }
         updateMessageIntervalDisplay(instanceElement, totalSeconds, this.value);
         updateRocketIndicator(instanceElement);
       });
@@ -6328,6 +6920,9 @@ document.addEventListener("DOMContentLoaded", function () {
             ? "Skip at end of workout"
             : "Always play message";
         }
+        
+        // Mark this message as having customized the skipAtEndOfWorkout setting
+        markPropertyAsCustomized(instanceElement, 'skipAtEndOfWorkout');
       });
     }
 
@@ -6614,10 +7209,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       titleInput.addEventListener("blur", function () {
-        if (!this.value.trim()) {
-          // Set appropriate default based on instance type
-          this.value = instanceType === "shot" ? "Shot" : "Message";
-        }
+        // Allow empty shot names - don't force a default value
         updateRocketIndicator(instanceElement);
       });
 
@@ -6671,7 +7263,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const titleSelector = type === "shot" ? ".shot-title" : ".message-title";
     const titleInput = newInstance.querySelector(titleSelector);
     if (titleInput) {
-      titleInput.value = type === "shot" ? "New shot" : "";
+      titleInput.value = type === "shot" ? "" : "";
     }
 
     const shotMsgInstancesContainer = parentPatternElement.querySelector(
@@ -6853,6 +7445,43 @@ document.addEventListener("DOMContentLoaded", function () {
     const patternRepeatSlider = patternElement.querySelector(".repeat-slider");
     const patternRepeatValueSpan =
       patternElement.querySelector(".repeat-value");
+    const patternRepeatTypeSelect = patternElement.querySelector(".repeat-type-select");
+    const patternRepeatFixedContainer = patternElement.querySelector(".repeat-fixed-container");
+    const patternRepeatRandomContainer = patternElement.querySelector(".repeat-random-container");
+    const patternRepeatMinSlider = patternElement.querySelector(".repeat-min-slider");
+    const patternRepeatMaxSlider = patternElement.querySelector(".repeat-max-slider");
+    if (patternRepeatRandomContainer) {
+        const sliderContainer = patternRepeatRandomContainer.querySelector('.repeat-slider-container');
+        const minThumb = patternRepeatRandomContainer.querySelector('.repeat-min-thumb');
+        const maxThumb = patternRepeatRandomContainer.querySelector('.repeat-max-thumb');
+        const rangeFill = patternRepeatRandomContainer.querySelector('.repeat-range-fill');
+    
+        if (sliderContainer && minThumb && maxThumb && rangeFill) {
+            const context = {
+                container: sliderContainer,
+                minThumb,
+                maxThumb,
+                rangeFill,
+                min: 0,
+                max: 10,
+                step: 1,
+                gap: 1, // min gap of 1
+                instanceElement: patternElement
+            };
+
+            // Set initial values from dataset or defaults
+            const initialMin = parseFloat(patternElement.dataset.minValue || '0');
+            const initialMax = parseFloat(patternElement.dataset.maxValue || '3');
+            updateSliderUI({ ...context, minVal: initialMin, maxVal: initialMax });
+    
+            minThumb.addEventListener('mousedown', (e) => startSliderDrag(e, { ...context, activeThumb: minThumb }));
+            minThumb.addEventListener('touchstart', (e) => startSliderDrag(e, { ...context, activeThumb: minThumb }));
+            maxThumb.addEventListener('mousedown', (e) => startSliderDrag(e, { ...context, activeThumb: maxThumb }));
+            maxThumb.addEventListener('touchstart', (e) => startSliderDrag(e, { ...context, activeThumb: maxThumb }));
+        }
+    }
+    const patternRepeatMinValueSpan = patternElement.querySelector(".repeat-min-value");
+    const patternRepeatMaxValueSpan = patternElement.querySelector(".repeat-max-value");
     const patternShotIntervalSlider = patternElement.querySelector(
       ".shot-interval-slider",
     );
@@ -7096,8 +7725,102 @@ document.addEventListener("DOMContentLoaded", function () {
       patternRepeatSlider.addEventListener("input", function () {
         if (patternRepeatValueSpan)
           patternRepeatValueSpan.textContent = `${this.value}x`;
+        updateRepeatTypeDisplay(patternElement);
         updateRocketIndicator(patternElement);
       });
+
+    // Handle pattern repeat type selection
+    if (patternRepeatTypeSelect) {
+      patternRepeatTypeSelect.addEventListener("change", function () {
+        const isRandom = this.value === "random";
+        if (patternRepeatFixedContainer) {
+          patternRepeatFixedContainer.style.display = isRandom ? "none" : "block";
+        }
+        if (patternRepeatRandomContainer) {
+          patternRepeatRandomContainer.style.display = isRandom ? "block" : "none";
+        }
+        updateRepeatTypeDisplay(patternElement);
+        updateRocketIndicator(patternElement);
+      });
+    }
+
+    // Handle pattern random repeat range slider
+    if (patternRepeatMinSlider && patternRepeatMaxSlider) {
+      // Update range display and ensure min <= max with proper constraints
+      const updateRangeDisplay = () => {
+        const sliderMin = parseInt(patternRepeatMinSlider.min || '0');
+        const sliderMax = parseInt(patternRepeatMaxSlider.max || '10');
+        const minValue = parseInt(patternRepeatMinSlider.value);
+        const maxValue = parseInt(patternRepeatMaxSlider.value);
+
+        // Enforce strict inequality: min < max
+        let finalMin = minValue;
+        let finalMax = maxValue;
+        if (finalMax <= finalMin) {
+          // Prefer bumping max up if possible, else lower min
+          if (finalMax < sliderMax) {
+            finalMax = Math.min(sliderMax, finalMin + 1);
+            patternRepeatMaxSlider.value = String(finalMax);
+          } else {
+            finalMin = Math.max(sliderMin, finalMax - 1);
+            patternRepeatMinSlider.value = String(finalMin);
+          }
+        }
+        
+        // Update the range value display
+        const rangeValueSpan = patternElement.querySelector(".repeat-range-value");
+        if (rangeValueSpan) {
+          rangeValueSpan.textContent = `${finalMin} to ${finalMax}`;
+        }
+        
+        // Update the range fill visual
+        const rangeFill = patternElement.querySelector(".repeat-range-fill");
+        if (rangeFill) {
+          const minPercent = (finalMin / 10) * 100;
+          const maxPercent = (finalMax / 10) * 100;
+          rangeFill.style.left = `${minPercent}%`;
+          rangeFill.style.right = `${100 - maxPercent}%`;
+        }
+        
+        updateRepeatTypeDisplay(patternElement);
+        updateRocketIndicator(patternElement);
+      };
+      
+      // Min slider event with constraint
+      patternRepeatMinSlider.addEventListener("input", function () {
+        const sliderMin = parseInt(this.min || '0');
+        const minValue = parseInt(this.value);
+        const maxValue = parseInt(patternRepeatMaxSlider.value);
+
+        // Enforce strict inequality: min < max
+        if (minValue >= maxValue) {
+          const newMin = Math.max(sliderMin, maxValue - 1);
+          this.value = String(newMin);
+        }
+        
+        updateRangeDisplay();
+      });
+      
+      // Max slider event with constraint
+      patternRepeatMaxSlider.addEventListener("input", function () {
+        const sliderMax = parseInt(this.max || '10');
+        const maxValue = parseInt(this.value);
+        const minValue = parseInt(patternRepeatMinSlider.value);
+
+        // Enforce strict inequality: min < max
+        if (maxValue <= minValue) {
+          const newMax = Math.min(sliderMax, minValue + 1);
+          this.value = String(newMax);
+        }
+        
+        updateRangeDisplay();
+      });
+      
+
+      
+      // Initial display update
+      updateRangeDisplay();
+    }
 
     if (patternShotIntervalSlider)
       patternShotIntervalSlider.addEventListener("input", function () {
@@ -7530,9 +8253,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       patternPanelTitleInput.addEventListener("blur", function () {
-        if (!this.value.trim()) {
-          this.value = "Pattern";
-        }
+        // Allow empty pattern names - don't force a default value
         updateRocketIndicator(patternElement);
       });
 
@@ -7987,13 +8708,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.error("presentBtn not found.");
   }
 
-  // Export button functionality
-  const exportPreviewBtn = document.getElementById("exportPreviewBtn");
-  if (exportPreviewBtn) {
-    exportPreviewBtn.addEventListener("click", exportPreviewAsPNG);
-  } else {
-    console.error("exportPreviewBtn not found.");
-  }
+
 
   if (previewModal) {
     previewModal.addEventListener("click", function (e) {
@@ -8385,7 +9100,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Modal event handlers
   function updateModalText(action) {
     const modalTitle = document.getElementById("resetConfigModalTitle");
-    const modalText = document.getElementById("resetConfigModalText");
+    const modalText = document.getElementById("resetConfigModalTitle");
     const modalOkBtn = document.getElementById("modalOkBtn");
 
     if (action === "rocket-mode-off") {
@@ -8394,6 +9109,59 @@ document.addEventListener("DOMContentLoaded", function () {
         "Turning off rocket mode will hide advanced features.";
       modalOkBtn.textContent = "Disable";
     }
+  }
+
+  // About modal functionality
+  function showAboutModal() {
+    const aboutModal = document.getElementById("aboutModal");
+    const aboutBuildId = document.getElementById("aboutBuildId");
+    const aboutBuildDate = document.getElementById("aboutBuildDate");
+    
+    if (aboutModal && aboutBuildId && aboutBuildDate) {
+      // Use the build info from the global variable
+      const buildId = "2025-08-15-13-58-BUILD-008"; // This should match the comment at the top of scripts.js
+      aboutBuildId.textContent = buildId;
+      
+      // Extract date from build ID (format: 2025-01-15-16-30-BUILD-006)
+      const dateMatch = buildId.match(/(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        const buildDate = new Date(dateMatch[1]);
+        aboutBuildDate.textContent = buildDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + ' at ' + buildDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      } else {
+        aboutBuildDate.textContent = "Unknown";
+      }
+      
+      aboutModal.classList.remove("hidden");
+    }
+  }
+
+  // About modal event handlers
+  const aboutModalCloseBtn = document.getElementById("aboutModalCloseBtn");
+  if (aboutModalCloseBtn) {
+    aboutModalCloseBtn.addEventListener("click", function() {
+      const aboutModal = document.getElementById("aboutModal");
+      if (aboutModal) {
+        aboutModal.classList.add("hidden");
+      }
+    });
+  }
+
+  // About modal click outside to close
+  const aboutModal = document.getElementById("aboutModal");
+  if (aboutModal) {
+    aboutModal.addEventListener("click", function(e) {
+      if (e.target === aboutModal) {
+        aboutModal.classList.add("hidden");
+      }
+    });
   }
 
   if (modalCancelBtn) {
@@ -8663,12 +9431,17 @@ document.addEventListener("DOMContentLoaded", function () {
           const result = WorkoutLib.loadWorkoutFromJsonWithValidation(enrichedWorkoutData);
           if (result.success) {
             timeline = WorkoutLib.generateWorkoutTimeline(result.workout);
+            // Convert timeline events to sound events for audio playback
+            if (WorkoutLib.timelineEventsToSoundEvents) {
+              timelinePlayback.soundEvents = WorkoutLib.timelineEventsToSoundEvents(timeline);
+            } else {
+              timelinePlayback.soundEvents = timeline; // Fallback to timeline if conversion not available
+            }
           }
         } catch (error) {
           console.warn('Failed to generate timeline:', error);
         }
       }
-      timelinePlayback.soundEvents = timeline;
     } else {
       // New format with html and soundEvents
       document.getElementById("previewContent").innerHTML = previewResult.html;
@@ -8731,6 +9504,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } catch (error) {
       console.warn('Web Audio API not supported:', error);
+      return false;
     }
   }
 
@@ -9393,7 +10167,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      // Check for sound effects using extracted sound events data
+      // Check for sound events using extracted sound events data
        if (audioContext && timelinePlayback.soundEvents && timelinePlayback.soundEvents.length > 0) {
          let ttsErrorCount = 0;
          
@@ -9405,9 +10179,7 @@ document.addEventListener("DOMContentLoaded", function () {
            }
 
            // Check if this sound event should trigger at the current time
-           // Use a small tolerance (50ms) to account for timing precision
-           const tolerance = 0.05;
-           const isEventTime = Math.abs(currentTime - soundEvent.time) < tolerance;
+           const isEventTime = Math.abs(currentTime - soundEvent.time) < 0.05;
 
            if (isEventTime) {
              const soundKey = `${soundEvent.type}-${soundEvent.time.toFixed(3)}`;
@@ -9418,9 +10190,30 @@ document.addEventListener("DOMContentLoaded", function () {
                  playSplitStepPowerUp(soundEvent.speed);
                  timelinePlayback.playedSounds.add(soundKey);
                } else if (soundEvent.type === 'beep') {
-                 playTwoToneBeep();
-                 triggerBeepFlash(soundEvent.time);
-                 timelinePlayback.playedSounds.add(soundKey);
+                 // Handle countdown beeps differently from shot beeps
+                 if (soundEvent.isCountdown) {
+                   // Skip countdown beeps - they are handled directly in the UI logic
+                   // to ensure they coincide with the number changes
+                   timelinePlayback.playedSounds.add(soundKey);
+                 } else {
+                   // Regular shot beeps
+                   playTwoToneBeep();
+                   triggerWorkoutFlash();
+                   
+                   // Count completed shots and flip ghost (only for shot beeps, not countdown beeps)
+                   if (soundEvent.entry && soundEvent.entry.type === 'Shot') {
+                     workoutExecution.shotsCompleted++;
+
+                     // Flip ghost at the end of shot intervals
+                     const statusIndicator = document.getElementById("workoutStatusIndicator");
+                     if (statusIndicator) {
+                       const wasFlipped = statusIndicator.classList.contains("flipped");
+                       statusIndicator.classList.toggle("flipped");
+                       const isNowFlipped = statusIndicator.classList.contains("flipped");
+                     }
+                   }
+                   timelinePlayback.playedSounds.add(soundKey);
+                 }
                } else if (soundEvent.type === 'tts') {
                  try {
                    playTTS(soundEvent.text, soundEvent.entryConfig);
@@ -9719,7 +10512,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // --- Workout Execution Functions ---
-  let workoutExecution = {
+  window.workoutExecution = {
     isRunning: false,
     isPaused: false,
     currentTime: 0,
@@ -9783,29 +10576,79 @@ document.addEventListener("DOMContentLoaded", function () {
     // Reset and initialize workout execution state
     workoutExecution.workoutData = enrichedWorkoutData;
     
-    // Handle both old (string) and new (object) return formats
-    if (typeof previewResult === 'string') {
-      // Generate timeline for sound events for old format
-      let timeline = [];
-      if (WorkoutLib.loadWorkoutFromJsonWithValidation && WorkoutLib.generateWorkoutTimeline) {
-        try {
-          const result = WorkoutLib.loadWorkoutFromJsonWithValidation(enrichedWorkoutData);
-          if (result.success) {
-            timeline = WorkoutLib.generateWorkoutTimeline(result.workout);
-          }
-        } catch (error) {
-          console.warn('Failed to generate timeline:', error);
+    // Generate timeline for presentation mode timing
+    let timeline = [];
+    if (WorkoutLib.loadWorkoutFromJsonWithValidation && WorkoutLib.generateWorkoutTimeline) {
+      try {
+        const result = WorkoutLib.loadWorkoutFromJsonWithValidation(enrichedWorkoutData);
+        if (result.success) {
+          timeline = WorkoutLib.generateWorkoutTimeline(result.workout);
         }
+      } catch (error) {
+        console.warn('Failed to generate timeline:', error);
       }
-      workoutExecution.soundEvents = timeline;
-    } else {
-      // New format with html and soundEvents
-      workoutExecution.soundEvents = previewResult.soundEvents;
     }
     
-
-    workoutExecution.maxTime = stats.totalTime;
-    workoutExecution.totalShots = stats.totalShots;
+    // Store the timeline data for presentation mode timing calculations
+    workoutExecution.timeline = timeline;
+    
+    // Generate soundEvents from timeline for audio playback using the new library
+    if (WorkoutLib.timelineEventsToSoundEvents) {
+      const generatedSoundEvents = WorkoutLib.timelineEventsToSoundEvents(timeline);
+      workoutExecution.audioSoundEvents = generatedSoundEvents;
+    } else {
+      // FALLBACK: If the function is not available, try to wait for it
+      // Try to wait for the function to become available
+      let attempts = 0;
+      const maxAttempts = 10;
+      const checkFunction = () => {
+        attempts++;
+        if (WorkoutLib.timelineEventsToSoundEvents && attempts <= maxAttempts) {
+          const generatedSoundEvents = WorkoutLib.timelineEventsToSoundEvents(timeline);
+          workoutExecution.audioSoundEvents = generatedSoundEvents;
+        } else if (attempts <= maxAttempts) {
+          setTimeout(checkFunction, 100);
+        } else {
+          workoutExecution.audioSoundEvents = [];
+        }
+      };
+      
+      // Start checking
+      setTimeout(checkFunction, 100);
+      
+      // For now, use empty array to prevent errors
+      workoutExecution.audioSoundEvents = [];
+    }
+    
+    // For presentation mode, use the actual timeline to determine maxTime
+    // This ensures that limits and repeats are properly respected
+    if (timeline.length > 0) {
+      // Find the actual end time from the timeline (respects limits and repeats)
+      const actualMaxTime = Math.max(...timeline.map(event => event.endTime || 0));
+      workoutExecution.maxTime = actualMaxTime;
+      
+      // Also update totalShots to reflect the actual timeline
+      const actualTotalShots = timeline.filter(event => event.type === 'Shot').length;
+      workoutExecution.totalShots = actualTotalShots;
+      
+      // Debug logging for presentation mode timing
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('DEBUG: Presentation mode timeline:', {
+          timelineLength: timeline.length,
+          actualMaxTime,
+          actualTotalShots,
+          previewMaxTime: stats.totalTime,
+          previewTotalShots: stats.totalShots
+        });
+      }
+    } else {
+      // Fallback to preview stats if timeline generation failed
+      workoutExecution.maxTime = stats.totalTime;
+      workoutExecution.totalShots = stats.totalShots;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.warn('DEBUG: Using fallback preview stats for presentation mode');
+      }
+    }
     workoutExecution.shotsCompleted = 0;
     workoutExecution.currentTime = startTime; // Start at the specified time
 
@@ -9836,10 +10679,17 @@ document.addEventListener("DOMContentLoaded", function () {
     workoutExecution.lastShotCompleted = false;
     workoutExecution.lastCountdownNumber = null;
     workoutExecution.lastEntryId = null;
+    
+    // Reset end tick highlight state for new workout
+    workoutExecution.endTickHighlighted = false;
+    workoutExecution.endTickHighlightTime = null;
+
+    // Hide timing ticks when workout starts (they'll show when first shot begins)
+    updateTimingTicksVisibility(false);
 
     // Mark sounds as played up to the start time to avoid replaying them
     if (startTime > 0) {
-      workoutExecution.soundEvents.forEach(soundEvent => {
+      workoutExecution.audioSoundEvents.forEach(soundEvent => {
         if (soundEvent.time < startTime) {
           // Don't mark completion events as played - they should only play at actual completion
           if (soundEvent.isCompletion) {
@@ -9970,10 +10820,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Update shot title and progress meter
     updateShotDisplay();
+    
+
   }
 
   function updateShotDisplay() {
-    const { currentTime, soundEvents, isRunning, isPaused } = workoutExecution;
+    const { currentTime, timeline, isRunning, isPaused } = workoutExecution;
 
     let shotTitle = "";  // Don't show "Get Ready" initially
     let currentPattern = "--";
@@ -10005,6 +10857,9 @@ document.addEventListener("DOMContentLoaded", function () {
       shotTitle = "Paused";
       ensureTextVisible(); // Make sure text is visible when paused
       progressText = ""; // Remove smaller text
+      
+      // Hide timing ticks when paused
+      updateTimingTicksVisibility(false);
     } else if (isRunning) {
       // Check for workout completion first (by time or by last shot completion)
       const isTimeComplete = currentTime >= workoutExecution.maxTime;
@@ -10025,47 +10880,84 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Initialize timeline index if needed
         if (!workoutExecution.timelineIndex) {
-          workoutExecution.timelineIndex = buildTimelineIndex(soundEvents);
+          workoutExecution.timelineIndex = buildTimelineIndex(timeline);
         }
 
         // Find active event using timeline index
         const timelineData = workoutExecution.timelineIndex;
         activeEvent = findActiveEvent(currentTime, timelineData);
+        
 
-        if (activeEvent) {
-          activeEventType = activeEvent.type;
-          // console.log(`Active event: ${activeEvent.type} - ${activeEvent.description}`);
+
+                 if (activeEvent) {
+                     activeEventType = activeEvent.type;
 
           // Get the current entry ID for ghost flip tracking
-          if (activeEvent.data && activeEvent.data.entry) {
-            currentEntryId = activeEvent.data.entry.id;
-          }
-
-          // Track current entry for other purposes (but don't flip here)
-          if (currentEntryId && currentEntryId !== workoutExecution.lastEntryId) {
-            workoutExecution.lastEntryId = currentEntryId;
-          }
-        }
-
-                 // Handle active event using new timeline system
-         if (activeEvent && activeEventType === 'message_tts') {
-           // For empty messages, show nothing (silent time gap)
-           shotTitle = activeEvent.data.text || "";
-           if (shotTitle.trim() !== '') {
-             ensureTextVisible(); // Make sure text is visible for messages
+           if (activeEvent.data && activeEvent.data.entry) {
+             currentEntryId = activeEvent.data.entry.id;
            }
-           progressText = ""; // Remove smaller text
 
-           // Don't touch progress meter during TTS - keep previous value
-           // progressPercentage remains as initialized above
+           // Track current entry for other purposes (but don't flip here)
+           if (currentEntryId && currentEntryId !== workoutExecution.lastEntryId) {
+             workoutExecution.lastEntryId = currentEntryId;
+           }
+           
+           // NEW: Calculate continuous progress from 0% to 100% for each element interval
+           // Calculate progress relative to the current element's interval, not absolute workout time
+           const elementStartTime = activeEvent.data.startTime || 0;
+           const elementEndTime = activeEvent.data.endTime || 0;
+           
+           if (elementEndTime > elementStartTime) {
+             const elementDuration = elementEndTime - elementStartTime;
+             
+             // Calculate progress relative to this element's interval
+             // This ensures each shot shows 0% to 100% progress within its own time window
+             const elementElapsed = currentTime - elementStartTime;
+             
+             // Progress from 0% to 100% throughout the element interval
+             progressPercentage = Math.min(Math.max((elementElapsed / elementDuration) * 100, 0), 100);
+             
+             // Special handling for end of interval: briefly show 100% to highlight end tick
+             const timeRemaining = elementEndTime - currentTime;
+             if (timeRemaining <= 0.1 && timeRemaining > -0.5) { // Within 0.1s of end, show 100% briefly
+               progressPercentage = 100;
+               
+               // Store that we've shown the end highlight for this interval
+               if (!workoutExecution.endTickHighlighted) {
+                 workoutExecution.endTickHighlighted = true;
+                 workoutExecution.endTickHighlightTime = currentTime;
+               }
+             }
+           } else {
+             progressPercentage = 100; // Fallback for zero-duration elements
+           }
+         
+         // Update timing tick glow effects based on current progress
+         updateTimingTickGlows(progressPercentage);
+         
+         // Set progress phase based on event type
+         progressPhase = activeEventType;
+         
+         // Update timing tick marks for rocket mode (only when we have an active event)
+         updateTimingTickMarks(activeEvent);
+       }
+
+       // Handle active event using new timeline system
+         if (activeEvent && activeEventType === 'message_tts') {
+           const message = activeEvent.data;
+                     shotTitle = message.text || "";
+           if (shotTitle.trim() !== '') {
+             ensureTextVisible();
+           }
+           progressText = "";
            progressPhase = "message";
 
-           // Find pattern name - prefer stored pattern to avoid flickering
+           // Find pattern name
            if (workoutExecution.currentPattern) {
              currentPattern = workoutExecution.currentPattern;
            } else if (workoutExecution.workoutData && workoutExecution.workoutData.patterns) {
              const pattern = workoutExecution.workoutData.patterns.find(p =>
-               p.entries && p.entries.some(e => e.id === activeEvent.data.entry.id)
+               p.entries && p.entries.some(e => e.id === message.entry.id)
              );
              if (pattern) {
                currentPattern = pattern.name;
@@ -10074,9 +10966,9 @@ document.addEventListener("DOMContentLoaded", function () {
            }
          }
          else if (activeEvent && activeEventType === 'message_countdown') {
-           const message = activeEvent.data;
-           
-           // Check if countdown is enabled for this message
+                     const message = activeEvent.data;
+          
+          // Check if countdown is enabled for this message
            const effectiveConfig = message.entry?.config || {};
            const isCountdownEnabled = effectiveConfig.countdown;
            
@@ -10089,13 +10981,18 @@ document.addEventListener("DOMContentLoaded", function () {
              if (countdownDuration > 1.0) {
                // Calculate remaining time for countdown display
                const remainingTime = countdownDuration - countdownElapsed;
-               if (remainingTime > 0) {
-                 // Ensure countdown number only changes at whole second boundaries
-                 const countdownNumber = Math.ceil(remainingTime);
-                 shotTitle = `${countdownNumber}`;
-                 ensureTextVisible(); // Make sure countdown text is visible
+                             if (remainingTime > 0) {
+                // Calculate countdown number first (needed for both display and effects)
+                const countdownNumber = Math.ceil(remainingTime);
+                
+                // Check if rocket mode is enabled - countdown numbers should only be visible when rocket mode is on
+                const isRocketMode = document.documentElement.getAttribute('data-rocket-mode') === 'on';
+                
+                // Always show countdown numbers during countdown phase, regardless of rocket mode
+                shotTitle = `${countdownNumber}`;
+                ensureTextVisible(); // Make sure countdown text is visible
 
-                 // Add flash effect for last 10 seconds (same as preptime)
+                 // Add flash effect for last 10 seconds (same as preptime) - works in both rocket and non-rocket modes
                  const shotTitleElement = document.getElementById("workoutShotTitle");
                  if (shotTitleElement) {
                    // Check if this is an empty message - for empty messages, show all countdown numbers
@@ -10130,20 +11027,15 @@ document.addEventListener("DOMContentLoaded", function () {
                        // Store the current number to detect changes
                        workoutExecution.lastCountdownNumber = countdownNumber;
                      }
-                   } else if (isEmptyMessage && countdownNumber > 10) {
-                     // For empty messages with numbers > 10: show numbers but no flash/beep effects
+                   } else {
+                     // For numbers > 10: show numbers but no flash/beep/pulse effects
                      shotTitleElement.classList.remove("countdown-flash", "countdown-pulse");
                      
                      // Check if this is a new digit (different from last displayed)
                      if (countdownNumber !== workoutExecution.lastCountdownNumber) {
-                       // Store the current number to detect changes (no flash/beep for numbers > 10)
+                       // Store the current number to detect changes (no effects for numbers > 10)
                        workoutExecution.lastCountdownNumber = countdownNumber;
                      }
-                   } else {
-                     // For non-empty messages with numbers > 10: show pulse effect
-                     shotTitleElement.classList.remove("countdown-flash");
-                     shotTitleElement.classList.add("countdown-pulse");
-                     workoutExecution.lastCountdownNumber = null;
                    }
                  }
                } else {
@@ -10157,17 +11049,15 @@ document.addEventListener("DOMContentLoaded", function () {
                }
                progressText = ""; // Remove smaller text
 
-               // Progress meter ascends from 0% to 100% during countdown
-               const countdownProgress = countdownElapsed / countdownDuration;
-               progressPercentage = Math.min(Math.max(countdownProgress * 100, 0), 100);
+               // Progress is now calculated centrally for all events
              } else {
                // Very short countdown, just show message completion
                shotTitle = message.text || "";
                if (shotTitle.trim() !== '') {
-                 ensureTextVisible(); // Make sure message completion text is visible
+                 ensureTextVisible();
                }
-               progressText = ""; // Remove smaller text
-               progressPercentage = 100;
+               progressText = "";
+               // Progress is now calculated centrally for all events
              }
            } else {
              // Countdown is disabled - keep message text visible during countdown phase and update progress bar
@@ -10182,9 +11072,7 @@ document.addEventListener("DOMContentLoaded", function () {
              const countdownDuration = message.endTime - adjustedTtsEndTime;
              const countdownElapsed = currentTime - adjustedTtsEndTime;
              
-             // Progress meter ascends from 0% to 100% during the message interval
-             const countdownProgress = countdownElapsed / countdownDuration;
-             progressPercentage = Math.min(Math.max(countdownProgress * 100, 0), 100);
+                            // Progress is now calculated centrally for all events
              
              // Remove any countdown effects
              const shotTitleElement = document.getElementById("workoutShotTitle");
@@ -10208,20 +11096,86 @@ document.addEventListener("DOMContentLoaded", function () {
              }
            }
          }
-         else if (activeEvent && activeEventType === 'shot_preparing') {
-           const shot = activeEvent.data;
-           shotTitle = shot.name || "Shot";
-           ensureTextVisible(); // Make sure shot text is visible during preparation
+         else if (activeEvent && activeEventType === 'message') {
+           // Handle messages without countdown (just TTS, no countdown phase)
+           const message = activeEvent.data;
+                     shotTitle = message.text || "";
+           if (shotTitle.trim() !== '') {
+             ensureTextVisible();
+           }
+           progressText = "";
+           progressPhase = "message";
 
-           const prepareProgress = (currentTime - shot.ttsTime) / (shot.beepTime - shot.ttsTime);
-           // Progress meter ascends from 0% to 100%
-           progressPercentage = Math.min(Math.max(prepareProgress * 100, 0), 100);
+           // Find pattern name
+           if (workoutExecution.currentPattern) {
+             currentPattern = workoutExecution.currentPattern;
+           } else if (workoutExecution.workoutData && workoutExecution.workoutData.patterns) {
+             const pattern = workoutExecution.workoutData.patterns.find(p =>
+               p.entries && p.entries.some(e => e.id === message.entry.id)
+             );
+             if (pattern) {
+               currentPattern = pattern.name;
+               workoutExecution.currentPattern = pattern.name;
+             }
+           }
+         }
+         else if (activeEvent && activeEventType === 'shot_preparing') {
+          const shot = activeEvent.data;
+          
+          // BUGFIX: Use same data source as TTS to ensure shotTitle matches TTS announcement
+          // Try multiple strategies to find the corresponding TTS event
+          let correspondingTtsEvent = null;
+          
+          // Strategy 1: Find TTS event by exact ID and timing match
+          correspondingTtsEvent = workoutExecution.audioSoundEvents?.find(soundEvent => 
+            soundEvent.type === 'tts' && 
+            soundEvent.entry?.id === shot.entry?.id &&
+            Math.abs(soundEvent.time - (shot.ttsTime || shot.startTime)) < 0.1
+          );
+          
+          // Strategy 2: If no exact match, find TTS event that's currently playing or just played
+          if (!correspondingTtsEvent) {
+            correspondingTtsEvent = workoutExecution.audioSoundEvents?.find(soundEvent => 
+              soundEvent.type === 'tts' && 
+              Math.abs(soundEvent.time - currentTime) < 0.5  // TTS happening around current time
+            );
+          }
+          
+          // Strategy 3: If still no match, find the nearest TTS event by timing
+          if (!correspondingTtsEvent) {
+            const nearbyTtsEvents = workoutExecution.audioSoundEvents?.filter(e => e.type === 'tts') || [];
+            if (nearbyTtsEvents.length > 0) {
+              correspondingTtsEvent = nearbyTtsEvents.reduce((closest, current) => {
+                const currentDiff = Math.abs(current.time - currentTime);
+                const closestDiff = Math.abs(closest.time - currentTime);
+                return currentDiff < closestDiff ? current : closest;
+              });
+              // Only use it if it's reasonably close (within 3 seconds)
+              if (Math.abs(correspondingTtsEvent.time - currentTime) > 3.0) {
+                correspondingTtsEvent = null;
+              }
+            }
+          }
+          
+
+          
+          shotTitle = correspondingTtsEvent?.text || shot.name || "";
+          ensureTextVisible();
+
+           // Progress is now calculated centrally for all events
 
            // Reset fade state for new shot
            workoutExecution.fadeTriggered = false;
            workoutExecution.glowTriggered = false;
+           
+           // Reset end tick highlight state for new shot interval
+           workoutExecution.endTickHighlighted = false;
+           workoutExecution.endTickHighlightTime = null;
 
-           progressText = ""; // Remove smaller text
+           // Show timing ticks when shot starts
+           updateTimingTicksVisibility(true);
+
+           progressText = "";
            progressPhase = "preparing";
 
            // Find pattern name
@@ -10231,97 +11185,80 @@ document.addEventListener("DOMContentLoaded", function () {
              );
              if (pattern) {
                currentPattern = pattern.name;
-               workoutExecution.currentPattern = pattern.name; // Store for persistence
+               workoutExecution.currentPattern = pattern.name;
              }
            }
          }
          else if (activeEvent && activeEventType === 'shot_executing') {
            const shot = activeEvent.data;
-           progressText = ""; // Remove smaller text
+           progressText = "";
+           
+           // Progress is now calculated centrally for all events
+           
+          // Handle shot title visibility and effects
+          // BUGFIX: Use same data source as TTS to ensure shotTitle matches TTS announcement
+          // Try multiple strategies to find the corresponding TTS event
+          let correspondingTtsEvent = null;
+          
+          // Strategy 1: Find TTS event by exact ID and timing match
+          correspondingTtsEvent = workoutExecution.audioSoundEvents?.find(soundEvent => 
+            soundEvent.type === 'tts' && 
+            soundEvent.entry?.id === shot.entry?.id &&
+            Math.abs(soundEvent.time - (shot.ttsTime || shot.startTime)) < 0.1
+          );
+          
+          // Strategy 2: If no exact match, find TTS event that's currently playing or just played
+          if (!correspondingTtsEvent) {
+            correspondingTtsEvent = workoutExecution.audioSoundEvents?.find(soundEvent => 
+              soundEvent.type === 'tts' && 
+              Math.abs(soundEvent.time - currentTime) < 0.5  // TTS happening around current time
+            );
+          }
+          
+          // Strategy 3: If still no match, find the nearest TTS event by timing
+          if (!correspondingTtsEvent) {
+            const nearbyTtsEvents = workoutExecution.audioSoundEvents?.filter(e => e.type === 'tts') || [];
+            if (nearbyTtsEvents.length > 0) {
+              correspondingTtsEvent = nearbyTtsEvents.reduce((closest, current) => {
+                const currentDiff = Math.abs(current.time - currentTime);
+                const closestDiff = Math.abs(closest.time - currentTime);
+                return currentDiff < closestDiff ? current : closest;
+              });
+              // Only use it if it's reasonably close (within 3 seconds)
+              if (Math.abs(correspondingTtsEvent.time - currentTime) > 3.0) {
+                correspondingTtsEvent = null;
+              }
+            }
+          }
+          
 
+          
+          shotTitle = correspondingTtsEvent?.text || shot.name || "";
+          ensureTextVisible();
+           
+           // Trigger glow effect on shot text when beep first hits
            const timeSinceBeep = currentTime - shot.beepTime;
-           const pauseDuration = 0.2; // 0.2 second pause at 100%
+           if (timeSinceBeep <= 0.05 && !workoutExecution.glowTriggered) {
+             const shotTitleElement = document.getElementById("workoutShotTitle");
+             if (shotTitleElement) {
+               shotTitleElement.classList.add("glow-pulse");
+               workoutExecution.glowTriggered = true;
 
-           // Ensure shot title is visible at start of execution
-           if (timeSinceBeep <= 0.05) {
-             ensureTextVisible();
+               // Remove glow after animation
+               setTimeout(() => {
+                 shotTitleElement.classList.remove("glow-pulse");
+               }, 250);
+             }
            }
-
-           if (timeSinceBeep <= pauseDuration) {
-             // Pause at 100% for 0.2 seconds
-             progressPercentage = 100;
-             shotTitle = shot.name || "Shot"; // Keep shot name during pause
-             ensureTextVisible(); // Make sure shot text is visible during beep pause
-
-             // Trigger glow effect on shot text when beep first hits
-             if (timeSinceBeep <= 0.05 && !workoutExecution.glowTriggered) {
-               const shotTitleElement = document.getElementById("workoutShotTitle");
-               if (shotTitleElement) {
-                 shotTitleElement.classList.add("glow-pulse");
-                 workoutExecution.glowTriggered = true;
-
-                 // Remove glow after animation
-                 setTimeout(() => {
-                   shotTitleElement.classList.remove("glow-pulse");
-                 }, 250);
-               }
-             }
-                        } else {
-               // Descend from 100% to 0% for the remaining time
-               // Find next shot to time the descent
-               const timelineData = workoutExecution.timelineIndex;
-               const nextShot = timelineData ? timelineData.shots.find(s => s.ttsTime > shot.ttsTime) : null;
-
-               if (nextShot) {
-                 const descentStartTime = shot.beepTime + pauseDuration;
-                 const descentDuration = nextShot.ttsTime - descentStartTime;
-                 if (descentDuration > 0) {
-                   const descentProgress = (currentTime - descentStartTime) / descentDuration;
-                   progressPercentage = Math.min(Math.max(100 - (descentProgress * 100), 0), 100);
-                 } else {
-                   progressPercentage = 0; // Next shot is too close, go to 0%
-                 }
-
-                 // Reset glow trigger for next shot when getting close
-                 if (progressPercentage < 20) {
-                   workoutExecution.glowTriggered = false;
-                 }
-               } else {
-                 // No next shot - this is the last shot, mark as complete when execution ends
-                 const remainingTime = shot.endTime - (shot.beepTime + pauseDuration);
-                 if (remainingTime > 0) {
-                   const descentProgress = (timeSinceBeep - pauseDuration) / remainingTime;
-                   progressPercentage = Math.min(Math.max(100 - (descentProgress * 100), 0), 100);
-
-                   // Check if last shot execution is complete
-                   if (currentTime >= shot.endTime && !workoutExecution.lastShotCompleted) {
-                     workoutExecution.lastShotCompleted = true;
-                   }
-                 } else {
-                   progressPercentage = 0; // No time left, go to 0%
-                   workoutExecution.lastShotCompleted = true; // Mark as complete
-                 }
-               }
-
-             // Smoothly fade out shot title when progress meter descends to 50%
-             if (progressPercentage <= 50) {
-               if (!workoutExecution.fadeTriggered) {
-                 const shotTitleElement = document.getElementById("workoutShotTitle");
-                 if (shotTitleElement) {
-                   shotTitleElement.classList.add("fade-out");
-                   workoutExecution.fadeTriggered = true;
-                 }
-               }
-               shotTitle = "\u00A0"; // Non-breaking space to maintain layout
-             } else {
-               shotTitle = shot.name || "Shot";
-               ensureTextVisible(); // Make sure shot text is visible before fade threshold
-             }
+           
+           // Check if last shot execution is complete
+           if (currentTime >= shot.endTime && !workoutExecution.lastShotCompleted) {
+             workoutExecution.lastShotCompleted = true;
            }
 
            progressPhase = "executing";
 
-           // Find pattern name - use stored pattern for consistency
+           // Find pattern name
            if (workoutExecution.currentPattern) {
              currentPattern = workoutExecution.currentPattern;
            } else if (workoutExecution.workoutData && workoutExecution.workoutData.patterns) {
@@ -10342,6 +11279,9 @@ document.addEventListener("DOMContentLoaded", function () {
            progressPercentage = 0;
            progressPhase = "ready";
 
+           // Hide timing ticks when no shot is in progress
+           updateTimingTicksVisibility(false);
+
            // Maintain current pattern to avoid flickering
            if (workoutExecution.currentPattern) {
              currentPattern = workoutExecution.currentPattern;
@@ -10358,6 +11298,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Only update if content actually changed to prevent flicker
     // Use non-breaking space to maintain layout when text is empty
     const displayText = shotTitle || "\u00A0"; // \u00A0 is non-breaking space
+    
     if (shotTitleElement.textContent !== displayText) {
       shotTitleElement.textContent = displayText;
     }
@@ -10375,9 +11316,15 @@ document.addEventListener("DOMContentLoaded", function () {
       progressTextElement.textContent = "\u00A0"; // Use non-breaking space to maintain layout
     }
 
-    // Update progress bar
+    // NEW: Smooth progress bar updates for better visual experience
     const progressBar = document.getElementById("workoutShotProgressBar");
-    progressBar.style.setProperty('--progress', `${progressPercentage}%`);
+    
+    // Use smooth interpolation for progress updates to prevent jerky movement
+    if (!workoutExecution.progressAnimationId) {
+      workoutExecution.progressAnimationId = requestAnimationFrame(() => {
+        updateProgressBarSmoothly(progressBar, progressPercentage);
+      });
+    }
 
     // Track changes for stability
     const progressChanged = Math.abs(progressPercentage - (workoutExecution.lastProgress || 0)) > 5;
@@ -10423,6 +11370,236 @@ document.addEventListener("DOMContentLoaded", function () {
     progressBar.style.setProperty('--bg-position', `${bgPosition}%`);
   }
 
+  /**
+   * NEW: Smooth progress bar updates to prevent jerky movement
+   * This ensures the progress bar moves smoothly between values
+   */
+  function updateProgressBarSmoothly(progressBar, targetPercentage) {
+    // Cancel any existing animation
+    if (workoutExecution.progressAnimationId) {
+      cancelAnimationFrame(workoutExecution.progressAnimationId);
+      workoutExecution.progressAnimationId = null;
+    }
+
+    const currentPercentage = parseFloat(progressBar.style.getPropertyValue('--progress') || '0');
+    const startPercentage = currentPercentage;
+    const targetPercentageNum = parseFloat(targetPercentage);
+    const startTime = performance.now();
+    const animationDuration = 100; // 100ms for smooth transitions
+
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / animationDuration, 1);
+      
+      // Use easing function for smooth movement
+      const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+      const currentValue = startPercentage + (targetPercentageNum - startPercentage) * easeProgress;
+      
+      progressBar.style.setProperty('--progress', `${currentValue}%`);
+      
+      if (progress < 1) {
+        workoutExecution.progressAnimationId = requestAnimationFrame(animate);
+      } else {
+        workoutExecution.progressAnimationId = null;
+      }
+    }
+
+    // Start the animation
+    workoutExecution.progressAnimationId = requestAnimationFrame(animate);
+  }
+
+  /**
+   * Updates the timing tick marks below the progress bar for rocket mode
+   * Shows Start, TTS, Split, and End timing for the current shot/message
+   * Timing values match Preview mode exactly: Start (0s), TTS (announced), Split (split step), End (beep)
+   * In presentation mode, timing ticks are only shown when rocket mode is enabled
+   */
+  function updateTimingTickMarks(activeEvent) {
+    const timingTicks = document.getElementById('workoutTimingTicks');
+    if (!timingTicks) {
+      console.log('DEBUG: Timing ticks element not found');
+      return;
+    }
+
+    // Check if rocket mode is enabled
+    const isRocketMode = document.documentElement.getAttribute('data-rocket-mode') === 'on';
+    
+    if (!isRocketMode) {
+      timingTicks.classList.add('hidden');
+      return;
+    }
+
+    // Show the timing ticks
+    timingTicks.classList.remove('hidden');
+
+    if (!activeEvent || !activeEvent.data) {
+      // Hide ticks if no active event
+      timingTicks.classList.add('hidden');
+      return;
+    }
+
+    const eventData = activeEvent.data;
+
+    if (activeEvent.type === 'shot_preparing' || activeEvent.type === 'shot_executing') {
+      // Shot timing - use absolute timing values that match Preview mode
+      const startTime = 0.0; // Always 0 for the current interval
+      const endTime = eventData.endTime - eventData.startTime; // Duration of this interval
+      
+      // TTS time (announced) - same as Preview mode's "Announced" value
+      const leadTime = eventData.entry?.config?.shotAnnouncementLeadTime || 2.5;
+      const ttsTime = endTime - leadTime;
+      
+      // Split step time - same as Preview mode's "Split step" value
+      const splitStepSpeed = eventData.entry?.config?.splitStepSpeed || 'auto-scale';
+      let splitTime = endTime;
+      if (splitStepSpeed !== 'none') {
+        // Use the same calculation as the parser
+        const splitDuration = splitStepSpeed === 'slow' ? 0.64 : 
+                             splitStepSpeed === 'fast' ? 0.32 : 0.48;
+        splitTime = endTime - splitDuration;
+      }
+      
+      // End time (beep) - same as Preview mode's "Split step" value
+      const beepTime = endTime;
+      
+
+
+      // Update tick times and positions (scaled to progress bar width)
+      updateTickTimeAndPosition('start-tick', startTime, endTime, startTime);
+      updateTickTimeAndPosition('tts-tick', ttsTime, endTime, ttsTime);
+      updateTickTimeAndPosition('split-tick', splitTime, endTime, splitTime);
+      updateTickTimeAndPosition('end-tick', beepTime, endTime, beepTime);
+
+    } else if (activeEvent.type === 'message_tts' || activeEvent.type === 'message_countdown') {
+      // Hide timing ticks for message elements - only show during shot processing
+      timingTicks.classList.add('hidden');
+      return;
+    }
+  }
+
+  /**
+   * Helper function to update a specific tick's time display and position
+   * Positions are scaled to the progress bar width (0% to 100%)
+   */
+  function updateTickTimeAndPosition(tickClass, timeInSeconds, totalDuration, absoluteTime) {
+    const tick = document.querySelector(`.${tickClass}`);
+    if (!tick) return;
+    
+    // Update the time display
+    const timeElement = tick.querySelector('.tick-time');
+    if (timeElement) {
+      timeElement.textContent = `${timeInSeconds.toFixed(1)}s`;
+    }
+    
+    // Calculate position as percentage of progress bar width
+    // For example: 4.0s of 8.0s = 50%, 4.0s of 5.0s = 80%
+    const positionPercentage = (absoluteTime / totalDuration) * 100;
+    
+    // Position the tick at the calculated percentage using CSS custom property
+    // The CSS already handles positioning with !important rules
+    tick.style.setProperty('--tick-position', `${positionPercentage}%`);
+    
+    // Store the position percentage for glow effect calculations
+    tick.dataset.positionPercentage = positionPercentage;
+  }
+
+  /**
+   * Updates the glow effects on timing ticks based on current progress
+   * Ticks glow when progress passes them, reset when interval begins
+   */
+  function updateTimingTickGlows(currentProgressPercentage) {
+    const timingTicks = document.getElementById('workoutTimingTicks');
+    if (!timingTicks) return;
+    
+    // Get all timing ticks
+    const ticks = timingTicks.querySelectorAll('.timing-tick');
+    
+    ticks.forEach(tick => {
+      const positionPercentage = parseFloat(tick.dataset.positionPercentage || '0');
+      const tickLine = tick.querySelector('.tick-line');
+      const tickLabel = tick.querySelector('.tick-label');
+      const tickTime = tick.querySelector('.tick-time');
+      
+      // Apply glow effect when progress passes the tick position
+      const shouldGlow = currentProgressPercentage >= positionPercentage;
+      
+      // Check if this is the end tick for special handling
+      const isEndTick = tick.classList.contains('end-tick');
+      
+      // Update glow effects with smooth transitions
+      if (tickLine) {
+        tickLine.classList.toggle('active', shouldGlow);
+      }
+      if (tickLabel) {
+        tickLabel.classList.toggle('active', shouldGlow);
+      }
+      if (tickTime) {
+        tickTime.classList.toggle('active', shouldGlow);
+      }
+    });
+  }
+
+  function updateTimingTicksVisibility(isShotInProgress) {
+    const timingTicks = document.getElementById('workoutTimingTicks');
+    if (!timingTicks) return;
+    
+    // Check if rocket mode is enabled - timing ticks should only be visible when rocket mode is on
+    const isRocketMode = document.documentElement.getAttribute('data-rocket-mode') === 'on';
+    
+    if (!isRocketMode) {
+      // Hide timing ticks when rocket mode is disabled
+      timingTicks.style.display = 'none';
+      timingTicks.style.opacity = '0';
+      return;
+    }
+    
+    // Show/hide timing ticks based on whether a shot is in progress (only when rocket mode is on)
+    if (isShotInProgress) {
+      timingTicks.style.display = 'flex';
+      timingTicks.style.opacity = '1';
+    } else {
+      timingTicks.style.display = 'none';
+      timingTicks.style.opacity = '0';
+    }
+  }
+
+  /**
+   * Helper function to update a specific tick's time display (legacy)
+   */
+  function updateTickTime(tickClass, timeInSeconds) {
+    const tick = document.querySelector(`.${tickClass}`);
+    if (!tick) return;
+    
+    const timeElement = tick.querySelector('.tick-time');
+    if (timeElement) {
+      timeElement.textContent = `${timeInSeconds.toFixed(1)}s`;
+    }
+  }
+
+  /**
+   * Updates the visibility of timing tick marks based on rocket mode state
+   * In presentation mode, timing ticks are only shown when rocket mode is enabled
+   */
+  function updateTimingTickMarksVisibility(rocketMode) {
+    const timingTicks = document.getElementById('workoutTimingTicks');
+    if (!timingTicks) return;
+    
+    // Check if we're in presentation mode
+    const isPresentationMode = window.workoutExecution && window.workoutExecution.isPresentationMode;
+    
+    if (rocketMode === 'on') {
+      // Show timing ticks when rocket mode is enabled
+      timingTicks.classList.remove('hidden');
+      
+      // Don't try to update tick marks during initialization - they'll be updated when workout starts
+      // This prevents the "Cannot access 'workoutExecution' before initialization" error
+    } else {
+      // Hide timing ticks when rocket mode is disabled
+      // In presentation mode, this ensures no timing ticks are shown when rocket mode is off
+      timingTicks.classList.add('hidden');
+    }
+  }
+
   function calculateMessageDuration(entryConfig) {
     // Use the existing WorkoutLib function
     return WorkoutLib.calculateMessageDuration ?
@@ -10463,132 +11640,46 @@ document.addEventListener("DOMContentLoaded", function () {
     return minutes * 60 + seconds;
   }
 
-  function buildTimelineIndex(soundEvents) {
+  function buildTimelineIndex(timeline) {
     const shots = [];
     const messages = [];
 
-    // Sort all events by time to process chronologically
-    const sortedEvents = [...soundEvents].sort((a, b) => a.time - b.time);
-
-    // Process shot events: find TTS+beep pairs for each shot occurrence
-    const processedEvents = new Set();
-
-    sortedEvents.forEach(event => {
-      if (processedEvents.has(event) || !event.entry) return;
-
-      if (event.entry.type === 'Shot' && event.type === 'tts') {
-        // Look for the corresponding beep event for this shot occurrence
-        const maxLookAhead = 3.0; // Look ahead max 3 seconds for the beep
-        const correspondingBeep = sortedEvents.find(otherEvent =>
-          !processedEvents.has(otherEvent) &&
-          otherEvent.entry &&
-          otherEvent.entry.id === event.entry.id &&
-          otherEvent.type === 'beep' &&
-          otherEvent.time > event.time &&
-          otherEvent.time <= event.time + maxLookAhead
-        );
-
-        if (correspondingBeep) {
-          shots.push({
-            name: event.entry.name,
-            ttsTime: event.time,
-            beepTime: correspondingBeep.time,
-            endTime: correspondingBeep.time + 3.0, // 3 seconds after beep
-            entry: event.entry,
-            ttsEvent: event,
-            beepEvent: correspondingBeep
-          });
-
-          processedEvents.add(event);
-          processedEvents.add(correspondingBeep);
-        }
-      } else if (event.entry.type === 'Message' && event.type === 'tts' && !event.isCountdown) {
-        // Process message TTS events
-        const messageDuration = calculateMessageDuration(event.entryConfig);
-        const ttsDuration = estimateTTSDuration(event.text, event.entryConfig?.speechRate || 1.0);
-
-        // Find any countdown events for this message (now beep events instead of TTS)
-        const countdownEvents = sortedEvents.filter(otherEvent =>
-          !processedEvents.has(otherEvent) &&
-          otherEvent.entry &&
-          otherEvent.entry.id === event.entry.id &&
-          otherEvent.type === 'beep' &&
-          otherEvent.isCountdown &&
-          otherEvent.time > event.time &&
-          otherEvent.time <= event.time + messageDuration
-        );
-
-        messages.push({
-          text: event.text,
-          startTime: event.time,
-          ttsEndTime: event.time + ttsDuration,
-          endTime: event.time + messageDuration,
-          countdownEvents: countdownEvents.sort((a, b) => a.time - b.time),
+    // Process timeline events directly - they already have the correct structure
+    timeline.forEach(event => {
+      if (event.type === 'Shot') {
+        // Shot events from timeline already have the correct structure
+        shots.push({
+          name: event.name,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          ttsTime: event.subEvents?.announced_time || event.startTime,
+          beepTime: event.subEvents?.beep_time || event.endTime,
+          splitStepTime: event.subEvents?.split_step_time || (event.endTime - 0.48),
           entry: event.entry,
-          mainTTS: event
+          duration: event.duration
         });
-
-        processedEvents.add(event);
-        countdownEvents.forEach(ce => processedEvents.add(ce));
-      } else if (event.entry.type === 'Message' && event.type === 'beep' && event.isCountdown) {
-        // Handle empty messages that only have countdown events (no TTS)
-        // Check if we already processed this message
-        const existingMessage = messages.find(m => m.entry.id === event.entry.id);
-        if (!existingMessage) {
-          // Find all countdown events for this message
-          const countdownEvents = sortedEvents.filter(otherEvent =>
-            !processedEvents.has(otherEvent) &&
-            otherEvent.entry &&
-            otherEvent.entry.id === event.entry.id &&
-            otherEvent.type === 'beep' &&
-            otherEvent.isCountdown
-          );
-
-          if (countdownEvents.length > 0) {
-            // Calculate message duration from the countdown events
-            const sortedCountdownEvents = countdownEvents.sort((a, b) => a.time - b.time);
-            const firstCountdownTime = sortedCountdownEvents[0].time;
-            const lastCountdownTime = sortedCountdownEvents[sortedCountdownEvents.length - 1].time;
-            const messageDuration = lastCountdownTime + 1.0; // Add 1 second after last countdown
-
-            messages.push({
-              text: '', // Empty text for empty messages
-              startTime: firstCountdownTime - 0.1, // Start slightly before first countdown
-              ttsEndTime: firstCountdownTime - 0.1, // No TTS, so ttsEndTime = startTime
-              endTime: messageDuration,
-              countdownEvents: sortedCountdownEvents,
-              entry: event.entry,
-              mainTTS: null // No TTS for empty messages
-            });
-
-            countdownEvents.forEach(ce => processedEvents.add(ce));
-          }
-        }
-      } else if (event.entry.type === 'Message' && event.type === 'silent' && event.isSilentMessage) {
-        // Handle empty messages with countdown disabled (silent messages)
-        // Check if we already processed this message
-        const existingMessage = messages.find(m => m.entry.id === event.entry.id);
-        if (!existingMessage) {
-          // Calculate message duration from the entry config
-          const messageDuration = calculateMessageDuration(event.entryConfig);
-          
-          messages.push({
-            text: '', // Empty text for silent messages
-            startTime: event.time,
-            ttsEndTime: event.time, // No TTS, so ttsEndTime = startTime
-            endTime: event.time + messageDuration,
-            countdownEvents: [], // No countdown events for silent messages
-            entry: event.entry,
-            mainTTS: null // No TTS for silent messages
-          });
-
-          processedEvents.add(event);
-        }
+      } else if (event.type === 'Message') {
+        // Message events from timeline
+        const messageText = event.entry?.config?.message || event.name || '';
+        const messageInterval = event.entry?.config?.interval || 0;
+        const ttsDuration = event.subEvents?.tts_end ? 
+          event.subEvents.tts_end - event.startTime : 
+          estimateTTSDuration(messageText, event.entry?.config?.speechRate || 1.0);
+        
+        messages.push({
+          text: messageText,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          ttsEndTime: event.subEvents?.tts_end || (event.startTime + ttsDuration),
+          interval: messageInterval,
+          entry: event.entry,
+          duration: event.duration
+        });
       }
     });
 
-    // Sort by start time
-    shots.sort((a, b) => a.ttsTime - b.ttsTime);
+    // Sort by start time for proper sequencing
+    shots.sort((a, b) => a.startTime - b.startTime);
     messages.sort((a, b) => a.startTime - b.startTime);
 
     return { shots, messages };
@@ -10624,7 +11715,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Check shots
     for (const shot of shots) {
-      if (currentTime >= shot.ttsTime && currentTime < shot.endTime) {
+      if (currentTime >= shot.startTime && currentTime < shot.endTime) {
         if (currentTime < shot.beepTime) {
           // Preparing phase
           return {
@@ -10779,6 +11870,11 @@ document.addEventListener("DOMContentLoaded", function () {
       workoutExecution.lastTTSHealthCheck = 0; // Reset health check timer
     }
 
+    // Initialize workout execution if not already done
+    if (!workoutExecution.workoutData || !workoutExecution.timeline) {
+      startWorkoutExecution();
+    }
+
     workoutExecution.isRunning = true;
     workoutExecution.isPaused = false;
     workoutExecution.completionTriggered = false; // Reset completion flag
@@ -10821,13 +11917,14 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      // NEW: More precise timing calculation for better synchronization
       const elapsed = (performance.now() - workoutExecution.startTime) / 1000;
       workoutExecution.currentTime = elapsed;
 
-      // Process sound events
+      // Process sound events with precise timing
       processSoundEvents();
 
-      // Update UI
+      // Update UI with synchronized timing
       updateWorkoutUI();
 
       // Check if workout is complete
@@ -10836,6 +11933,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      // Use requestAnimationFrame for smooth timing updates
       workoutExecution.animationFrame = requestAnimationFrame(animate);
     }
 
@@ -10848,6 +11946,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     workoutExecution.isPaused = true;
+
+    // Hide timing ticks when paused
+    updateTimingTicksVisibility(false);
 
     // Cancel animation frame
     if (workoutExecution.animationFrame) {
@@ -10991,6 +12092,9 @@ document.addEventListener("DOMContentLoaded", function () {
     workoutExecution.isPrepTimeCountdown = false;
     workoutExecution.prepTimeRemaining = 0;
     workoutExecution.prepTimeOriginal = 0;
+
+    // Hide timing ticks when workout stops
+    updateTimingTicksVisibility(false);
     
     // Clear prep time countdown timer
     if (workoutExecution.prepTimeTimerId) {
@@ -11041,6 +12145,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function completeWorkout() {
     workoutExecution.isRunning = false;
     workoutExecution.isPaused = false;
+
+    // Hide timing ticks when workout completes
+    updateTimingTicksVisibility(false);
 
     if (workoutExecution.animationFrame) {
       cancelAnimationFrame(workoutExecution.animationFrame);
@@ -11330,18 +12437,29 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 1000);
   }
 
-  function processSoundEvents() {
-    const { currentTime, soundEvents, playedSounds } = workoutExecution;
+      function processSoundEvents() {
+    const { currentTime, audioSoundEvents, playedSounds } = workoutExecution;
 
+    // Use audioSoundEvents for actual audio playback (the converted soundEvents)
+    // while timeline contains the timeline for timing synchronization
+    const soundEvents = audioSoundEvents || [];
+    
+
+    
+    // NEW: Use timeline-synchronized timing with reasonable tolerance
+    // This ensures presentation mode timing matches preview mode exactly
     soundEvents.forEach(soundEvent => {
-      const tolerance = 0.05;
-      const isEventTime = Math.abs(currentTime - soundEvent.time) < tolerance;
+      // Use reasonable timing tolerance (0.1 seconds) to account for frame timing variations
+      const isEventTime = Math.abs(currentTime - soundEvent.time) < 0.1;
 
       if (isEventTime) {
         const soundKey = `${soundEvent.type}-${soundEvent.time.toFixed(3)}`;
+        
+
 
         if (!playedSounds.has(soundKey)) {
           if (soundEvent.type === 'splitStep') {
+
             playSplitStepPowerUp(soundEvent.speed);
             playedSounds.add(soundKey);
           } else if (soundEvent.type === 'beep') {
@@ -11352,6 +12470,7 @@ document.addEventListener("DOMContentLoaded", function () {
               playedSounds.add(soundKey);
             } else {
               // Regular shot beeps
+  
               playTwoToneBeep();
               triggerWorkoutFlash();
               
@@ -11370,12 +12489,153 @@ document.addEventListener("DOMContentLoaded", function () {
               playedSounds.add(soundKey);
             }
           } else if (soundEvent.type === 'tts') {
+
             playTTS(soundEvent.text, soundEvent.entryConfig);
             playedSounds.add(soundKey);
           }
         }
       }
     });
+  }
+
+  /**
+   * NEW: Build a timeline index for better synchronization between preview and presentation modes
+   * This ensures that presentation mode uses the exact same timing calculations as preview mode
+   */
+  function buildTimelineIndex(timelineEvents) {
+    const timelineData = {
+      shots: [],
+      messages: [],
+      splitSteps: [],
+      ttsEvents: []
+    };
+
+    timelineEvents.forEach(event => {
+      if (event.type === 'Shot') {
+        // Shot events from timeline
+        timelineData.shots.push({
+          startTime: event.startTime,
+          endTime: event.endTime,
+          ttsTime: event.subEvents.announced_time,
+          beepTime: event.subEvents.beep_time,
+          splitStepTime: event.subEvents.split_step_time,
+          name: event.name,
+          entry: event.entry
+        });
+      } else if (event.type === 'Message') {
+        // Message events from timeline
+        const messageText = event.entry?.config?.message || event.name;
+        const messageInterval = event.entry?.config?.interval || 0;
+        const ttsEndTime = event.subEvents.tts_end || event.subEvents.message_start || event.startTime;
+        
+        timelineData.messages.push({
+          startTime: event.startTime,
+          endTime: event.endTime,
+          ttsEndTime: ttsEndTime,
+          text: messageText,
+          entry: event.entry,
+          interval: messageInterval
+        });
+      }
+    });
+
+    // Sort by time for proper sequencing
+    timelineData.shots.sort((a, b) => a.startTime - b.startTime);
+    timelineData.messages.sort((a, b) => a.startTime - b.startTime);
+
+    return timelineData;
+  }
+
+  /**
+   * NEW: Find the active event at the current time for UI synchronization
+   * This ensures that presentation mode UI updates match the preview mode timing exactly
+   */
+  function findActiveEvent(currentTime, timelineData) {
+    // Find active shot event - use startTime for proper progress calculation
+    // Handle boundary case: at exactly endTime, we're still in the current shot (100% progress)
+    const activeShot = timelineData.shots.find(shot => 
+      currentTime >= shot.startTime && currentTime <= shot.endTime
+    );
+
+    if (activeShot) {
+      if (currentTime < activeShot.beepTime) {
+        return {
+          type: 'shot_preparing',
+          data: activeShot
+        };
+      } else {
+        return {
+          type: 'shot_executing',
+          data: activeShot
+        };
+      }
+    }
+
+    // Find active message event - check TTS phase first
+    const ttsMessage = timelineData.messages.find(message => {
+      const ttsEndTime = message.ttsEndTime || message.startTime;
+      return currentTime >= message.startTime && currentTime <= ttsEndTime;
+    });
+
+    if (ttsMessage) {
+      return {
+        type: 'message_tts',
+        data: ttsMessage
+      };
+    }
+
+    // Check for countdown phase after TTS (within message duration)
+    const countdownMessage = timelineData.messages.find(message => {
+      const ttsEndTime = message.ttsEndTime || message.startTime;
+      const messageEndTime = message.endTime;
+      return currentTime >= ttsEndTime && currentTime <= messageEndTime;
+    });
+
+    if (countdownMessage) {
+      return {
+        type: 'message_countdown',
+        data: countdownMessage
+      };
+    }
+
+    return null;
+  }
+
+  // Get the theme-appropriate flash color based on current theme and color scheme
+  function getThemeFlashColor() {
+    const theme = document.documentElement.getAttribute("data-theme");
+    const colorScheme = document.documentElement.getAttribute("data-color-scheme");
+    
+    // Theme color mapping based on the color schemes used in the app
+    const themeColors = {
+      // Dark themes
+      'dark': {
+        'blue-ocean': 'rgba(16, 185, 129, 0.8)',      // Green/teal
+        'purple-nebula': 'rgba(168, 85, 247, 0.8)',   // Purple
+        'forest-night': 'rgba(34, 197, 94, 0.8)',     // Green
+        'crimson-shadow': 'rgba(239, 68, 68, 0.8)',   // Red
+        'midnight-teal': 'rgba(20, 184, 166, 0.8)',   // Teal
+        // Default for dark theme
+        'default': 'rgba(255, 255, 255, 0.8)'
+      },
+      // Light themes
+      'light': {
+        'cloud-silver': 'rgba(5, 150, 105, 0.8)',     // Green
+        'warm-sunset': 'rgba(234, 88, 12, 0.8)',      // Orange
+        'fresh-mint': 'rgba(22, 163, 74, 0.8)',       // Green
+        'rose-gold': 'rgba(236, 72, 153, 0.8)',       // Pink
+        'arctic-blue': 'rgba(2, 132, 199, 0.8)',      // Blue
+        'lavender-mist': 'rgba(147, 51, 234, 0.8)',   // Purple
+        // Default for light theme
+        'default': 'rgba(239, 68, 68, 0.8)'
+      }
+    };
+    
+    // Get the appropriate color for the current theme and color scheme
+    const themeColorMap = themeColors[theme] || themeColors.light;
+    const flashColor = themeColorMap[colorScheme] || themeColorMap.default;
+    
+    return flashColor;
   }
 
   function triggerWorkoutFlash() {
@@ -11387,42 +12647,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 300);
     }
 
-    // Add mobile-specific background flash effect (copied from squash-ghost app)
-    if (isMobileDevice()) {
-      // Get theme-aware glow color (same as text glow)
-      const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
-      const glowColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+    // Add full-screen background flash effect for all devices and orientations
+    // This ensures the flash is visible in portrait orientation on all devices
+    // Use theme-appropriate flash color instead of generic white/red
+    const glowColor = getThemeFlashColor();
 
-      // Create a bright flash overlay that covers the entire screen (like squash-ghost app)
-      const flashOverlay = document.createElement('div');
-      flashOverlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: ${glowColor};
-        z-index: 99999;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.1s ease-out;
-      `;
+    // Create a bright flash overlay that covers the entire screen
+    const flashOverlay = document.createElement('div');
+    flashOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: ${glowColor};
+      z-index: 99999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease-out;
+    `;
 
-      document.body.appendChild(flashOverlay);
+    document.body.appendChild(flashOverlay);
 
-      // Trigger the flash effect - simple fade in/out like squash-ghost app
-      requestAnimationFrame(() => {
-        flashOverlay.style.opacity = '1';
+    // Trigger the flash effect - simple fade in/out
+    requestAnimationFrame(() => {
+      flashOverlay.style.opacity = '1';
+      setTimeout(() => {
+        flashOverlay.style.opacity = '0';
         setTimeout(() => {
-          flashOverlay.style.opacity = '0';
-          setTimeout(() => {
-            if (flashOverlay.parentNode) {
-              flashOverlay.parentNode.removeChild(flashOverlay);
-            }
-          }, 100);
+          if (flashOverlay.parentNode) {
+            flashOverlay.parentNode.removeChild(flashOverlay);
+          }
         }, 100);
-      });
-    }
+      }, 100);
+    });
   }
 
   // --- Page Visibility Handling ---
@@ -11437,22 +12695,107 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // --- Initial Load ---
-  // Load a default workout from file on initial page load
-  fetch("default.workout.json")
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  // Check for URL parameters first, then load default workout
+  async function initializeWorkout() {
+    try {
+      // Check for URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const workoutUrl = urlParams.get('url_workout');
+      
+      if (workoutUrl) {
+        console.log("Loading workout from URL parameter:", workoutUrl);
+        
+        // Show loading overlay
+        showLoadingOverlay();
+        
+        try {
+          // Convert Hastebin URLs to raw format
+          let fetchUrl = workoutUrl;
+          if (workoutUrl.includes('hastebin.com/') && !workoutUrl.includes('/raw/')) {
+            const key = workoutUrl.split('/').pop();
+            fetchUrl = `https://hastebin.com/raw/${key}`;
+          }
+
+          // Fetch the workout data
+          const response = await fetch(fetchUrl);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const text = await response.text();
+          
+          // Try to extract JSON from the response
+          let jsonData;
+          try {
+            // First try to parse as direct JSON
+            jsonData = JSON.parse(text);
+          } catch (parseError) {
+            // If that fails, try to extract JSON from commented content
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                jsonData = JSON.parse(jsonMatch[0]);
+              } catch (secondParseError) {
+                throw new Error("Could not extract valid JSON from the response");
+              }
+            } else {
+              throw new Error("No JSON content found in the response");
+            }
+          }
+
+          // If the JSON is an array, take the first element
+          if (Array.isArray(jsonData)) {
+            jsonData = jsonData[0];
+          }
+
+          // Validate the JSON structure
+          const validation = await validateWorkoutJSON(jsonData);
+          if (!validation.success) {
+            const errorMessage =
+              "Invalid workout file from URL:\n\n" + validation.errors.join("\n");
+            alert(errorMessage);
+            console.error("Validation errors:", validation.errors);
+            throw new Error("Invalid workout data");
+          }
+
+          // Load the workout from URL
+          loadWorkout(jsonData);
+          console.log("Workout loaded from URL parameter successfully");
+          
+          // Clear the URL parameter to prevent reloading on refresh
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.delete('url_workout');
+          window.history.replaceState({}, '', newUrl);
+          
+        } catch (fetchError) {
+          console.error("Error fetching workout from URL parameter:", fetchError);
+          alert("Failed to load workout from URL parameter. Loading default workout instead.\n\nError: " + fetchError.message);
+          throw fetchError; // This will trigger the fallback to default workout
+        } finally {
+          hideLoadingOverlay();
+        }
+        
+      } else {
+        // No URL parameter, load default workout
+        console.log("No URL parameter found, loading default workout");
+        const response = await fetch("default.workout.json");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        loadWorkout(data);
       }
-      return response.json();
-    })
-    .then((data) => {
-      loadWorkout(data);
-    })
-    .catch((e) => {
-      console.error("Error loading default workout:", e);
+      
+    } catch (e) {
+      console.error("Error loading workout:", e);
       // If loading fails, create a default empty pattern
       createPatternInstance();
-    });
+    }
+  }
+
+  // Initialize workout on page load
+  initializeWorkout();
 
   /**
    * Finds the correct insertion position for a cloned element, considering linked groups and position locks.
@@ -12070,6 +13413,91 @@ document.addEventListener("DOMContentLoaded", function () {
     updateRocketIndicator(element);
   }
 
+  /**
+   * Loads repeat configuration into UI elements.
+   * @param {Element} element - The element containing repeat controls
+   * @param {number|object} repeatCount - The repeat configuration (fixed or random)
+   */
+  function loadRepeatConfiguration(element, repeatCount) {
+      const repeatTypeSelect = element.querySelector(".repeat-type-select");
+      const repeatFixedContainer = element.querySelector(".repeat-fixed-container");
+      const repeatRandomContainer = element.querySelector(".repeat-random-container");
+      const repeatSlider = element.querySelector(".repeat-slider");
+      const repeatValueSpan = element.querySelector(".repeat-value");
+  
+      if (typeof repeatCount === 'object' && repeatCount.type === 'random') {
+        if (repeatTypeSelect) repeatTypeSelect.value = "random";
+        if (repeatFixedContainer) repeatFixedContainer.style.display = "none";
+        if (repeatRandomContainer) repeatRandomContainer.style.display = "block";
+  
+        const min = repeatCount.min !== undefined ? repeatCount.min : 1;
+        const max = repeatCount.max !== undefined ? repeatCount.max : 3;
+  
+        // Set dataset values and update the UI
+        element.dataset.minValue = min;
+        element.dataset.maxValue = max;
+  
+        const sliderContainer = element.querySelector('.repeat-slider-container');
+        const minThumb = element.querySelector('.repeat-min-thumb');
+        const maxThumb = element.querySelector('.repeat-max-thumb');
+        const rangeFill = element.querySelector('.repeat-range-fill');
+  
+        if(sliderContainer && minThumb && maxThumb && rangeFill) {
+            const context = {
+                container: sliderContainer, minThumb, maxThumb, rangeFill,
+                min: 0, max: 10, instanceElement: element
+            };
+            updateSliderUI({ ...context, minVal: min, maxVal: max });
+        }
+      } else if (typeof repeatCount === 'object' && repeatCount.type === 'fixed') {
+        if (repeatTypeSelect) repeatTypeSelect.value = "fixed";
+        if (repeatFixedContainer) repeatFixedContainer.style.display = "block";
+        if (repeatRandomContainer) repeatRandomContainer.style.display = "none";
+  
+        const count = repeatCount.count !== undefined ? repeatCount.count : 1;
+        if (repeatSlider) repeatSlider.value = count;
+        if (repeatValueSpan) repeatValueSpan.textContent = `${count}x`;
+      } else {
+        // Legacy support: if it's a number, treat as fixed
+        if (repeatTypeSelect) repeatTypeSelect.value = "fixed";
+        if (repeatFixedContainer) repeatFixedContainer.style.display = "block";
+        if (repeatRandomContainer) repeatRandomContainer.style.display = "none";
+  
+        const count = repeatCount !== undefined ? repeatCount : 1;
+        if (repeatSlider) repeatSlider.value = count;
+        if (repeatValueSpan) repeatValueSpan.textContent = `${count}x`;
+      }
+  
+      updateRepeatTypeDisplay(element);
+  }
+
+  /**
+   * Updates the repeat type display text in the dropdown option.
+   * @param {Element} element - The element containing repeat controls
+   */
+  function updateRepeatTypeDisplay(element) {
+      const repeatTypeSelect = element.querySelector(".repeat-type-select");
+      if (!repeatTypeSelect) return;
+  
+      const isRandom = repeatTypeSelect.value === "random";
+  
+      if (isRandom) {
+        // Get values from the element's dataset
+        const minValue = element.dataset.minValue !== undefined ? element.dataset.minValue : "1";
+        const maxValue = element.dataset.maxValue !== undefined ? element.dataset.maxValue : "3";
+        const randomOption = repeatTypeSelect.querySelector('option[value="random"]');
+        if (randomOption) {
+          randomOption.textContent = `Random range: ${minValue} to ${maxValue}`;
+        }
+      } else {
+        // This part remains the same
+        const repeatValue = element.querySelector(".repeat-slider")?.value || "1";
+        const fixedOption = repeatTypeSelect.querySelector('option[value="fixed"]');
+        if (fixedOption) {
+          fixedOption.textContent = `Repeat: ${repeatValue}x`;
+        }
+      }
+  }
 
   /**
    * Updates the rocket indicator for an element based on its settings.
@@ -12793,325 +14221,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // --- Export Preview Functions ---
-  
-  /**
-   * Exports the preview timeline as a PNG image
-   */
-  async function exportPreviewAsPNG() {
-    try {
-      const exportBtn = document.getElementById('exportPreviewBtn');
-      if (exportBtn) {
-        exportBtn.disabled = true;
-        exportBtn.title = 'Exporting...';
-      }
 
-      // Show confirmation dialog
-      const confirmed = confirm('Rendering to PNG may take a few moments for longer timelines. Continue with export?');
-      if (!confirmed) {
-        return;
-      }
-
-      // Get the preview content
-      const previewContent = document.getElementById('previewContent');
-      if (!previewContent) {
-        throw new Error('Preview content not found');
-      }
-
-      // Create a temporary container for the export
-      const exportContainer = document.createElement('div');
-      exportContainer.style.cssText = `
-        position: fixed;
-        top: -9999px;
-        left: -9999px;
-        width: 800px;
-        background: white;
-        color: black;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        padding: 20px;
-        box-sizing: border-box;
-        overflow: hidden;
-      `;
-
-      // Clone the preview content
-      const contentClone = previewContent.cloneNode(true);
-      
-      // Apply print-friendly styles to the clone
-      try {
-        applyPrintFriendlyStyles(contentClone);
-      } catch (error) {
-        console.warn('Warning: Could not apply print-friendly styles:', error);
-        // Continue with export even if styling fails
-      }
-      
-      // Add workout name as header
-      const workoutName = document.getElementById('previewWorkoutName')?.textContent || 'Workout Preview';
-      const header = document.createElement('h1');
-      header.textContent = workoutName;
-      header.style.cssText = `
-        margin: 0 0 20px 0;
-        font-size: 24px;
-        font-weight: bold;
-        color: black;
-        text-align: center;
-        border-bottom: 2px solid #333;
-        padding-bottom: 10px;
-      `;
-      
-      exportContainer.appendChild(header);
-      exportContainer.appendChild(contentClone);
-      document.body.appendChild(exportContainer);
-
-      // Use html2canvas to capture the content
-      const canvas = await html2canvas(exportContainer, {
-        width: 800,
-        height: Math.max(exportContainer.scrollHeight, 600), // Ensure minimum height
-        scale: 2, // Higher resolution
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 800,
-        windowHeight: Math.max(exportContainer.scrollHeight, 600)
-      });
-
-      // Clean up the temporary container
-      document.body.removeChild(exportContainer);
-
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${workoutName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_timeline.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 'image/png');
-
-      // Re-enable the export button
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.title = 'Export timeline as PNG';
-      }
-
-    } catch (error) {
-      console.error('Error exporting preview:', error);
-      
-      alert('Failed to export preview. Please try again.');
-      
-      // Re-enable the export button on error
-      const exportBtn = document.getElementById('exportPreviewBtn');
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.title = 'Export timeline as PNG';
-      }
-    }
-  }
-
-  /**
-   * Applies print-friendly styles to the preview content
-   */
-  function applyPrintFriendlyStyles(element) {
-    // Remove any existing theme classes and apply print styles
-    if (element.className && typeof element.className === 'string') {
-      element.className = element.className.replace(/data-theme-[^ ]*/g, '');
-    }
-    
-    // Apply print-friendly styles to all elements
-    const styleRules = `
-      * {
-        color: black !important;
-        background: white !important;
-        border-color: #333 !important;
-        box-shadow: none !important;
-        text-shadow: none !important;
-        vertical-align: baseline !important;
-      }
-      
-      span, div, p {
-        vertical-align: middle !important;
-        line-height: 1.2 !important;
-      }
-      
-      .bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200 {
-        background: white !important;
-        border: 1px solid #ccc !important;
-      }
-      
-      .text-gray-800, .text-gray-900, .text-gray-700 {
-        color: black !important;
-      }
-      
-      .text-gray-500, .text-gray-600 {
-        color: #666 !important;
-      }
-      
-      .text-blue-700, .text-blue-600, .text-cyan-600 {
-        color: #333 !important;
-      }
-      
-      .text-purple-700, .text-orange-700, .text-yellow-700, .text-red-700, .text-green-600 {
-        color: #333 !important;
-      }
-      
-      .bg-blue-50, .bg-cyan-50 {
-        background: #f5f5f5 !important;
-        border: 1px solid #ccc !important;
-      }
-      
-      .pattern-ribbon {
-        background: #333 !important;
-      }
-      
-      .timing-badge, .rocket-timing-badge {
-        background: #f0f0f0 !important;
-        color: black !important;
-        border: 1px solid #ccc !important;
-        display: inline-block !important;
-        vertical-align: baseline !important;
-        line-height: 1.2 !important;
-        height: auto !important;
-        min-height: 20px !important;
-        padding: 4px 8px !important;
-        box-sizing: border-box !important;
-      }
-      
-      .timeline-current-icon {
-        filter: grayscale(100%) !important;
-      }
-      
-      /* Additional badge-like elements */
-      .badge, [class*="badge"], [class*="Badge"] {
-        display: inline-block !important;
-        vertical-align: baseline !important;
-        line-height: 1.2 !important;
-        padding: 4px 8px !important;
-        height: auto !important;
-        min-height: 20px !important;
-        box-sizing: border-box !important;
-      }
-      
-      /* Force text alignment inside badges */
-      .timing-badge *, .rocket-timing-badge *, .badge *, [class*="badge"] *, [class*="Badge"] * {
-        vertical-align: baseline !important;
-        line-height: 1 !important;
-        display: inline !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      
-      /* Specific fixes for timing display elements */
-      .timing-badge, .rocket-timing-badge {
-        position: relative !important;
-      }
-      
-      /* Ensure text content is properly positioned */
-      .timing-badge > span, .rocket-timing-badge > span,
-      .timing-badge > div, .rocket-timing-badge > div {
-        vertical-align: baseline !important;
-        line-height: 1.2 !important;
-        display: inline !important;
-        position: relative !important;
-        top: 0 !important;
-        transform: none !important;
-      }
-      
-      /* Fix SVG and image alignment */
-      svg, img {
-        vertical-align: baseline !important;
-        display: inline-block !important;
-      }
-      
-      /* Pattern and shot info containers */
-      .pattern-info, .shot-info, .message-info {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-      }
-      
-      button, .preview-btn-header, .preview-close-btn {
-        display: none !important;
-      }
-      
-      .preview-header {
-        display: none !important;
-      }
-    `;
-    
-    // Create and inject the styles
-    const style = document.createElement('style');
-    style.textContent = styleRules;
-    element.appendChild(style);
-    
-    // Apply styles to all child elements
-    const allElements = element.querySelectorAll('*');
-    allElements.forEach(el => {
-      // Remove any theme-related classes - handle cases where className might not be a string
-      if (el.className && typeof el.className === 'string') {
-        el.className = el.className.replace(/data-theme-[^ ]*/g, '');
-      }
-      
-      // Ensure text is readable and properly aligned
-      const computedStyle = window.getComputedStyle(el);
-      if (computedStyle.color && computedStyle.color !== 'rgba(0, 0, 0, 0)') {
-        el.style.color = 'black';
-      }
-      if (computedStyle.backgroundColor && computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-        el.style.backgroundColor = 'white';
-      }
-      
-      // Ensure proper vertical alignment for inline elements and badges
-      const isBadge = el.tagName === 'SPAN' || 
-                     el.classList.contains('badge') || 
-                     el.classList.contains('timing-badge') ||
-                     el.classList.contains('rocket-timing-badge') ||
-                     (el.className && typeof el.className === 'string' && el.className.includes('badge')) ||
-                     (el.className && typeof el.className === 'string' && el.className.includes('Badge'));
-      
-      if (isBadge) {
-        el.style.verticalAlign = 'baseline';
-        el.style.lineHeight = '1.2';
-        el.style.display = 'inline-block';
-        el.style.minHeight = '20px';
-        el.style.padding = '4px 8px';
-        el.style.boxSizing = 'border-box';
-        el.style.height = 'auto';
-      }
-      
-      // Also fix any text nodes or child elements that might be causing alignment issues
-      if (el.children.length === 0 && el.textContent && el.textContent.trim()) {
-        // This is a text-only element, ensure it's properly aligned
-        el.style.verticalAlign = 'baseline';
-        el.style.lineHeight = '1.2';
-        el.style.display = 'inline';
-        el.style.margin = '0';
-        el.style.padding = '0';
-      }
-      
-      // Fix alignment for timing-related elements and graphics
-      if ((el.className && typeof el.className === 'string' && el.className.includes('timing')) || 
-          (el.className && typeof el.className === 'string' && el.className.includes('time')) || 
-          el.textContent.match(/^\d{2}:\d{2}/)) {
-        el.style.verticalAlign = 'baseline';
-        el.style.lineHeight = '1.2';
-        el.style.display = 'inline-block';
-        el.style.position = 'relative';
-        el.style.top = '0';
-        el.style.transform = 'none';
-      }
-      
-      // Fix SVG and image elements
-      if (el.tagName === 'SVG' || el.tagName === 'IMG') {
-        el.style.verticalAlign = 'baseline';
-        el.style.display = 'inline-block';
-        el.style.position = 'relative';
-        el.style.top = '0';
-      }
-    });
-  }
 
           // Remove glow if any setting is changed (only for user-initiated events that actually modify the workout)
         if (mainContainer) {
@@ -13163,5 +14273,11 @@ document.addEventListener("DOMContentLoaded", function () {
           }, true);
         }
 
+  // Make functions available globally for testing
+  if (typeof window !== 'undefined') {
+    window.handleLoadWorkoutFromUrl = handleLoadWorkoutFromUrl;
+    // Note: handleShareWorkoutOnline is not implemented yet, but the test expects it
+    // window.handleShareWorkoutOnline = handleShareWorkoutOnline;
+  }
 });
 

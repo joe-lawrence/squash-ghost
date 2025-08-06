@@ -194,7 +194,36 @@ Represents a sequence of shots or messages within a workout.
       * If limits.type is "shot-limit", this is an **integer** (1-200).
       * If limits.type is "time-limit", this is a **string** in MM:SS format (e.g., "01:00", "30:00").
       * If limits.type is "all-shots", this field is **null**.
-  * **repeatCount** (integer, optional): How many times this pattern should be consecutively run (1-10). If omitted, defaults to 1.
+  * **repeatCount** (integer | object, optional): How many times this pattern should be consecutively run. This property is not inherited.
+    
+    **Fixed repeat (object)**: An object specifying the exact number of repeats:
+    ```json
+    {
+      "type": "fixed",
+      "count": 3
+    }
+    ```
+    This will run the pattern exactly 3 times. Range: 1-10.
+    
+    **Random repeat (object)**: An object specifying a random range of repeats:
+    ```json
+    {
+      "type": "random",
+      "min": 2,
+      "max": 5
+    }
+    ```
+    This will randomly select a repeat count between min and max (inclusive) each time the workout is generated. Range: min 0-10, max 1-10.
+    
+    **Legacy support**: For backward compatibility, integer values are still supported and treated as fixed repeats:
+    ```json
+    "repeatCount": 3
+    ```
+    This is equivalent to `{"type": "fixed", "count": 3}`.
+     
+     Note on number formatting: repeat counts are integers. In JSON they may be represented without a decimal (e.g., `3` instead of `3.0`). The `count`, `min`, and `max` fields should be integers; both `3` and `3.0` parse as numbers and are accepted by the implementation.
+    
+    If omitted, defaults to 1 (no repeats).
   * **voice** (string, optional): Overrides parent voice setting. The name of the Text-to-Speech voice to use.
   * **speechRate** (number, optional): Overrides parent speech rate setting. A float between 0.5 and 1.5.
   * **interval** (number, optional): Overrides workout-level shot timer duration.
@@ -238,14 +267,43 @@ Represents a single shot within a pattern.
 
 * **type** (string, required): Must be "Shot".
 * **id** (string, required): A unique identifier for the shot.
-* **name** (string, required): The name of the shot (e.g., "Boast", "Forehand Drive").
+* **name** (string, optional): The name of the shot (e.g., "Boast", "Forehand Drive"). If omitted or empty, the shot will be silent during TTS announcements.
 * **positionType** (string, required): Defines the positioning/ordering behavior within its parent context.
   * "normal": Normal in-order execution.
   * "linked": Must follow the preceding entry (linked with previous).
   * "last": Locked to the last position in iteration.
   * "1", "2", "3", etc.: Locked to a specific position number in iteration.
 * **config** (object, required):
-  * **repeatCount** (integer, optional): Specifies how many times this individual shot should be executed consecutively before moving to the next entry in the pattern. This property is not inherited.
+  * **repeatCount** (integer | object, optional): Specifies how many times this individual shot should be executed consecutively before moving to the next entry in the pattern. This property is not inherited.
+    
+    **Fixed repeat (object)**: An object specifying the exact number of repeats:
+    ```json
+    {
+      "type": "fixed",
+      "count": 3
+    }
+    ```
+    This will execute the shot exactly 3 times consecutively. Range: 1-10.
+    
+    **Random repeat (object)**: An object specifying a random range of repeats:
+    ```json
+    {
+      "type": "random",
+      "min": 2,
+      "max": 5
+    }
+    ```
+    This will randomly select a repeat count between min and max (inclusive) each time the workout is generated. Range: min 0-10, max 1-10.
+    
+    **Legacy support**: For backward compatibility, integer values are still supported and treated as fixed repeats:
+    ```json
+    "repeatCount": 3
+    ```
+    This is equivalent to `{"type": "fixed", "count": 3}`.
+     
+     Note on number formatting: repeat counts are integers. In JSON they may be represented without a decimal (e.g., `3` instead of `3.0`). The `min` and `max` fields should be integers; both `3` and `3.0` parse as numbers and are accepted by the implementation.
+    
+    If omitted, defaults to 1 (no repeats).
   * **interval** (number, optional): The duration of the shot timer in seconds (3.0-8.0, step 0.1s). **Note: Shots use numeric seconds, Messages use "MM:SS" strings.** Overrides pattern-level interval setting.
   * **intervalOffsetType** (string, optional): Type of interval offset. Overrides pattern-level setting.
     * "fixed": A single fixed offset applied.

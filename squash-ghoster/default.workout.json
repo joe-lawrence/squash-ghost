@@ -1,88 +1,85 @@
 {
-  "type": "Workout",
-  "name": "My Squash Workout",
   "config": {
+    "autoVoiceSplitStep": true,
+    "interval": 5.0,
+    "intervalOffset": {
+      "max": 0.0,
+      "min": 0.0
+    },
+    "intervalOffsetType": "fixed",
     "iterationType": "in-order",
     "limits": {
       "type": "all-shots",
       "value": null
     },
-    "voice": "Default",
-    "speechRate": 1.0,
-    "interval": 5.0,
-    "intervalOffsetType": "fixed",
-    "intervalOffset": {
-      "min": 0.0,
-      "max": 0.0
-    },
-    "autoVoiceSplitStep": true,
     "shotAnnouncementLeadTime": 2.5,
-    "splitStepSpeed": "auto-scale"
+    "speechRate": 1.0,
+    "splitStepSpeed": "auto-scale",
+    "voice": "Default"
   },
+  "name": "My Squash Workout",
   "patterns": [
     {
-      "type": "Pattern",
-      "id": "patternInstance_1",
-      "name": "Six points",
-      "positionType": "normal",
       "config": {
-        "iterationType": "in-order",
-        "limits": {
-          "type": "all-shots",
-          "value": null
-        }
+        "iterationType": "shuffle",
+        "repeatCount": 5
       },
       "entries": [
         {
-          "type": "Message",
-          "id": "msgInstance_1",
-          "name": "Intro",
-          "positionType": "normal",
-          "config": {
-            "message": "Get ready",
-            "interval": "00:10",
-            "intervalType": "fixed",
-            "countdown": false,
-            "skipAtEndOfWorkout": false
-          }
-        },
-        {
-          "type": "Shot",
           "id": "shotInstance_1",
           "name": "Front left",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
         },
         {
-          "type": "Shot",
           "id": "shotInstance_2",
           "name": "Front right",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
         },
         {
-          "type": "Shot",
           "id": "shotInstance_3",
           "name": "Mid left",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
         },
         {
-          "type": "Shot",
           "id": "shotInstance_4",
           "name": "Mid right",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
         },
         {
-          "type": "Shot",
           "id": "shotInstance_5",
           "name": "Back left",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
         },
         {
-          "type": "Shot",
           "id": "shotInstance_6",
           "name": "Back right",
-          "positionType": "normal"
+          "positionType": "normal",
+          "type": "Shot"
+        },
+        {
+          "config": {
+            "countdown": true,
+            "interval": "00:30",
+            "intervalType": "fixed",
+            "message": "Rest",
+            "skipAtEndOfWorkout": true
+          },
+          "id": "msgInstance_9",
+          "name": "Rest",
+          "positionType": "last",
+          "type": "Message"
         }
-      ]
+      ],
+      "id": "patternInstance_1",
+      "name": "Six points",
+      "positionType": "normal",
+      "type": "Pattern"
     }
-  ]
+  ],
+  "type": "Workout"
 }

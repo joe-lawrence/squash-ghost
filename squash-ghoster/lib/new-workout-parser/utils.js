@@ -105,15 +105,26 @@ export function shuffleArrayRespectingLinks(array, seed = null) {
     return firstElement.positionType === 'normal' || firstElement.positionType === 'linked';
   });
 
-  // Separate linked groups (must stay together) from normal groups (can be shuffled)
-  const linkedGroups = remainingGroups.filter(group =>
-    group.some(element => element.positionType === 'linked')
-  );
-  const normalGroups = remainingGroups.filter(group =>
-    !group.some(element => element.positionType === 'linked')
-  );
+  // Separate linked groups (must stay together) from normal groups
+  // A group is considered a linked group if it contains any linked elements
+  const linkedGroups = [];
+  const normalGroups = [];
+  
+  remainingGroups.forEach(group => {
+    if (group.some(element => element.positionType === 'linked')) {
+      // This group contains linked elements, so it's a linked group
+      linkedGroups.push(group);
+    } else {
+      // This group contains only normal elements
+      normalGroups.push(group);
+    }
+  });
 
-  // Shuffle only the normal groups (never shuffle linked groups)
+  // Combine all groups for shuffling - linked groups should be shuffled along with normal groups
+  // but their internal order should be preserved
+  const allGroups = [...linkedGroups, ...normalGroups];
+  
+  // Shuffle all groups together (both linked and normal groups)
   if (seed !== null) {
     // Use seeded random for deterministic shuffling
     let randomSeed = seed;
@@ -122,20 +133,19 @@ export function shuffleArrayRespectingLinks(array, seed = null) {
       return randomSeed / 233280;
     };
     
-    for (let i = normalGroups.length - 1; i > 0; i--) {
+    for (let i = allGroups.length - 1; i > 0; i--) {
       const j = Math.floor(seededRandom() * (i + 1));
-      [normalGroups[i], normalGroups[j]] = [normalGroups[j], normalGroups[i]];
+      [allGroups[i], allGroups[j]] = [allGroups[j], allGroups[i]];
     }
   } else {
     // Use regular random for non-deterministic shuffling
-    for (let i = normalGroups.length - 1; i > 0; i--) {
+    for (let i = allGroups.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [normalGroups[i], normalGroups[j]] = [normalGroups[j], normalGroups[i]];
+      [allGroups[i], allGroups[j]] = [allGroups[j], allGroups[i]];
     }
   }
-
-  // Combine groups with linked groups first (to ensure they get consecutive positions)
-  const orderedGroups = [...linkedGroups, ...normalGroups];
+  
+  const orderedGroups = allGroups;
 
   // Place remaining groups in available positions (linked groups first)
   orderedGroups.forEach(group => {
